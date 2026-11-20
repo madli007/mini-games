@@ -17,7 +17,7 @@ Repo `mini-games` je prazen (GitHub: `madli007/mini-games`, veja `main`, še bre
 
 Vsaka nadaljnja igra bo nastala z promptom v slogu: »naredi igro X v `/games/x/`, brez build koraka, uporabi `shared/`, dodaj vnos v `games.json`«. Zato mora biti `shared/` **stabilen, preprost in dobro dokumentiran API**. To je najpomembnejši del naloge.
 
-**Delaj v enem kosu, do konca.** Ne ustavljaj se po fazah, ne sprašuj za potrditev vmesnih korakov in ne oddajaj polovične verzije z »naslednji koraki«. Odločitve sprejmi sam (ta dokument ti da dovolj usmeritev). Vprašaj samo, če si res blokiran. Supabase projekta in ključev **nimaš**: vse naredi tako, da deluje brez njih (glej »Offline način«) in da jih jaz kasneje samo vpišem.
+**Delaj v enem kosu, do konca.** Ne ustavljaj se po fazah, ne sprašuj za potrditev vmesnih korakov in ne oddajaj polovične verzije z »naslednji koraki«. Odločitve sprejmi sam (ta dokument ti da dovolj usmeritev). Vprašaj samo, če si res blokiran. Supabase projekt že obstaja (glej »Supabase projekt«). Vseeno mora vse delovati tudi brez njega (glej »Offline način«).
 
 Sproti vodi `PROGRESS.md` (načrt s kljukicami, dnevnik, kaj ni bilo preverjeno), da lahko nova seja nadaljuje, če zmanjka tokenov.
 
@@ -63,9 +63,17 @@ Pravila RLS in funkcije:
 
 Shema mora biti **idempotentna** (`create table if not exists`, `create or replace`, `drop policy if exists`), da jo lahko poženem večkrat.
 
+### Supabase projekt
+
+- Projekt **`mini-games`**, ref `ygdjxwchjfvzigasmayg`, regija eu-west-1.
+- URL: `https://ygdjxwchjfvzigasmayg.supabase.co`
+- Publishable ključ (javen, sme v repo): `sb_publishable_tIyU-rppDYcHt6AxIu9ahA_P1ofVudB`
+- V projektu je **že tabela `public.scores`** z rekordi pinballa (svoja pravila RLS in sprožilec `scores_check`). **Ne spreminjaj je in ne briši**; hub tabele so ločene (`game_scores` ...).
+- Če imaš v seji Supabase MCP orodja (`apply_migration`, `execute_sql`, `get_advisors`), shemo huba poženi kar sam kot migracijo, nato preveri `get_advisors` (security in performance) in popravi vse opozorila. Anonymous sign-ins vklopi v nastavitvah Auth, če to orodja omogočajo; sicer to zapiši v README kot ročni korak. Če orodij nimaš, shemo samo pripravi in v README napiši, kaj moram pognati.
+
 ### Konfiguracija
 
-`shared/config.js` vsebuje `SUPABASE_URL` in `SUPABASE_ANON_KEY` (privzeto prazna). README ima korak za korakom navodila: ustvari projekt, vklopi Anonymous sign-ins, poženi `schema.sql`, vpiši ključa, nastavi Site URL in redirect za magic link na GitHub Pages naslov.
+`shared/config.js` vsebuje `SUPABASE_URL` in `SUPABASE_ANON_KEY` z zgornjima vrednostma (ime spremenljivke je lahko tudi `SUPABASE_PUBLISHABLE_KEY`). Prazni vrednosti pomenita offline način. README ima korak za korakom navodila: vklopi Anonymous sign-ins, poženi `schema.sql`, nastavi Site URL in redirect za magic link na GitHub Pages naslov, kako preklopiš na drug projekt.
 
 ---
 
@@ -162,7 +170,7 @@ V `D:\Git\Brainstorm\pinball` je dokončan pinball (ALU PINBALL 2.0, svoj git re
 - Kopiraj `index.html`, `src/`, `tests/`, `tests.html`, `README.md`, `supabase/scores.sql` in `assets/logos/impol.png` v `games/pinball/`.
 - **Ne kopiraj**: `.git/`, `.DS_Store`, `PROMPT.md`, `PROGRESS.md`, `PREDLOGI-FIRME.md` in izvornih datotek logotipa (`.eps`, `.pdf`, `.jpg`, `Impol logotip.png`). Preveri, da `src/` ne uporablja nobene izpuščene datoteke.
 - Igre **ne prepisuj** in ne spreminjaj fizike, pravil ali izrisa. Poti so že relativne, zato mora delovati iz podmape. Preveri to v brskalniku na `/games/pinball/`.
-- Svoje lestvice ne seli v hub: ostane na svojem Supabase projektu (`src/config.js`, tabela `scores`). Konfiguracije ne spreminjaj.
+- Lestvica pinballa že teče na projektu `mini-games` (tabela `scores`, `src/config.js` že kaže tja). Konfiguracije ne spreminjaj in lestvice ne seli v `game_scores`.
 - Dodaj samo diskreten gumb ali povezavo »← Hub« (`../../`) na začetnem zaslonu, ki ne moti igranja. Če gre brez posega v logiko igre, ob koncu igre pokliči še `hub.awardXp(...)` za skupni XP. Če to zahteva večje spremembe, izpusti in zapiši v `PROGRESS.md`.
 - V `games.json` vnos `pinball` s statusom `live` (1 igralec, `single`, oznaki `arkada` in `rekordi`).
 - Testi pinballa (`node games/pinball/tests/run-node.mjs`) morajo po kopiranju še vedno uspeti.
@@ -185,7 +193,7 @@ V `D:\Git\Brainstorm\pinball` je dokončan pinball (ALU PINBALL 2.0, svoj git re
 3. **Testi brez build koraka**: `tests.html` in `node tests/run-node.mjs` za čisto logiko (PRNG in dnevni seed z Europe/Ljubljana, generator kod sob, krivulja nivojev, veljavnost `games.json` proti shemi, lokalni adapter: lestvica, XP omejitve, prenos hosta).
 4. **Multiplayer v offline načinu**: odpri dva ali tri zavihke, ustvari sobo, pridruži se s kodo in prek `?room=`, odigraj demo igro do konca, preizkusi odhod hosta sredi igre in osvežitev strani igralca.
 5. Preveri izgled na **telefonu** (375×812) in **namizju**; posnemi zaslone in jih sam preglej. Popravi vse, kar izgleda neurejeno.
-6. `schema.sql` preglej še enkrat posebej za RLS luknje (ali lahko kdo piše tuje vrstice, si dodeli XP mimo RPC, spremeni tujo sobo). Če imaš na voljo lokalni Postgres ali Supabase CLI, ga poženi; sicer to zapiši pod »Ni bilo preverjeno«.
+6. `schema.sql` preglej še enkrat posebej za RLS luknje (ali lahko kdo piše tuje vrstice, si dodeli XP mimo RPC, spremeni tujo sobo). Če je shema pognana na projektu, preizkusi hub še z njim (prijava, profil, lestvica, soba v dveh zavihkih) in preveri, da pinball lestvica še deluje. Kar ni bilo preverjeno, zapiši pod »Ni bilo preverjeno«.
 
 ---
 
