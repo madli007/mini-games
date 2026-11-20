@@ -37,14 +37,28 @@
   {
     "id": "ladjice",
     "name": "Potapljanje ladjic",
-    "description": "Klasika s powerupi: radar, torpedo, mine. Vsak proti vsem do 10 igralcev.",
+    "description": "Ladjice s kapitani, mano in powerupi. Dvoboj, battle royale do 10 igralcev ali dnevni izziv proti AI.",
     "icon": "🚢",
     "path": "games/ladjice/",
-    "players": { "min": 2, "max": 10 },
+    "players": { "min": 1, "max": 10 },
     "mode": "turn",
-    "tags": ["strategija"],
-    "status": "soon",
-    "color": "#4de1ff"
+    "tags": ["strategija", "party", "daily"],
+    "status": "live",
+    "scoreOrder": "asc",
+    "scoreUnit": "strelov",
+    "color": "#4de1ff",
+    "quests": [
+      { "id": "play", "tier": "e", "text": "Odigraj igro ladjic", "event": "play:ladjice", "target": 1 },
+      { "id": "ability-2", "tier": "e", "text": "Uporabi sposobnost kapitana 2×", "event": "ladjice:ability", "target": 2 },
+      { "id": "sink-5", "tier": "m", "text": "Potopi 5 ladij", "event": "ladjice:sink", "target": 5 },
+      { "id": "contract", "tier": "m", "text": "Izpolni skrivno pogodbo", "event": "ladjice:contract", "target": 1 },
+      { "id": "crate-3", "tier": "m", "text": "Poberi 3 powerup zaboje", "event": "ladjice:crate", "target": 3 },
+      { "id": "daily-45", "tier": "h", "text": "V dnevnem izzivu potopi floto v največ 45 strelih", "event": "ladjice:daily-shots", "target": 1, "cmp": "lte", "goal": 45 },
+      { "id": "br-win", "tier": "h", "text": "Zmagaj battle royale z vsaj 4 igralci", "event": "ladjice:br-win", "target": 1 },
+      { "id": "admiral", "tier": "h", "text": "Premagaj AI Admiral", "event": "ladjice:admiral-win", "target": 1 },
+      { "id": "w-sink-30", "tier": "w", "text": "Potopi 30 ladij ta teden", "event": "ladjice:sink", "target": 30 },
+      { "id": "w-mp-win-3", "tier": "w", "text": "Zmagaj 3 igre ladjic v multiplayerju", "event": "ladjice:mp-win", "target": 3 }
+    ]
   },
   {
     "id": "bomba-arena",

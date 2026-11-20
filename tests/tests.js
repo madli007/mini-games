@@ -12,6 +12,9 @@ import * as E from '../shared/economy.js';
 import * as Q from '../shared/quests.js';
 import * as K from '../shared/cosmetics.js';
 import * as SIM from './economy-sim.js';
+import * as L from '../games/ladjice/logic.js';
+import * as LA from '../games/ladjice/ai.js';
+import * as LC from '../games/ladjice/content.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -135,7 +138,8 @@ test('games.json ustreza shemi', (ctx) => {
   eq(errs, [], 'napake:');
   ok(ctx.games.some(g => g.id === 'reakcija' && g.status === 'live'));
   ok(ctx.games.some(g => g.id === 'pinball' && g.status === 'live'));
-  ok(ctx.games.filter(g => g.status === 'soon').length >= 14);
+  ok(ctx.games.filter(g => g.status === 'soon').length >= 13);
+  ok(ctx.games.some(g => g.id === 'ladjice' && g.status === 'live' && g.scoreOrder === 'asc'));
 });
 test('validator sheme zazna napake', (ctx) => {
   const bad = [{ ...ctx.games[0], id: 'Slabo ID', mode: 'x' }, { ...ctx.games[0] }];
@@ -337,7 +341,9 @@ test('naloge: predloge iz games.json in le za igre live', (ctx) => {
   const all = Q.expandTemplates(ctx.games);
   ok(all.some(t => t.id === 'reakcija-avg-260' && t.cmp === 'lte'), 'manjka predloga reakcije');
   ok(all.some(t => t.id === 'play-pinball'), 'manjka play-pinball');
-  ok(!all.some(t => t.id.includes('ladjice')), 'igra soon ne sme imeti nalog');
+  const soonIds = ctx.games.filter(g => g.status === 'soon').map(g => g.id);
+  ok(!all.some(t => soonIds.includes(t.game)), 'igra soon ne sme imeti nalog');
+  ok(all.some(t => t.id === 'ladjice-daily-45' && t.cmp === 'lte'), 'manjka naloga ladjic');
   ok(all.every(t => ['e', 'm', 'h', 'w'].includes(t.tier) && t.target >= 1), 'neveljaven tier/target');
   ok(all.every(t => Q.QUEST_ID_RE.test('w1.' + t.id)), 'predolg ali neveljaven id predloge');
   // brez iger za več igralcev ni nalog za multiplayer
@@ -540,6 +546,406 @@ test('lokalno: nagrada za nivo', async () => {
   const r = await a.awardXp(275);        // nivo 1 → 3
   eq(r.level_coins, E.levelReward(2) + E.levelReward(3));
   eq(r.coins, r.level_coins);
+});
+
+/* ------------------------------------------------------- ladjice */
+// flota 5-4-3-3-2 v vrsticah 0, 2, 4, 6, 8 (brez dotikanja)
+const LJ_FLEET = [[0, 1, 2, 3, 4], [20, 21, 22, 23], [40, 41, 42], [60, 61, 62], [80, 81]];
+function ljDuel(capA = 'sonar', capB = 'sonar', { crates = false, mode = 'duel', n = 2 } = {}) {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f'].slice(0, n);
+  const caps = [capA, capB, 'sonar', 'sonar', 'sonar', 'sonar'];
+  const st = L.newGame({ mode, seed: 'test', settings: { crates }, players: ids.map((id, i) => ({ id, captain: caps[i] })) });
+  if (mode !== 'br') for (const id of ids) ok(L.setFleet(st, id, LJ_FLEET), 'setFleet');
+  L.startPlay(st);
+  st.turn = 0;
+  for (const p of st.players) { p.crates = crates ? p.crates : []; }
+  return st;
+}
+const P = (st, id) => L.playerById(st, id);
+const shoot = (st, by, target, cell) => L.act(st, by, { t: 'shot', target, cell });
+/** b vedno strelja v prazno (zadnja vrstica od desne). */
+function pass(st, by = 'b', target = 'a') {
+  const T = P(st, target);
+  let c = 99;
+  while (T.marks[c] != null || LJ_FLEET.flat().includes(c)) c--;
+  return shoot(st, by, target, c);
+}
+
+test('ladjice: veljavnost postavitve', () => {
+  ok(L.validateFleet(10, [5, 4, 3, 3, 2], LJ_FLEET, true));
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 1, 2, 3, 4], [10, 11, 12, 13], [40, 41, 42], [60, 61, 62], [80, 81]], true), 'dotikanje');
+  ok(L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 1, 2, 3, 4], [10, 11, 12, 13], [40, 41, 42], [60, 61, 62], [80, 81]], false), 'dotikanje dovoljeno');
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 1, 2, 3, 4], [16, 27, 38, 49], [40, 41, 42], [60, 61, 62], [80, 81]], false), 'diagonalno se ne dotika, a dovoljeno ni');
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 1, 2, 3, 4], [0, 10, 20, 30], [40, 41, 42], [60, 61, 62], [80, 81]], false), 'prekrivanje');
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], [[8, 9, 10, 11, 12], [30, 31, 32, 33], [50, 51, 52], [70, 71, 72], [90, 91]], false), 'čez rob');
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 1, 2, 12, 13], [30, 31, 32, 33], [50, 51, 52], [70, 71, 72], [90, 91]], false), 'zvita ladja');
+  ok(!L.validateFleet(10, [5, 4, 3, 3, 2], LJ_FLEET.slice(1), true), 'manjka ladja');
+  ok(L.validateFleet(10, [5, 4, 3, 3, 2], [[0, 10, 20, 30, 40], [2, 3, 4, 5], [62, 63, 64], [97, 98, 99], [8, 18]], true), 'navpična');
+  for (const [mode, n] of [['duel', 2], ['br', 3], ['br', 4], ['br', 5], ['br', 10]]) {
+    const { size, fleet } = L.configFor(mode, n);
+    for (let s = 0; s < 40; s++) {
+      const r = L.makeRand(mode + n + ':' + s);
+      ok(L.validateFleet(size, fleet, L.randomFleet(size, fleet, true, r), true), `naključna flota ${mode} ${n}`);
+    }
+  }
+  eq(L.configFor('br', 3), { size: 8, fleet: [4, 3, 2, 2] });
+  eq(L.configFor('br', 7), { size: 7, fleet: [3, 2, 2] });
+});
+
+test('ladjice: strel, zadetek, potop, mana, poteze', () => {
+  const st = ljDuel();
+  eq(L.current(st).id, 'a');
+  eq(shoot(st, 'b', 'a', 5).err, 'not_your_turn');
+  eq(shoot(st, 'a', 'a', 5).err, 'bad_target');
+  let r = shoot(st, 'a', 'b', 99);
+  ok(r.ok);
+  eq(P(st, 'b').marks[99], 'm');
+  eq(P(st, 'a').mana, 2);
+  eq(L.current(st).id, 'b');
+  pass(st);
+  eq(shoot(st, 'a', 'b', 99).err, 'bad_cell', 'isto polje dvakrat');
+  r = shoot(st, 'a', 'b', 80);
+  ok(r.ev.some(e => e.res === 'hit'));
+  eq(P(st, 'a').mana, 3);
+  pass(st);
+  r = shoot(st, 'a', 'b', 81);
+  const s = r.ev.find(e => e.k === 'shot');
+  eq(s.res, 'sink');
+  eq(s.cells, [80, 81]);
+  eq(P(st, 'b').marks[80], 's');
+  eq(P(st, 'a').mana, 3 + 1 + 2);
+  eq(P(st, 'a').stats.sinks, 1);
+  eq(P(st, 'a').stats.bestStreak, 2);
+  // meja mane
+  P(st, 'a').mana = 9;
+  pass(st);
+  shoot(st, 'a', 'b', 98);
+  eq(P(st, 'a').mana, L.MANA_MAX);
+});
+
+test('ladjice: sonar (aktivna 3×3, pasivka smer)', () => {
+  const st = ljDuel('sonar');
+  const a = P(st, 'a');
+  eq(L.act(st, 'a', { t: 'ability', target: 'b', cell: 11 }).err, 'no_mana');
+  a.mana = 4;
+  const r = L.act(st, 'a', { t: 'ability', target: 'b', cell: 11 });
+  ok(r.ok);
+  eq(a.mana, 0);
+  eq(a.intel.b, { 0: 1, 1: 1, 2: 1, 10: 0, 11: 0, 12: 0, 20: 1, 21: 1, 22: 1 });
+  eq(L.current(st).id, 'b', 'sposobnost porabi potezo');
+  pass(st);
+  const r2 = shoot(st, 'a', 'b', 1);
+  eq(r2.ev.find(e => e.k === 'dir').dir, 'h');
+  eq(a.stats.intelHits, 1);
+  pass(st);
+  ok(!shoot(st, 'a', 'b', 20).ev.some(e => e.k === 'dir'), 'smer le prvič');
+  // megla: sonar stane 1 manj
+  st.modifier = 'megla';
+  eq(L.abilityCost(st, a), 3);
+});
+
+test('ladjice: torpedo (vrstica, prvi zadetek, pasivka +1 ob potopitvi)', () => {
+  const st = ljDuel('torpedo');
+  const a = P(st, 'a');
+  a.mana = 10;
+  let r = L.act(st, 'a', { t: 'ability', target: 'b', line: { dir: 'r', i: 1 } });
+  ok(r.ok);
+  ok([10, 11, 12, 13, 14, 15, 16, 17, 18, 19].every(c => P(st, 'b').marks[c] === 'm'), 'prazna vrstica razkrita');
+  eq(a.mana, 5);
+  pass(st);
+  r = L.act(st, 'a', { t: 'ability', target: 'b', line: { dir: 'c', i: 2 } });
+  ok(r.ev.some(e => e.k === 'shot' && e.res === 'hit' && e.cell === 2), 'zadene prvo ladjo v stolpcu');
+  eq(P(st, 'b').marks[22], undefined, 'za ladjo se ustavi');
+  // pasivka: +1 ob potopitvi
+  pass(st);
+  shoot(st, 'a', 'b', 80); pass(st);
+  const before = a.mana;
+  shoot(st, 'a', 'b', 81);
+  eq(a.mana, Math.min(10, before + 1 + 2 + 1));
+  // torpedo potopi ladjo → torpSinks
+  const st2 = ljDuel('torpedo');
+  P(st2, 'b').ships[4].hits = [1, 0];
+  P(st2, 'b').marks[80] = 'h';
+  P(st2, 'a').mana = 5;
+  L.act(st2, 'a', { t: 'ability', target: 'b', line: { dir: 'r', i: 8 } });
+  eq(P(st2, 'a').stats.torpSinks, 1);
+});
+
+test('ladjice: vaba (lažna ladja, pasivka preživi potopitev)', () => {
+  const st = ljDuel('sonar', 'vaba');
+  pass(st, 'a', 'b');
+  const b = P(st, 'b');
+  b.mana = 3;
+  ok(L.act(st, 'b', { t: 'ability', cell: 97, vertical: false }).ok);
+  eq(b.decoys[0].cells, [97, 98]);
+  const r = shoot(st, 'a', 'b', 98);
+  eq(r.ev.find(e => e.k === 'shot').res, 'decoy');
+  eq(b.marks[97], 'v');
+  eq(b.stats.decoyHits, 1);
+  pass(st, 'b', 'a');
+  // pasivka: prva potopitev → ladja ostane z enim poljem
+  shoot(st, 'a', 'b', 80); pass(st, 'b', 'a');
+  const r2 = shoot(st, 'a', 'b', 81);
+  ok(r2.ev.some(e => e.k === 'saved'), 'rešena');
+  ok(!b.ships[4].sunk);
+  eq(b.ships[4].hits.filter(Boolean).length, 1);
+  eq(b.marks[80], undefined, 'polje je spet neznano');
+  pass(st, 'b', 'a');
+  shoot(st, 'a', 'b', 80);
+  ok(b.ships[4].sunk, 'drugič potone');
+});
+
+test('ladjice: popravilo (aktivna, pasivka vsak 4. krog)', () => {
+  const st = ljDuel('popravilo', 'sonar');
+  pass(st, 'a', 'b');
+  shoot(st, 'b', 'a', 0);
+  const a = P(st, 'a');
+  eq(a.marks[0], 'h');
+  eq(L.act(st, 'a', { t: 'ability', cell: 1 }).err, 'no_mana');
+  a.mana = 4;
+  eq(L.act(st, 'a', { t: 'ability', cell: 1 }).err, 'bad_cell', 'nezadeto polje');
+  ok(L.act(st, 'a', { t: 'ability', cell: 0 }).ok);
+  eq(a.ships[0].hits[0], 0);
+  eq(a.marks[0], undefined);
+  // pasivka
+  const st2 = ljDuel('popravilo', 'sonar');
+  const a2 = P(st2, 'a');
+  let gained = 0;
+  while (st2.round < 4) {
+    const r = L.current(st2).id === 'a' ? pass(st2, 'a', 'b') : pass(st2, 'b', 'a');
+    gained += r.ev.filter(e => e.k === 'mana' && e.why === 'repair').length;
+  }
+  eq(gained, 1);
+});
+
+test('ladjice: EMP (preskok, ne dvakrat zapored, pasivka ±1)', () => {
+  const st = ljDuel('emp', 'sonar', { mode: 'br', n: 3 });
+  for (const p of st.players) p.ships = L.randomFleet(st.size, st.fleet, true, L.makeRand(p.id)).map((cells, k) => ({ id: k, cells, hits: cells.map(() => 0), size: cells.length, sunk: false }));
+  const a = P(st, 'a');
+  a.mana = 12;
+  ok(L.act(st, 'a', { t: 'ability', target: 'b' }).ok);
+  eq(L.current(st).id, 'c', 'b preskoči');
+  // c strelja
+  const free = L.unmarked(st, P(st, 'a')).find(c => !P(st, 'a').ships.some(s => s.cells.includes(c)));
+  shoot(st, 'c', 'a', free);
+  eq(L.current(st).id, 'a');
+  a.mana = 10;
+  eq(L.act(st, 'a', { t: 'ability', target: 'b' }).err, 'emp_repeat');
+  ok(L.act(st, 'a', { t: 'ability', target: 'c' }).ok);
+  // pasivka
+  a.mana = 5;
+  const seen = L.shownMana(st, a, 'b');
+  eq(Math.abs(seen - 5), 1);
+  eq(L.shownMana(st, a, 'a'), 5);
+});
+
+test('ladjice: kasetna bomba (4 polja, pasivka +3)', () => {
+  const st = ljDuel('kasetna');
+  const a = P(st, 'a');
+  shoot(st, 'a', 'b', 99);
+  eq(a.mana, 3);
+  pass(st);
+  a.mana = 5;
+  const r = L.act(st, 'a', { t: 'ability', target: 'b' });
+  ok(r.ok);
+  eq(r.ev.find(e => e.k === 'cluster').cells.length, 4);
+  eq(Object.keys(P(st, 'b').marks).length, 5);
+  eq(a.mana, 0 + r.ev.filter(e => e.k === 'mana' && e.pid === 'a').reduce((s, e) => s + e.n, 0));
+});
+
+test('ladjice: zaboji in predmeti (radar, mina, dvojni, ščit, inventar ≤2)', () => {
+  const st = ljDuel('sonar', 'sonar', { crates: true });
+  const a = P(st, 'a'), b = P(st, 'b');
+  b.crates = [99, 98, 97];
+  st.rs = 7;
+  const r = shoot(st, 'a', 'b', 99);
+  ok(r.ev.find(e => e.res === 'crate').item, 'dobi predmet');
+  eq(a.inv.length, 1);
+  eq(b.marks[99], 'c');
+  pass(st); shoot(st, 'a', 'b', 98); pass(st);
+  eq(a.inv.length, 2);
+  shoot(st, 'a', 'b', 97);
+  eq(a.inv.length, 2, 'inventar največ 2');
+  eq(a.stats.crates, 3);
+  pass(st);
+  // dvojni strel: dva strela v eni potezi
+  a.inv = ['dvojni', 'radar'];
+  ok(L.act(st, 'a', { t: 'item', item: 'dvojni' }).ok);
+  eq(L.current(st).id, 'a', 'predmet ne porabi poteze');
+  shoot(st, 'a', 'b', 96);
+  eq(L.current(st).id, 'a', 'drugi strel');
+  ok(L.act(st, 'a', { t: 'item', item: 'radar', target: 'b' }).ok);
+  const known = Object.entries(a.intel.b).filter(([, v]) => v === 1).map(([c]) => +c);
+  ok(known.length === 1 && LJ_FLEET.flat().includes(known[0]), 'radar razkrije ladjo');
+  eq(L.act(st, 'a', { t: 'item', item: 'radar', target: 'b' }).err, 'no_item');
+  shoot(st, 'a', 'b', 95);
+  eq(L.current(st).id, 'b');
+  // ščit b-ja odbije zadetek
+  b.inv = ['scit', 'mina'];
+  ok(L.act(st, 'b', { t: 'item', item: 'scit' }).ok);
+  eq(L.act(st, 'b', { t: 'item', item: 'mina', cell: 0 }).err, 'bad_cell', 'mina ne na ladjo');
+  ok(L.act(st, 'b', { t: 'item', item: 'mina', cell: 90 }).ok);
+  pass(st);
+  const s = shoot(st, 'a', 'b', 40);
+  eq(s.ev.find(e => e.k === 'shot').res, 'shield');
+  eq(b.marks[40], undefined);
+  pass(st);
+  // mina: a izgubi naslednjo potezo
+  eq(shoot(st, 'a', 'b', 90).ev.find(e => e.k === 'shot').res, 'mine');
+  pass(st);
+  eq(L.current(st).id, 'b', 'a preskoči zaradi mine');
+});
+
+test('ladjice: konec igre, zmagovalec, neodločeno', () => {
+  const st = ljDuel();
+  const cells = LJ_FLEET.flat();
+  for (let k = 0; k < cells.length; k++) {
+    shoot(st, 'a', 'b', cells[k]);
+    if (st.phase === 'play') pass(st);
+  }
+  eq(st.phase, 'over');
+  eq(st.winner, 'a');
+  ok(!P(st, 'b').alive);
+  eq(P(st, 'a').stats.kills, 1);
+  eq(shoot(st, 'a', 'b', 99).err, 'phase');
+  eq(L.standings(st).map(p => p.id), ['a', 'b']);
+  ok(L.awards(st).some(w => w.id === 'ostrostrelec' && w.pid === 'a'));
+  // neodločeno: več preživelih polj pred zadnjim dejanjem
+  eq(L.decideWinner([{ id: 'x', cellsBefore: 1, elimStep: 5 }, { id: 'y', cellsBefore: 3, elimStep: 5 }]).id, 'y');
+  eq(L.decideWinner([{ id: 'x', cellsBefore: 2, elimStep: 6 }, { id: 'y', cellsBefore: 2, elimStep: 5 }]).id, 'x');
+  // predaja (odklop) → zmaga drugi
+  const st2 = ljDuel();
+  L.forfeit(st2, 'a');
+  eq(st2.winner, 'b');
+});
+
+test('ladjice: battle royale (glava na pladnju, maščevanje, duhovi)', () => {
+  const st = L.newGame({ mode: 'br', seed: 'br', settings: { crates: false }, players: ['a', 'b', 'c'].map(id => ({ id, captain: 'sonar' })) });
+  eq(st.size, 8);
+  const F = [[0, 1, 2, 3], [16, 17, 18], [32, 33], [48, 49]];
+  for (const id of ['a', 'b', 'c']) ok(L.setFleet(st, id, F));
+  L.startPlay(st);
+  st.turn = 0;
+  const empty = id => { const T = P(st, id); for (let c = 63; c >= 0; c--) if (T.marks[c] == null && !F.flat().includes(c)) return c; };
+  const go = (by, t, c) => { const r = shoot(st, by, t, c); ok(r.ok, `${by}→${t}:${c} ${r.err}`); return r; };
+  // b potopi c-jevo ladjo → b je vodja
+  go('a', 'c', empty('c'));
+  go('b', 'c', 48); go('c', 'a', empty('a'));
+  go('a', 'c', empty('c'));
+  go('b', 'c', 49);
+  eq(L.bountyLeader(st).id, 'b');
+  // c zadene a → a se maščuje
+  go('c', 'a', 0);
+  const r = go('a', 'c', empty('c'));
+  ok(r.ev.some(e => e.k === 'revenge'), 'maščevanje');
+  // a potopi b-jevo ladjo → glava na pladnju (+3)
+  go('b', 'c', empty('c')); go('c', 'b', empty('b'));
+  go('a', 'b', 32); go('b', 'c', empty('c')); go('c', 'b', empty('b'));
+  const r2 = go('a', 'b', 33);
+  ok(r2.ev.some(e => e.k === 'bounty'), 'glava na pladnju');
+  // izloči c → duh, meteor
+  const cP = P(st, 'c');
+  for (const s of cP.ships) for (const c of s.cells) if (!s.sunk) { s.hits = s.hits.map(() => 1); }
+  for (const s of cP.ships) if (!s.sunk) { s.hits[s.hits.length - 1] = 0; }
+  // dokončaj c-jeve ladje
+  for (const s of cP.ships.filter(x => !x.sunk)) {
+    while (L.current(st).id !== 'a') { const cur = L.current(st).id; go(cur, cur === 'b' ? 'a' : 'b', empty(cur === 'b' ? 'a' : 'b')); }
+    go('a', 'c', s.cells[s.cells.length - 1]);
+  }
+  ok(!cP.alive, 'c izločen');
+  ok(L.current(st).id !== 'c');
+  eq(L.act(st, 'c', { t: 'shot', target: 'a', cell: 5 }).err, 'not_your_turn');
+  if (!L.canMeteor(st, cP)) {
+    while (st.round < cP.ghostReady) { const cur = L.current(st).id; go(cur, cur === 'b' ? 'a' : 'b', empty(cur === 'b' ? 'a' : 'b')); }
+  }
+  ok(L.canMeteor(st, cP));
+  const m = L.act(st, 'c', { t: 'meteor' });
+  ok(m.ok && m.ev.some(e => e.k === 'meteor'));
+  eq(L.act(st, 'c', { t: 'meteor' }).err, 'not_ready', 'meteor le vsake 3 kroge');
+  eq(cP.ghostReady, st.round + L.GHOST_EVERY);
+});
+
+test('ladjice: AI nikoli ne strelja dvakrat na isto polje in igro konča', () => {
+  for (const level of ['mornar', 'kapitan', 'admiral']) {
+    for (const [i, cap] of LC.CAPTAIN_IDS.entries()) {
+      const mode = i % 2 ? 'br' : 'ai';
+      const n = mode === 'br' ? 3 + (i % 3) : 2;
+      const st = L.newGame({ mode, seed: level + cap, players: Array.from({ length: n }, (_, k) => ({ id: 'p' + k, captain: LC.CAPTAIN_IDS[(i + k) % 6], ai: level })) });
+      L.startPlay(st);
+      let steps = 0;
+      while (st.phase === 'play' && steps < 3000) {
+        const pid = L.current(st).id;
+        const a = LA.chooseAction(st, pid, level);
+        ok(a, 'AI brez dejanja');
+        if (a.t === 'shot') ok(L.playerById(st, a.target).marks[a.cell] == null, `${level}/${cap}: dvojni strel na ${a.cell}`);
+        let r = L.act(st, pid, a);
+        if (!r.ok) {
+          ok(a.t !== 'shot', `${level}: neveljaven strel ${r.err}`);
+          r = L.act(st, pid, L.randomShot(st, pid));
+          ok(r.ok, 'rezervni strel');
+        }
+        steps++;
+      }
+      eq(st.phase, 'over', `${level}/${cap} ni končal`);
+    }
+  }
+});
+
+test('ladjice: Admiral je boljši od Mornarja (povprečno strelov)', () => {
+  const shots = level => {
+    let total = 0;
+    for (let g = 0; g < 6; g++) {
+      const st = L.dailyGame('2026-11-' + (10 + g), 'me');
+      st.players[0].captain = 'none';
+      let k = 0;
+      while (st.phase === 'play' && k < 200) { L.act(st, 'me', { t: 'shot', target: 'ai', cell: LA.bestShot(st, st.players[0], st.players[1], level, () => L.rnd(st)) }); k++; }
+      total += k;
+    }
+    return total / 6;
+  };
+  const m = shots('mornar'), a = shots('admiral');
+  ok(a < m - 10, `admiral ${a} vs mornar ${m}`);
+  return `admiral ${a.toFixed(1)}, kapitan ${shots('kapitan').toFixed(1)}, mornar ${m.toFixed(1)} strelov`;
+});
+
+test('ladjice: dnevni izziv je determinističen', () => {
+  const a = L.dailyGame('2026-11-20', 'x'), b = L.dailyGame('2026-11-20', 'y');
+  eq(a.players[1].ships, b.players[1].ships);
+  eq(a.players[1].crates, b.players[1].crates);
+  eq(a.modifier, b.modifier);
+  eq(a.players[0].captain, b.players[0].captain);
+  ok(LC.DAILY_CAPTAINS.includes(a.players[0].captain));
+  ok(LC.MODIFIER_IDS.includes(a.modifier));
+  ok(L.validateFleet(10, a.fleet, a.players[1].ships.map(s => s.cells), true));
+  const c = L.dailyGame('2026-11-21', 'x');
+  ok(JSON.stringify(c.players[1].ships) !== JSON.stringify(a.players[1].ships), 'drug dan, druga flota');
+  eq(a.players[0].offer, [], 'v dnevnem izzivu ni pogodb');
+  // AI ne strelja nazaj: igralec je vedno na potezi
+  for (let k = 0; k < 5; k++) { L.act(a, 'x', L.randomShot(a, 'x')); eq(L.current(a).id, 'x'); }
+  eq(a.players[0].stats.turns, 5);
+  // do konca
+  while (a.phase === 'play') L.act(a, 'x', L.randomShot(a, 'x'));
+  eq(a.winner, 'x');
+});
+
+test('ladjice: pogodbe, komentator, XP', () => {
+  ok(LC.CONTRACTS.length >= 12);
+  ok(LC.LINE_COUNT >= 25, 'komentator ' + LC.LINE_COUNT);
+  ok(LC.ACHIEVEMENTS.length >= 10);
+  const st = ljDuel('sonar', 'sonar');
+  ok(st.players.every(p => p.offer.length === 3 && p.contract === p.offer[0]));
+  eq(L.act(st, 'a', { t: 'contract', id: 'nič' }).ok, false);
+  // pogodba »3× zapored« se izpolni med igro
+  const a = P(st, 'a');
+  a.contract = 'streak3'; a.contractDone = false;
+  shoot(st, 'a', 'b', 0); pass(st); shoot(st, 'a', 'b', 1); pass(st);
+  const r = shoot(st, 'a', 'b', 2);
+  ok(r.ev.some(e => e.k === 'contract' && e.pid === 'a'));
+  ok(a.contractDone);
+  eq(L.xpFor({ mode: 'duel', won: true, contracts: 1 }), 85);
+  eq(L.xpFor({ mode: 'ai', won: true, level: 'admiral' }), 55);
+  eq(L.xpFor({ mode: 'ai', won: false }), 15);
+  eq(L.xpFor({ mode: 'daily', won: true }), 40);
 });
 
 /**

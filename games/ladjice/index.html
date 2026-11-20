@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#04071a">
+<meta name="description" content="Potapljanje ladjic s kapitani, mano in powerupi. Dvoboj, battle royale do 10 igralcev ali dnevni izziv proti AI.">
+<title>Potapljanje ladjic · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2304071a'/%3E%3Cpath d='M2 10h12l-2 3H4z' fill='%234de1ff'/%3E%3Cpath d='M6 9V5h3v4z' fill='%234de1ff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg lj-body">
+  <canvas id="ocean" class="lj-ocean" aria-hidden="true"></canvas>
+  <main class="mg-container lj">
+
+    <!-- MENI -->
+    <section id="menu" class="lj-screen">
+      <div class="lj-hero mg-card mg-card--glow">
+        <div class="lj-hero__art" id="heroArt" aria-hidden="true"></div>
+        <div class="lj-hero__txt">
+          <h1 class="mg-title">Potapljanje ladjic</h1>
+          <p class="mg-muted">Izberi <b>kapitana</b>, nabiraj <b>mano</b> z zgrešenimi streli, lovi <b>zaboje</b> s powerupi
+            in izpolni <b>skrivno pogodbo</b>. Zgrešeni streli vodijo do comebackov!</p>
+        </div>
+        <button class="mg-btn mg-btn--ghost mg-btn--small lj-mute" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+      </div>
+
+      <div class="lj-modes">
+        <div class="mg-card mg-stack lj-mode">
+          <div class="mg-row mg-row--between"><h2 class="mg-title">Solo proti AI</h2><span class="mg-badge mg-badge--cyan">1v1</span></div>
+          <div class="lj-seg" id="levelSeg" role="radiogroup" aria-label="Težavnost"></div>
+          <p class="mg-small mg-muted" id="levelDesc"></p>
+          <div class="mg-label">Tvoj kapitan</div>
+          <div class="lj-caps" id="soloCaps"></div>
+          <button class="mg-btn mg-btn--cyan mg-btn--big mg-btn--block" id="btnSolo" type="button">Izpluj</button>
+        </div>
+
+        <div class="mg-card mg-stack lj-mode lj-mode--daily">
+          <div class="mg-row mg-row--between"><h2 class="mg-title">Dnevni izziv</h2><span class="mg-badge mg-badge--yellow" id="dailyDate"></span></div>
+          <div id="dailyInfo" class="lj-daily"></div>
+          <div class="lj-best" id="myBest"></div>
+          <button class="mg-btn mg-btn--primary mg-btn--big mg-btn--block" id="btnDaily" type="button">Igraj dnevni izziv</button>
+        </div>
+
+        <div class="mg-card mg-stack lj-mode">
+          <div class="mg-row mg-row--between"><h2 class="mg-title">Multiplayer</h2><span class="mg-badge mg-badge--pink">2–10</span></div>
+          <p class="mg-muted mg-small" style="margin:0">Vsak na svojem telefonu. <b>2 igralca</b> = dvoboj 10×10, <b>3–10</b> = battle royale:
+            streljaj na kogarkoli, zadnji preživeli zmaga. Izločeni ostanejo kot <b>duhovi</b> z meteorji.</p>
+          <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnCreate" type="button">Ustvari sobo</button>
+          <form class="mg-row" id="joinForm" autocomplete="off">
+            <input class="mg-input mg-input--code" id="joinCode" maxlength="4" placeholder="KODA" aria-label="Koda sobe" style="flex:1;min-width:0;font-size:20px">
+            <button class="mg-btn mg-btn--cyan" type="submit">Pridruži se</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mg-grid mg-grid--2">
+        <div class="mg-card" id="board"></div>
+        <div class="mg-card">
+          <h2 class="mg-title">Dosežki</h2>
+          <div id="achList" class="lj-ach"></div>
+        </div>
+      </div>
+
+      <details class="mg-card lj-rules">
+        <summary class="mg-title">Pravila in kapitani</summary>
+        <div id="rules"></div>
+      </details>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="lj-screen mg-hidden">
+      <div id="lobbyMain"></div>
+      <div class="mg-card mg-stack" id="lobbyCaps"></div>
+    </section>
+
+    <!-- POSTAVITEV -->
+    <section id="place" class="lj-screen mg-hidden">
+      <div class="lj-placebar">
+        <h2 class="mg-title" style="margin:0">Postavi floto</h2>
+        <span class="mg-spacer"></span>
+        <span class="lj-timer mg-badge mg-badge--yellow" id="placeTimer"></span>
+      </div>
+      <div class="lj-place">
+        <div class="lj-place__grid">
+          <div class="lj-grid lj-grid--place" id="placeGrid"></div>
+          <p class="mg-small mg-muted mg-center" id="placeHint">Povleci ladjo, tapni za obrat.</p>
+          <div class="mg-row" style="justify-content:center">
+            <button class="mg-btn mg-btn--cyan" id="btnRandom" type="button">🎲 Naključno</button>
+            <button class="mg-btn mg-btn--green mg-btn--big" id="btnReady" type="button">Pripravljen ✓</button>
+          </div>
+          <p class="mg-center mg-small" id="placeWait"></p>
+        </div>
+        <div class="lj-place__side mg-stack">
+          <div class="mg-card mg-card--flat" id="placeCaptain"></div>
+          <div class="mg-card mg-card--flat mg-stack" id="placeContract"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- IGRA -->
+    <section id="play" class="lj-screen mg-hidden">
+      <div class="lj-top">
+        <div class="lj-opps" id="opps"></div>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnMenuPlay" type="button" aria-label="Meni">☰</button>
+      </div>
+      <div class="lj-banner" id="banner" aria-live="polite"></div>
+      <div class="lj-arena">
+        <div class="lj-arena__target">
+          <div class="lj-targethead">
+            <button class="mg-btn mg-btn--ghost mg-btn--small" id="prevTarget" type="button" aria-label="Prejšnji nasprotnik">◀</button>
+            <div class="lj-targetname" id="targetName"></div>
+            <button class="mg-btn mg-btn--ghost mg-btn--small" id="nextTarget" type="button" aria-label="Naslednji nasprotnik">▶</button>
+          </div>
+          <div class="lj-gridwrap" id="targetWrap">
+            <div class="lj-grid lj-grid--target" id="targetGrid"></div>
+          </div>
+          <div class="lj-modehint mg-hidden" id="modeHint"><span id="modeHintTxt"></span>
+            <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnCancelMode" type="button">Prekliči</button></div>
+        </div>
+        <div class="lj-arena__me">
+          <div class="lj-mebar">
+            <div class="lj-mehead" id="meHead"></div>
+          </div>
+          <div class="lj-gridwrap lj-gridwrap--me" id="meWrap">
+            <div class="lj-grid lj-grid--me" id="meGrid"></div>
+          </div>
+          <div class="lj-mana" id="mana" aria-label="Mana"></div>
+          <div class="lj-actions">
+            <button class="lj-ability" id="btnAbility" type="button"></button>
+            <div class="lj-inv" id="inv"></div>
+          </div>
+          <div class="lj-emotes" id="emotes"></div>
+        </div>
+        <aside class="lj-feed" id="feed" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <!-- TV -->
+    <section id="tv" class="lj-screen mg-hidden">
+      <div class="lj-tvhead">
+        <h1 class="mg-title" style="margin:0">🚢 Potapljanje ladjic</h1>
+        <span class="mg-spacer"></span>
+        <div class="lj-banner lj-banner--tv" id="tvBanner"></div>
+      </div>
+      <div class="lj-tv">
+        <div class="lj-tvgrids" id="tvGrids"></div>
+        <aside class="lj-tvside mg-stack">
+          <div class="mg-card mg-card--flat" id="tvAlive"></div>
+          <div class="lj-feed lj-feed--tv" id="tvFeed"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

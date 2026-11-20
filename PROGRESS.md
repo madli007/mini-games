@@ -168,3 +168,60 @@ Simulacija 30 dni (`tests/economy-sim.js`, test »ekonomija: simulacija«):
 - Opozorilo advisorja »Leaked Password Protection« (Auth) se ne nanaša na hub (gesel ni); po želji ga vklopi v
   *Authentication → Settings*.
 - Naslednja igra: kopiraj `prompts/TEMPLATE-igra.md` (fiksni del zdaj zahteva `hub.reportGame`).
+
+---
+
+# Potapljanje ladjic (`games/ladjice/`)
+
+Prompt: `prompts/04-ladjice.md`. Stanje: **končano** (20. 11. 2026).
+
+## Načrt
+
+- [x] `games/ladjice/content.js` — kapitani, predmeti, modifikatorji, pogodbe (≥12), komentator (≥25), dosežki
+- [x] `games/ladjice/logic.js` — čist pogon pravil (stanje + `act`), PRNG v stanju (prenos hosta), flote, zaboji,
+      sposobnosti, pasivke, mana, predmeti, BR twisti (glava, maščevanje, duhovi), konec/neodločeno, dnevni izziv
+- [x] `games/ladjice/ai.js` — Mornar / Kapitan / Admiral (verjetnostna mapa, premišljene sposobnosti)
+- [x] testi v `tests/tests.js` (postavitev, strel/zadetek/potop, vse sposobnosti in pasivke, mana, zaboji, EMP,
+      konec in neodločeno, AI brez dvojnih strelov, determinističen dnevni izziv) + popravek testa »soon nima nalog«
+- [x] `fx.js` — WebAudio zvoki, ocean canvas, projektil/pljusk/eksplozija/potop, tresenje, vibracija
+- [x] `index.html`, `game.css`, `game.js` — meni, postavitev (drag&drop, rotacija, naključno, časovnik),
+      igralni zaslon (telefon/namizje), killfeed + komentator, emote, krožni časovnik, »zadnji zdihljaj«
+- [x] Solo proti AI (3 težavnosti), dnevni izziv (kapitan + modifikator dneva, lestvica asc)
+- [x] Multiplayer: lobby (kapitani, nastavitve, TV), dvoboj, battle royale, host stanje (`setState`+`pushMove`),
+      prenos hosta, ponovna povezava, odklopljeni → AI, izločitev po 2 min, revanša
+- [x] TV pogled (`?tv=1` / gumb v lobbyju)
+- [x] Povzetek ob koncu (nagrade, pogodbe), XP, dosežki (11), `reportGame`, `reportEvent`
+- [x] `games.json`: live, opis, players.min 1, oznake, naloge (10)
+- [x] Preverjanja v brskalniku (konzola, testi, MP 2–3 zavihki, telefon/namizje), commit
+
+## Dnevnik
+
+- **Logika in AI** (content/logic/ai.js) + 15 testov uspešnih. Admiral v povprečju ~36 strelov za floto, Kapitan ~37, Mornar ~95.
+  Pogodbe: 15, komentator: ~60 vrstic. Stanje igre je en JSON (tudi PRNG `rs`) → host ga shrani v room_state.
+- **UI napisan** (fx.js, index.html, game.css, game.js — vse funkcije, tudi MP/TV). Solo igra v brskalniku odigrana do
+  konca (povzetek, nagrade, pogodbe, XP), postavitev (vleka, obrat), torpedo način. Telefon: spodnji del v 2 stolpcih.
+- **Brskalnik (offline):** dnevni izziv do konca (lestvica, +40 XP, en poskus/dan, nato vaja). MP s 3 zavihki: soba,
+  pridružitev prek `?room=` in s kodo, zasedeni kapitani v lobbyju, BR 8×8, osvežitev igralca sredi igre (ista identiteta,
+  stanje iz room_state), odhod hosta → nov host nadaljuje, odklopljenega igra AI.
+- **Popravki po testu:** animacije čakajo največ dur+250 ms (v nerišočem zavihku `finished` ne pride → vrsta je obvisela);
+  `navigator.vibrate` le po interakciji (sicer napaka v konzoli); obrazec za kodo ne pošlje strani pred `hub.init`;
+  telefon: spodnji del v dveh stolpcih, manjše čipe, skrita vrstica tarče v dvoboju; debelejše ladje.
+- **Dvoboj in TV (3. zavihek z `?tv=1`):** TV je izključen iz igre (2 igralca → dvoboj 10×10), kaže mreže obeh z meglo
+  vojne, projektile, killfeed in lestvico preživelih; igra do konca (»… je kralj morja!«), rezultati pri vseh.
+  Revanša v isti sobi (host) → nova postavitev pri vseh. Odhod hosta sredi dvoboja → drugi prevzame, odklopljenega igra AI.
+- **Sprememba v `shared/room.js`:** host je odsotne igralce po 30 s odstranil iz `room_players` tudi med igro, zato se
+  igralec po daljši odsotnosti ni mogel vrniti (`room_started`). Zdaj jih odstrani le v lobbyju; med igro o izločitvi
+  odloča igra (ladjice: po 2 min). Testi huba in pinballa še uspešni.
+- **Supabase:** igra ne potrebuje lastnih tabel (stanje v `room_state`, poteze v `moves`, lestvica v `game_scores`).
+  V Supabaseu ni treba pognati ničesar.
+
+## Ni narejeno / ni bilo preverjeno (ladjice)
+
+- **Supabase način** ni bil preizkušen v brskalniku (le offline). API je isti, sheme ni bilo treba spreminjati.
+- **Prava naprava** (vibracija, zvok na iOS, dotik/vlečenje na telefonu) — le emulacija 375×812 in miška.
+- **Meteor duha prek UI** — logika je testirana (test BR), gumb je narejen; v brskalniku se je izločeni igralec vrnil šele
+  po odstranitvi iz sobe (zato popravek v room.js), meteorja v živo nisem sprožil.
+- **`prefers-reduced-motion`** — pravila so v CSS/JS (animacije izklopljene, `FX.reduced()`), emulacije nisem vklopil.
+- **Igra z 5–10 igralci** (mreža 7×7) — preizkušeno le v testih (AI simulacija BR s 3–5 igralci), v brskalniku s 3.
+- **Dosežki** `royale`, `duh`, `vsi-kapitani`, `pogodbenik`, `snajper` — koda je, v brskalniku niso bili doseženi.
+- Pogodba se izbere na zaslonu postavitve; na telefonu je pod mrežo (treba se je pomakniti).

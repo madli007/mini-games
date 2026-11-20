@@ -6,7 +6,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 **kovanci, dnevne naloge in trgovina s kozmetiko** (`shop.html`) ter **register iger** (`games.json`).
 
 - Objavljeno: **https://madli007.github.io/mini-games/**
-- Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija) in 14 napovedanih.
+- Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
+  (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled) in 13 napovedanih.
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
 - Backend: Supabase (anonimna prijava, RLS, realtime). Brez njega vse deluje v **offline načinu**.
 
@@ -100,6 +101,7 @@ shared/                                   skupni API (dokumentacija: shared/READ
   economy.js quests.js cosmetics.js cosmetics.css   kovanci, naloge, katalog kozmetike
   adapters/local.js adapters/supabase.js adapters/types.js
 games/reakcija/                           demo igra (index.html, game.js, logic.js, game.css)
+games/ladjice/                            Potapljanje ladjic (logic.js, ai.js, content.js, fx.js, game.js)
 games/pinball/                            kopija ALU PINBALL 2.0 (izvirnik v repoju pinball)
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/                           SQL posameznih iger (če ga potrebujejo)

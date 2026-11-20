@@ -272,8 +272,9 @@ export class Room {
       this._lastTouch = now;
       this.backend.updateRoom(this.code, {}).catch(() => {});
     }
+    // med igro odsotnih ne odstranjujemo (lahko se vrnejo; o izločitvi odloča igra) — le v lobbyju
     for (const [id, since] of this._absentSince) {
-      if (now - since > PLAYER_DROP_MS) {
+      if (this.status === 'lobby' && now - since > PLAYER_DROP_MS) {
         this._absentSince.delete(id);
         this.backend.removePlayer(this.code, id).catch(() => {});
       }
