@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="MINI GAMES — zbirka spletnih iger za igranje s prijatelji.">
+<title>MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23090a1a'/%3E%3Cpath d='M3 5h2v2h2V5h2v2h2V5h2v6h-2V9H9v2H7V9H5v2H3z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="shared/ui.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="mg">
+  <main class="mg-container dash">
+    <section class="dash-hero">
+      <div class="mg-card mg-card--glow dash-join">
+        <h2 class="mg-title">Pridruži se s kodo</h2>
+        <form id="joinForm" class="dash-join__form" autocomplete="off">
+          <input id="joinCode" class="mg-input mg-input--code" maxlength="4" inputmode="text" autocapitalize="characters"
+                 spellcheck="false" placeholder="ABCD" aria-label="Koda sobe (4 znaki)">
+          <button class="mg-btn mg-btn--primary mg-btn--big" type="submit">Vstopi</button>
+        </form>
+        <div id="joinErr" class="mg-error" role="alert"></div>
+      </div>
+      <div class="mg-card dash-me" id="meCard">
+        <div class="mg-empty"><span class="mg-spin"></span></div>
+      </div>
+    </section>
+
+    <section class="mg-card dash-section" id="lobbiesCard">
+      <div class="mg-row mg-row--between">
+        <h2 class="mg-title" style="margin:0">Aktivni lobbyji</h2>
+        <span class="mg-badge mg-badge--green mg-pulse" id="lobbyLive">● v živo</span>
+      </div>
+      <div id="lobbies" class="dash-lobbies"></div>
+    </section>
+
+    <section class="dash-section">
+      <div class="mg-row mg-row--between dash-games-head">
+        <h2 class="mg-title" style="margin:0">Igre</h2>
+        <div class="mg-tabs" role="tablist" id="filters" style="margin:0">
+          <button class="mg-tab" role="tab" data-f="all" aria-selected="true">Vse</button>
+          <button class="mg-tab" role="tab" data-f="solo">Solo</button>
+          <button class="mg-tab" role="tab" data-f="multi">Multiplayer</button>
+          <button class="mg-tab" role="tab" data-f="party">Party</button>
+          <button class="mg-tab" role="tab" data-f="daily">Dnevni izziv</button>
+        </div>
+      </div>
+      <div id="games" class="dash-games"></div>
+    </section>
+
+    <section class="mg-grid mg-grid--2 dash-section">
+      <div class="mg-card" id="boardCard">
+        <div class="mg-row mg-row--between">
+          <h2 class="mg-title" style="margin:0">Skupna lestvica</h2>
+        </div>
+        <div class="mg-tabs" role="tablist" id="boardTabs" style="margin-top:12px">
+          <button class="mg-tab" role="tab" data-b="xp" aria-selected="true">Top XP</button>
+          <button class="mg-tab" role="tab" data-b="daily">Dnevni zmagovalci</button>
+        </div>
+        <div id="board"></div>
+      </div>
+      <div class="mg-card" id="achCard">
+        <h2 class="mg-title">Moji dosežki</h2>
+        <div id="ach"></div>
+      </div>
+    </section>
+
+    <footer class="dash-foot mg-muted mg-small">
+      MINI GAMES · igre za prijatelje · <a href="https://github.com/madli007/mini-games">izvorna koda</a>
+    </footer>
+  </main>
+  <noscript><p style="color:#fff;text-align:center">Za hub potrebuješ JavaScript.</p></noscript>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+/* Dashboard (index.html) — dopolnilo k shared/ui.css */
+
+.dash { display: flex; flex-direction: column; gap: var(--mg-s5); padding-bottom: var(--mg-s7); }
+.dash-section { display: flex; flex-direction: column; gap: var(--mg-s3); }
+
+/* logo */
+.dash-logo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .4em;
+  font: 400 clamp(12px, 3.4vw, 20px)/1 var(--mg-font-title);
+  color: var(--mg-yellow);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dash-logo b {
+  font-weight: 400;
+  background: linear-gradient(180deg, #fff 0%, var(--mg-yellow) 45%, var(--mg-orange) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(2px 2px 0 #7a1a5c) drop-shadow(0 0 10px rgba(255, 79, 216, .35));
+}
+.dash-logo i { font-style: normal; color: var(--mg-pink); text-shadow: 2px 2px 0 #2a0022, 0 0 12px rgba(255, 79, 216, .5); }
+
+/* zgornji del */
+.dash-hero { display: grid; gap: var(--mg-s4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .dash-hero { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); } }
+.dash-join__form { display: flex; gap: var(--mg-s3); }
+.dash-join__form .mg-input { flex: 1; min-width: 0; }
+@media (max-width: 420px) {
+  .dash-join__form { flex-direction: column; }
+}
+.dash-me { display: flex; align-items: center; gap: var(--mg-s4); }
+.dash-me__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dash-me__name { font-size: 22px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-me__lvl { font: 400 10px var(--mg-font-title); color: var(--mg-yellow); }
+.dash-me .mg-xpbar { height: 10px; }
+
+/* lobbyji */
+.dash-lobbies { display: grid; gap: var(--mg-s2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.dash-lobby {
+  display: flex;
+  align-items: center;
+  gap: var(--mg-s3);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .07);
+}
+.dash-lobby__icon { font-size: 26px; }
+.dash-lobby__info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dash-lobby__info b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-lobby__code { font: 400 11px var(--mg-font-title); color: var(--mg-yellow); }
+
+/* igre */
+.dash-games-head { gap: var(--mg-s3); }
+.dash-games { display: grid; gap: var(--mg-s4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+.dash-game {
+  --gc: var(--mg-yellow);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mg-s2);
+  padding: var(--mg-s4);
+  border-radius: var(--mg-r3);
+  border: 2px solid color-mix(in srgb, var(--gc) 35%, var(--mg-line));
+  background:
+    radial-gradient(260px 120px at 85% -20%, color-mix(in srgb, var(--gc) 25%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--mg-panel-2), var(--mg-panel));
+  color: var(--mg-text);
+  text-decoration: none;
+  box-shadow: var(--mg-shadow);
+  transition: transform .12s, border-color .12s, box-shadow .12s;
+}
+a.dash-game:hover { transform: translateY(-3px); border-color: var(--gc); box-shadow: var(--mg-shadow), 0 0 22px color-mix(in srgb, var(--gc) 40%, transparent); }
+.dash-game__top { display: flex; align-items: center; gap: var(--mg-s3); }
+.dash-game__icon, .dash-lobby__icon {
+  font-family: var(--mg-emoji);
+}
+.dash-game__icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  border-radius: 14px;
+  font-size: 30px;
+  background: color-mix(in srgb, var(--gc) 18%, #0b0d22);
+  border: 2px solid color-mix(in srgb, var(--gc) 60%, transparent);
+}
+.dash-game__icon img { width: 34px; height: 34px; }
+.dash-game__name { font: 400 12px/1.5 var(--mg-font-title); color: var(--gc); text-transform: uppercase; }
+.dash-game__desc { color: var(--mg-dim); font-size: 15px; flex: 1; }
+.dash-game__tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dash-game--soon { filter: grayscale(.7) brightness(.7); box-shadow: none; cursor: default; }
+.dash-game--soon .dash-game__soon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font: 400 9px var(--mg-font-title);
+  color: #1a1300;
+  background: var(--mg-yellow);
+  padding: 5px 7px;
+  border-radius: 6px;
+  transform: rotate(4deg);
+}
+
+/* dosežki */
+.dash-ach-game { margin-bottom: var(--mg-s3); }
+.dash-ach-game h3 { font: 400 10px var(--mg-font-title); color: var(--mg-dim); margin: 0 0 6px; text-transform: uppercase; }
+.dash-ach-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.dash-ach { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: rgba(255, 210, 63, .08); border: 1px solid rgba(255, 210, 63, .3); font-weight: 600; }
+
+.dash-foot { text-align: center; padding-top: var(--mg-s4); }

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alu Pinball — testi</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 20px; background: #05070b; color: #e6edf5; font: 14px/1.45 Consolas, "Share Tech Mono", monospace; }
+  h1 { font: 700 18px system-ui, sans-serif; letter-spacing: 2px; color: #ffab3d; margin: 0 0 12px; }
+  #sum { font: 700 16px system-ui, sans-serif; margin: 10px 0; }
+  pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+  .ok { color: #39ff88; } .bad { color: #ff4a5a; } .info { color: #8796a8; }
+  button { background: #ff8a2a; color: #1a0b00; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+  label { margin-left: 12px; color: #8796a8; }
+</style>
+</head>
+<body>
+  <h1>ALU PINBALL 2.0 — skriptni testi fizike in pravil</h1>
+  <button id="run">Zaženi teste</button>
+  <label>simuliranih iger: <input id="n" type="number" value="12" min="1" max="100" style="width:60px"></label>
+  <div id="sum"></div>
+  <pre id="log"></pre>
+  <script type="module">
+    import { runAll } from './tests/tests.js';
+    const log = document.getElementById('log'), sum = document.getElementById('sum');
+    const line = (s) => {
+      const span = document.createElement('span');
+      span.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : 'info';
+      span.textContent = s + '\n';
+      log.appendChild(span);
+    };
+    function run() {
+      log.textContent = ''; sum.textContent = 'teče …';
+      setTimeout(() => {
+        const t0 = performance.now();
+        const r = runAll(line, { games: +document.getElementById('n').value || 12 });
+        const sec = ((performance.now() - t0) / 1000).toFixed(1);
+        sum.innerHTML = r.fails ? `<span class="bad">NEUSPELO: ${r.fails} / ${r.results.length}</span> (${sec} s)`
+          : `<span class="ok">VSI TESTI USPEŠNI (${r.results.length})</span> (${sec} s)`;
+        window.__testResult = r;
+      }, 30);
+    }
+    document.getElementById('run').onclick = run;
+    run();
+  </script>
+</body>
+</html>

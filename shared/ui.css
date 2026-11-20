@@ -1,0 +1,483 @@
+/* =====================================================================
+   MINI GAMES — skupni izgled (retro arkada)
+   Vključi:  <link rel="stylesheet" href="../../shared/ui.css">
+             <body class="mg">
+   Vsa pravila so omejena na body.mg in razrede .mg-*, zato ui.css ne
+   pokvari iger, ki imajo svoj izgled (npr. pinball).
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  /* barve */
+  --mg-bg: #090a1a;
+  --mg-bg-2: #10122b;
+  --mg-panel: #15183a;
+  --mg-panel-2: #1c2050;
+  --mg-line: #2b3170;
+  --mg-text: #eef0ff;
+  --mg-dim: #9097c8;
+  --mg-faint: #5c6299;
+  --mg-yellow: #ffd23f;
+  --mg-pink: #ff4fd8;
+  --mg-cyan: #4de1ff;
+  --mg-green: #39ff88;
+  --mg-red: #ff3b5c;
+  --mg-orange: #ff8a1f;
+  --mg-purple: #a78bfa;
+  --mg-accent: var(--mg-yellow);
+  --mg-gold: #ffd23f;
+  --mg-silver: #c9d3e6;
+  --mg-bronze: #e08a4f;
+
+  /* pisave */
+  --mg-emoji: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji';
+  --mg-font-title: 'Press Start 2P', ui-monospace, 'Courier New', monospace, var(--mg-emoji);
+  --mg-font: 'Rajdhani', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif, var(--mg-emoji);
+  --mg-font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* razmiki in oblike */
+  --mg-s1: 4px;
+  --mg-s2: 8px;
+  --mg-s3: 12px;
+  --mg-s4: 16px;
+  --mg-s5: 24px;
+  --mg-s6: 32px;
+  --mg-s7: 48px;
+  --mg-r1: 6px;
+  --mg-r2: 10px;
+  --mg-r3: 16px;
+  --mg-shadow: 0 6px 0 rgba(0, 0, 0, .35), 0 10px 30px rgba(0, 0, 0, .35);
+  --mg-glow: 0 0 18px color-mix(in srgb, var(--mg-accent) 45%, transparent);
+  --mg-header-h: 56px;
+  --mg-max: 1180px;
+}
+
+/* --------------------------------------------------------------- osnova */
+body.mg {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--mg-text);
+  font-family: var(--mg-font);
+  font-size: 17px;
+  line-height: 1.4;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(255, 79, 216, .12), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(77, 225, 255, .10), transparent 60%),
+    linear-gradient(var(--mg-bg), var(--mg-bg-2));
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body.mg *, body.mg *::before, body.mg *::after { box-sizing: border-box; }
+body.mg::after {   /* CRT črte (nežno, čez vse, ne lovi klikov) */
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 3px);
+  z-index: 2000;
+}
+body.mg a { color: var(--mg-cyan); }
+body.mg h1, body.mg h2, body.mg h3 { margin: 0 0 var(--mg-s3); line-height: 1.25; }
+body.mg :focus-visible { outline: 2px solid var(--mg-cyan); outline-offset: 2px; }
+
+.mg-title, .mg-pixel {
+  font-family: var(--mg-font-title);
+  letter-spacing: .02em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+h1.mg-title { font-size: clamp(18px, 4vw, 28px); }
+h2.mg-title { font-size: clamp(13px, 2.6vw, 16px); color: var(--mg-accent); }
+h3.mg-title { font-size: 11px; color: var(--mg-dim); }
+.mg-muted { color: var(--mg-dim); }
+.mg-small { font-size: 14px; }
+.mg-center { text-align: center; }
+.mg-hidden { display: none !important; }
+
+/* --------------------------------------------------------------- postavitev */
+.mg-container { width: 100%; max-width: var(--mg-max); margin: 0 auto; padding: var(--mg-s4); }
+.mg-stack { display: flex; flex-direction: column; gap: var(--mg-s3); }
+.mg-row { display: flex; align-items: center; gap: var(--mg-s3); flex-wrap: wrap; }
+.mg-row--between { justify-content: space-between; }
+.mg-spacer { flex: 1; }
+.mg-grid { display: grid; gap: var(--mg-s4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.mg-grid--2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+
+/* --------------------------------------------------------------- kartice */
+.mg-card {
+  background: linear-gradient(180deg, var(--mg-panel-2), var(--mg-panel));
+  border: 2px solid var(--mg-line);
+  border-radius: var(--mg-r3);
+  padding: var(--mg-s4);
+  box-shadow: var(--mg-shadow);
+}
+.mg-card--glow { border-color: color-mix(in srgb, var(--mg-accent) 60%, var(--mg-line)); box-shadow: var(--mg-shadow), var(--mg-glow); }
+.mg-card--flat { box-shadow: none; }
+
+/* --------------------------------------------------------------- gumbi */
+.mg-btn {
+  --b: var(--mg-panel-2);
+  --f: var(--mg-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mg-s2);
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 2px solid color-mix(in srgb, var(--b) 60%, #fff 10%);
+  border-radius: var(--mg-r2);
+  background: var(--b);
+  color: var(--f);
+  font: 700 16px/1 var(--mg-font);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--b) 55%, #000);
+  transition: transform .06s, box-shadow .06s, filter .15s;
+  user-select: none;
+  touch-action: manipulation;
+}
+.mg-btn:hover { filter: brightness(1.12); }
+.mg-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--b) 55%, #000); }
+.mg-btn:disabled, .mg-btn[aria-disabled='true'] { opacity: .45; cursor: not-allowed; transform: none; filter: none; }
+.mg-btn--primary { --b: var(--mg-yellow); --f: #1a1300; }
+.mg-btn--pink { --b: var(--mg-pink); --f: #2a0022; }
+.mg-btn--cyan { --b: var(--mg-cyan); --f: #00222a; }
+.mg-btn--green { --b: var(--mg-green); --f: #002a12; }
+.mg-btn--danger { --b: var(--mg-red); --f: #fff; }
+.mg-btn--ghost { --b: transparent; border-color: var(--mg-line); box-shadow: none; }
+.mg-btn--ghost:active { transform: none; box-shadow: none; }
+.mg-btn--big { min-height: 60px; padding: 16px 28px; font-size: 20px; border-radius: var(--mg-r3); }
+.mg-btn--small { min-height: 34px; padding: 6px 12px; font-size: 14px; }
+.mg-btn--block { width: 100%; }
+
+/* --------------------------------------------------------------- vnos */
+.mg-input, .mg-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  background: #0b0d22;
+  border: 2px solid var(--mg-line);
+  border-radius: var(--mg-r2);
+  color: var(--mg-text);
+  font: 600 18px var(--mg-font);
+}
+.mg-input:focus, .mg-select:focus { border-color: var(--mg-cyan); outline: none; box-shadow: 0 0 0 3px rgba(77, 225, 255, .18); }
+.mg-input--code {
+  font: 400 clamp(22px, 7vw, 34px) var(--mg-font-title);
+  text-align: center;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  padding-left: calc(14px + .35em);
+}
+.mg-label { display: block; font-weight: 700; color: var(--mg-dim); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: var(--mg-s1); }
+.mg-field { display: flex; flex-direction: column; gap: var(--mg-s1); }
+.mg-error { color: var(--mg-red); font-weight: 600; min-height: 1.4em; }
+.mg-check { display: inline-flex; align-items: center; gap: var(--mg-s2); cursor: pointer; font-weight: 600; }
+.mg-check input { width: 20px; height: 20px; accent-color: var(--mg-yellow); }
+
+/* --------------------------------------------------------------- značke */
+.mg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--mg-line);
+  background: rgba(255, 255, 255, .04);
+  color: var(--mg-dim);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.mg-badge--yellow { color: var(--mg-yellow); border-color: color-mix(in srgb, var(--mg-yellow) 50%, transparent); }
+.mg-badge--pink { color: var(--mg-pink); border-color: color-mix(in srgb, var(--mg-pink) 50%, transparent); }
+.mg-badge--cyan { color: var(--mg-cyan); border-color: color-mix(in srgb, var(--mg-cyan) 50%, transparent); }
+.mg-badge--green { color: var(--mg-green); border-color: color-mix(in srgb, var(--mg-green) 50%, transparent); }
+.mg-badge--red { color: var(--mg-red); border-color: color-mix(in srgb, var(--mg-red) 50%, transparent); }
+
+/* --------------------------------------------------------------- zavihki */
+.mg-tabs { display: flex; gap: var(--mg-s1); flex-wrap: wrap; margin-bottom: var(--mg-s3); }
+.mg-tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--mg-line);
+  background: transparent;
+  color: var(--mg-dim);
+  font: 700 14px var(--mg-font);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mg-tab[aria-selected='true'] { background: var(--mg-accent); border-color: var(--mg-accent); color: #1a1300; }
+
+/* --------------------------------------------------------------- tabela */
+.mg-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.mg-table th { text-align: left; color: var(--mg-faint); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; }
+.mg-table td { padding: 7px 8px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.mg-table tr.mg-me td { background: rgba(255, 210, 63, .08); }
+.mg-table .mg-rank { width: 2.4em; font-family: var(--mg-font-title); font-size: 11px; color: var(--mg-dim); }
+.mg-table tr:nth-child(1) .mg-rank { color: var(--mg-gold); }
+.mg-table tr:nth-child(2) .mg-rank { color: var(--mg-silver); }
+.mg-table tr:nth-child(3) .mg-rank { color: var(--mg-bronze); }
+.mg-table .mg-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.mg-empty { color: var(--mg-faint); text-align: center; padding: var(--mg-s4); }
+
+/* --------------------------------------------------------------- avatar */
+.mg-avatar {
+  --c: var(--mg-yellow);
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 22%, #0b0d22);
+  border: 2px solid var(--c);
+  font-size: 20px;
+  line-height: 1;
+}
+.mg-avatar--lg { width: 64px; height: 64px; font-size: 36px; border-radius: 16px; }
+.mg-avatar--sm { width: 26px; height: 26px; font-size: 15px; border-radius: 7px; border-width: 1.5px; }
+.mg-who { display: inline-flex; align-items: center; gap: var(--mg-s2); min-width: 0; }
+.mg-who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --------------------------------------------------------------- XP vrstica */
+.mg-xpbar { height: 8px; border-radius: 99px; background: #0b0d22; border: 1px solid var(--mg-line); overflow: hidden; }
+.mg-xpbar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--mg-pink), var(--mg-yellow)); transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+
+/* --------------------------------------------------------------- glava */
+.mg-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--mg-s3);
+  height: var(--mg-header-h);
+  padding: 0 var(--mg-s4);
+  background: rgba(9, 10, 26, .88);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid var(--mg-line);
+}
+.mg-header__back { flex: none; }
+.mg-header__title { flex: 1; min-width: 0; font-family: var(--mg-font-title); font-size: clamp(10px, 2.8vw, 14px); color: var(--mg-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mg-profile-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--mg-s2);
+  padding: 4px 10px 4px 4px;
+  border-radius: 12px;
+  border: 2px solid var(--mg-line);
+  background: var(--mg-panel);
+  color: var(--mg-text);
+  font: 700 15px var(--mg-font);
+  cursor: pointer;
+  max-width: 220px;
+}
+.mg-profile-chip:hover { border-color: var(--mg-cyan); }
+.mg-profile-chip__info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mg-profile-chip__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; }
+.mg-profile-chip__lvl { font-family: var(--mg-font-title); font-size: 8px; color: var(--mg-yellow); line-height: 1; }
+.mg-profile-chip .mg-xpbar { height: 5px; width: 90px; }
+@media (max-width: 420px) {
+  .mg-profile-chip .mg-xpbar { width: 56px; }
+  .mg-profile-chip { max-width: 150px; }
+}
+
+/* --------------------------------------------------------------- toast */
+.mg-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: min(92vw, 420px);
+}
+.mg-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #1a1d45;
+  border: 2px solid var(--mg-yellow);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5), 0 0 20px rgba(255, 210, 63, .25);
+  color: #eef0ff;
+  font: 700 16px 'Rajdhani', system-ui, sans-serif, 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji';
+  animation: mg-toast-in .35s cubic-bezier(.2, 1.4, .4, 1);
+}
+.mg-toast__icon { font-size: 22px; }
+.mg-toast.mg-out { animation: mg-toast-out .3s forwards; }
+@keyframes mg-toast-in { from { transform: translateY(20px) scale(.9); opacity: 0; } }
+@keyframes mg-toast-out { to { transform: translateY(10px); opacity: 0; } }
+
+/* --------------------------------------------------------------- modal */
+.mg-modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: var(--mg-s4);
+  background: rgba(4, 5, 14, .78);
+  backdrop-filter: blur(4px);
+  animation: mg-fade .2s;
+  overflow-y: auto;
+}
+.mg-modal {
+  width: min(100%, 460px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  background: linear-gradient(180deg, #1f2358, #15183a);
+  border: 2px solid var(--mg-line);
+  border-radius: 18px;
+  padding: var(--mg-s5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  color: #eef0ff;
+  font-family: 'Rajdhani', system-ui, sans-serif, 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji';
+  animation: mg-pop .25s cubic-bezier(.2, 1.3, .4, 1);
+}
+.mg-modal--wide { width: min(100%, 640px); }
+.mg-modal__title { font: 400 14px/1.6 'Press Start 2P', monospace; color: var(--mg-yellow); margin: 0 0 var(--mg-s4); text-transform: uppercase; }
+.mg-modal__actions { display: flex; gap: var(--mg-s2); justify-content: flex-end; flex-wrap: wrap; margin-top: var(--mg-s5); }
+@keyframes mg-fade { from { opacity: 0; } }
+@keyframes mg-pop { from { transform: scale(.92); opacity: 0; } }
+
+/* izbira avatarja */
+.mg-emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
+.mg-emoji-grid button, .mg-color-grid button {
+  height: 42px;
+  border-radius: 10px;
+  border: 2px solid var(--mg-line);
+  background: #0b0d22;
+  font-size: 22px;
+  cursor: pointer;
+}
+.mg-emoji-grid button[aria-pressed='true'] { border-color: var(--mg-yellow); background: rgba(255, 210, 63, .15); }
+.mg-color-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.mg-color-grid button { height: 32px; }
+.mg-color-grid button[aria-pressed='true'] { outline: 3px solid #fff; outline-offset: 1px; }
+
+/* --------------------------------------------------------------- odštevanje */
+.mg-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: rgba(4, 5, 14, .45);
+}
+.mg-countdown span {
+  font: 400 clamp(64px, 22vw, 180px) 'Press Start 2P', monospace;
+  color: var(--mg-yellow);
+  text-shadow: 0 0 30px rgba(255, 210, 63, .7), 6px 6px 0 #000;
+  animation: mg-count .9s ease-out forwards;
+}
+@keyframes mg-count { from { transform: scale(2); opacity: 0; } 30% { transform: scale(1); opacity: 1; } to { transform: scale(.8); opacity: 0; } }
+
+/* --------------------------------------------------------------- lobby */
+.mg-lobby { display: grid; gap: var(--mg-s4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 820px) { .mg-lobby { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; } }
+.mg-lobby__code {
+  font: 400 clamp(40px, 14vw, 84px)/1 'Press Start 2P', monospace;
+  letter-spacing: .12em;
+  color: var(--mg-yellow);
+  text-shadow: 0 0 24px rgba(255, 210, 63, .45), 4px 4px 0 #000;
+  text-align: center;
+  margin: var(--mg-s3) 0;
+  word-break: break-all;
+}
+.mg-lobby__share { display: flex; gap: var(--mg-s4); align-items: center; justify-content: center; flex-wrap: wrap; }
+.mg-qr { width: 150px; height: 150px; padding: 8px; background: #fff; border-radius: 12px; flex: none; display: grid; place-items: center; }
+.mg-qr svg, .mg-qr img { width: 100%; height: 100%; display: block; }
+.mg-players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mg-players li {
+  display: flex;
+  align-items: center;
+  gap: var(--mg-s2);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  animation: mg-pop .25s;
+}
+.mg-players li .mg-who { flex: 1; }
+.mg-players li.mg-me { border-color: color-mix(in srgb, var(--mg-yellow) 40%, transparent); }
+
+/* --------------------------------------------------------------- rezultati */
+.mg-podium { display: flex; align-items: flex-end; justify-content: center; gap: var(--mg-s2); margin: var(--mg-s5) 0 var(--mg-s3); min-height: 210px; }
+.mg-podium__col { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 31%; max-width: 140px; animation: mg-rise .6s cubic-bezier(.2, 1.2, .4, 1) backwards; }
+.mg-podium__col:nth-child(1) { animation-delay: .25s; }
+.mg-podium__col:nth-child(2) { animation-delay: .5s; }
+.mg-podium__col:nth-child(3) { animation-delay: 0s; }
+.mg-podium__name { font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-podium__score { font-size: 14px; color: var(--mg-dim); font-weight: 700; }
+.mg-podium__block {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 10px 10px 0 0;
+  font: 400 22px 'Press Start 2P', monospace;
+  color: #000;
+}
+.mg-podium__block--1 { height: 110px; background: linear-gradient(var(--mg-gold), #c99a10); }
+.mg-podium__block--2 { height: 80px; background: linear-gradient(var(--mg-silver), #8d98ad); }
+.mg-podium__block--3 { height: 56px; background: linear-gradient(var(--mg-bronze), #9c5427); }
+@keyframes mg-rise { from { transform: translateY(40px); opacity: 0; } }
+.mg-xp-gain { color: var(--mg-green); font-weight: 700; }
+
+/* --------------------------------------------------------------- razno */
+.mg-offline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--mg-orange);
+  color: var(--mg-orange);
+  background: rgba(255, 138, 31, .08);
+  font: 700 13px var(--mg-font);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: help;
+}
+.mg-kbd { font: 600 13px var(--mg-font-mono); padding: 1px 6px; border: 1px solid var(--mg-line); border-bottom-width: 3px; border-radius: 6px; background: #0b0d22; }
+.mg-pulse { animation: mg-pulse 1.4s ease-in-out infinite; }
+@keyframes mg-pulse { 50% { opacity: .45; } }
+.mg-spin { display: inline-block; width: 18px; height: 18px; border: 3px solid var(--mg-line); border-top-color: var(--mg-yellow); border-radius: 50%; animation: mg-spin .8s linear infinite; }
+@keyframes mg-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  body.mg *, .mg-toast, .mg-modal, .mg-podium__col { animation: none !important; transition: none !important; }
+}
+
+/* barvni emoji (sistemske pisave za besedilo imajo pogosto le enobarvne) */
+.mg-avatar, .mg-toast__icon, .mg-emoji-grid button, .mg-emoji {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+/* povezave, oblikovane kot gumbi, obdržijo barvo gumba */
+body.mg a.mg-btn { color: var(--f); }
+
+/* ozka glava na telefonu */
+@media (max-width: 480px) {
+  .mg-header { gap: 8px; padding: 0 10px; }
+  .mg-header .mg-offline { font-size: 10px; padding: 2px 6px; letter-spacing: .02em; }
+  .mg-profile-chip { padding: 3px 8px 3px 3px; max-width: 120px; }
+  .mg-profile-chip .mg-avatar { width: 30px; height: 30px; font-size: 17px; }
+  .mg-profile-chip .mg-xpbar { width: 48px; }
+  .mg-header__back { padding: 6px 10px; }
+}

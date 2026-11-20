@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Reakcija — ko zaslon pozeleni, tapni čim hitreje. Dnevni izziv in multiplayer.">
+<title>Reakcija · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2339ff88'/%3E%3Cpath d='M9 1 3 9h4l-1 6 6-8H8z' fill='%23090a1a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg">
+  <main class="mg-container rk">
+
+    <!-- MENI -->
+    <section id="menu" class="rk-screen">
+      <div class="rk-hero mg-card mg-card--glow">
+        <div class="rk-hero__icon">⚡</div>
+        <div>
+          <h1 class="mg-title" style="margin:0 0 8px">Reakcija</h1>
+          <p class="mg-muted" style="margin:0">Ko zaslon <b style="color:var(--mg-green)">pozeleni</b>, tapni čim hitreje.
+            Prezgoden klik stane <b style="color:var(--mg-orange)">1000 ms</b>. Šteje povprečje vseh krogov.</p>
+        </div>
+      </div>
+
+      <div class="mg-grid mg-grid--2">
+        <div class="mg-card mg-stack">
+          <h2 class="mg-title">Dnevni izziv</h2>
+          <p class="mg-muted" style="margin:0">10 krogov. Vsi igralci imajo danes <b>enake zamike</b>, zato je lestvica poštena.</p>
+          <div class="rk-best" id="myBest"></div>
+          <button class="mg-btn mg-btn--green mg-btn--big mg-btn--block" id="btnSolo">Igraj solo</button>
+        </div>
+        <div class="mg-card mg-stack">
+          <h2 class="mg-title">Dvoboj</h2>
+          <p class="mg-muted" style="margin:0">2–10 igralcev, vsak na svojem telefonu. Kdo je najhitrejši v sobi?</p>
+          <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnCreate">Ustvari sobo</button>
+          <form class="mg-row" id="joinForm" autocomplete="off">
+            <input class="mg-input mg-input--code" id="joinCode" maxlength="4" placeholder="KODA" aria-label="Koda sobe" style="flex:1;min-width:0;font-size:20px">
+            <button class="mg-btn mg-btn--cyan" type="submit">Pridruži se</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mg-grid mg-grid--2">
+        <div class="mg-card" id="board"></div>
+        <div class="mg-card">
+          <h2 class="mg-title">Dosežki</h2>
+          <div id="achList" class="rk-ach"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="rk-screen mg-hidden"></section>
+
+    <!-- IGRA -->
+    <section id="play" class="rk-screen mg-hidden">
+      <div class="rk-bar">
+        <span class="mg-badge mg-badge--yellow" id="roundLbl">Krog 1/10</span>
+        <span class="rk-dots" id="dots"></span>
+        <span class="mg-spacer"></span>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnQuit">Prekini</button>
+      </div>
+      <button type="button" class="rk-zone" id="zone" aria-live="assertive">
+        <span class="rk-zone__big" id="zoneBig">Pripravi se</span>
+        <span class="rk-zone__small" id="zoneSmall"></span>
+      </button>
+      <div class="mg-card rk-scores mg-hidden" id="mpScores"></div>
+    </section>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

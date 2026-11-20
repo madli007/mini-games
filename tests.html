@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Testi · MINI GAMES</title>
+<link rel="stylesheet" href="shared/ui.css">
+<style>
+  pre { white-space: pre-wrap; font: 14px/1.5 var(--mg-font-mono); }
+  .ok { color: var(--mg-green); } .bad { color: var(--mg-red); }
+</style>
+</head>
+<body class="mg">
+  <main class="mg-container mg-stack">
+    <h1 class="mg-title">Testi</h1>
+    <p class="mg-muted">Čista logika: PRNG, dnevni seed, kode sob, nivoji, register iger, lokalni adapter, prenos hosta.
+      Testi uporabljajo svojo predpono v localStorage (mg-test:), zato tvoj profil in rezultati ostanejo.</p>
+    <div class="mg-card"><pre id="out">Poganjam …</pre></div>
+  </main>
+  <script type="module">
+    import { runAll } from './tests/tests.js';
+    const out = document.getElementById('out');
+    out.textContent = '';
+    const games = await (await fetch('games.json', { cache: 'no-cache' })).json();
+    const schema = await (await fetch('games.schema.json', { cache: 'no-cache' })).json();
+    const log = s => {
+      const line = document.createElement('div');
+      line.textContent = s;
+      line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
+      out.appendChild(line);
+    };
+    const { fails } = await runAll(log, { games, schema });
+    document.title = (fails ? '✘ ' : '✔ ') + document.title;
+  </script>
+</body>
+</html>

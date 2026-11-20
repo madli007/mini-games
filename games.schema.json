@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://madli007.github.io/mini-games/games.schema.json",
+  "title": "MINI GAMES — register iger",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "name", "description", "icon", "path", "players", "mode", "tags", "status"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^[a-z0-9-]{1,32}$", "description": "Enak kot ime mape v games/ in kot game v bazi." },
+      "name": { "type": "string", "minLength": 2, "maxLength": 40 },
+      "description": { "type": "string", "minLength": 5, "maxLength": 160 },
+      "icon": { "type": "string", "minLength": 1, "maxLength": 80, "description": "Emoji ali relativna pot do SVG." },
+      "path": { "type": "string", "pattern": "^games/[a-z0-9-]+/$", "description": "Relativna pot do igre (s končno poševnico)." },
+      "players": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["min", "max"],
+        "properties": {
+          "min": { "type": "integer", "minimum": 1, "maximum": 16 },
+          "max": { "type": "integer", "minimum": 1, "maximum": 16 }
+        }
+      },
+      "mode": { "type": "string", "enum": ["single", "realtime", "turn", "async"] },
+      "tags": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^[a-zčšž0-9-]{2,20}$" }
+      },
+      "status": { "type": "string", "enum": ["live", "soon"] },
+      "scoreOrder": { "type": "string", "enum": ["asc", "desc"], "description": "asc = manjši rezultat je boljši (npr. čas). Privzeto desc." },
+      "scoreUnit": { "type": "string", "maxLength": 10, "description": "Enota rezultata za prikaz (npr. ms)." },
+      "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Barva kartice na dashboardu." }
+    }
+  }
+}
