@@ -37,8 +37,8 @@ Projekt `mini-games` (ref `ygdjxwchjfvzigasmayg`, eu-west-1) je že povezan v `s
 Shema huba (`supabase/schema.sql`) je na projektu **že pognana**; pinball tabele `scores` se ne dotika.
 
 1. **Vklopi anonimno prijavo** — *Authentication → Sign In / Providers → Anonymous sign-ins → Enable*.
-   **To je edini obvezni ročni korak.** Dokler ni vklopljeno, hub zazna napako (»Anonymous sign-ins are
-   disabled«) in teče v offline načinu (v konzoli je ena napaka 422 od Supabase).
+   **Vklopljeno 20. 11. 2026.** Če je izklopljeno, hub zazna napako (»Anonymous sign-ins are disabled«)
+   in teče v offline načinu (v konzoli je ena napaka 422 od Supabase).
 2. *(Če shemo spremeniš ali preklopiš projekt)* **SQL Editor → New query** → prilepi `supabase/schema.sql` → *Run*.
    Shema je idempotentna (lahko jo poženeš večkrat).
 3. **Magic link** (»Shrani profil za drugo napravo«) — *Authentication → URL Configuration*:

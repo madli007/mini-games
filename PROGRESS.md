@@ -41,15 +41,14 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026).
   gostujoči profili, »Pripravljen«, nastavitve (št. krogov), igra do konca s stopničkami in XP, »Nova runda« →
   nazaj v lobby, odhod hosta sredi igre (krog 2/5) → Ana prevzame in igra se nadaljuje do konca, osvežitev igralca
   sredi igre → vrne se z istim profilom in dobi stanje, lobby se na dashboardu pojavi v realnem času.
-- **Supabase:** anonimna prijava na projektu **ni vklopljena** (»Anonymous sign-ins are disabled«); Supabase MCP nima
-  orodja za nastavitve Auth. Hub to zazna in preklopi v offline način. Ročni korak je v README.
+- **Supabase (po vklopu Anonymous sign-ins, 20. 11. 2026):** preizkušeno v brskalniku z `?igralec=1` in `?igralec=2`:
+  anonimna prijava, ustvarjanje profila, dnevni izziv (rezultat, XP prek `award_xp`, 3 dosežki v bazi), lobby se pojavi
+  na dashboardu drugega igralca, pridružitev s kodo, presence, dvoboj 3 kroge do stopničk, odhod hosta sredi igre →
+  drugi igralec prevzame (tudi `rooms.host_id` v bazi prek `claim_host`) in igra se konča; pinball lestvica (`scores`)
+  še deluje; konzola brez napak.
 
 ## Ni bilo preverjeno
 
-- **Hub s Supabase v brskalniku** (prijava, profil, lestvica, soba v dveh zavihkih) — ker anonimna prijava še ni
-  vklopljena. Baza, RLS in vse RPC funkcije so preizkušene z SQL (lažni JWT), adapter `supabase.js` pa ne v živo.
-  Ko vklopiš *Anonymous sign-ins*: odpri hub, ustvari profil, odigraj dnevni izziv, nato sobo v zavihkih
-  `?igralec=1` in `?igralec=2`.
 - **Magic link** (povezava profila z emailom, prijava na drugi napravi) — ni preizkušeno (potrebuje email in
   nastavljen Site URL / Redirect URLs).
 - **QR koda na telefonu** — generira se (pripeta knjižnica `qrcode-generator@1.4.4`), skeniranje ni preizkušeno.
@@ -62,5 +61,5 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026).
 
 ## Za naslednjo sejo
 
-- Vklopi Anonymous sign-ins in preizkusi hub s Supabase (glej zgoraj).
+- V bazi sta testna profila TestAna in TestBor (z rezultatom, XP in dosežki) — po želji ju izbriši.
 - Naslednja igra: kopiraj `prompts/TEMPLATE-igra.md`.
