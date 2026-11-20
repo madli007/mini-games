@@ -62,4 +62,5 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026).
 ## Za naslednjo sejo
 
 - V bazi sta testna profila TestAna in TestBor (z rezultatom, XP in dosežki) — po želji ju izbriši.
+- Naslednji korak: `prompts/02-trgovina.md` (kovanci, dnevne naloge, trgovina, kozmetika).
 - Naslednja igra: kopiraj `prompts/TEMPLATE-igra.md`.
