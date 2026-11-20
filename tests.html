@@ -23,13 +23,14 @@
     out.textContent = '';
     const games = await (await fetch('games.json', { cache: 'no-cache' })).json();
     const schema = await (await fetch('games.schema.json', { cache: 'no-cache' })).json();
+    const schemaSql = await (await fetch('supabase/schema.sql', { cache: 'no-cache' })).text();
     const log = s => {
       const line = document.createElement('div');
       line.textContent = s;
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema });
+    const { fails } = await runAll(log, { games, schema, schemaSql });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

@@ -206,6 +206,15 @@ export function bestPerUser(rows, { seed = null, since = null, asc = false, limi
     .slice(0, Math.max(1, Math.min(limit, 100)));
 }
 
+/**
+ * Slovenska množina: plural(1,'dan','dneva','dnevi','dni') → '1 dan', 2 → '2 dneva', 3 → '3 dnevi', 5 → '5 dni'.
+ */
+export function plural(n, one, two, few, many) {
+  const m = Math.abs(n) % 100;
+  const w = m === 1 ? one : m === 2 ? two : (m === 3 || m === 4) ? few : many;
+  return `${n} ${w}`;
+}
+
 /** Escape za vstavljanje v HTML. */
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -11,9 +11,13 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JS } from './config.js';
 import { LocalBackend, codedError } from './adapters/local.js';
 import { Room } from './room.js';
 import * as U from './util.js';
+import * as E from './economy.js';
+import * as Q from './quests.js';
+import * as K from './cosmetics.js';
 import { ui } from './ui.js';
 
 const listeners = new Set();
+const questListeners = new Set();
 
 function param(name) {
   try { return new URLSearchParams(location.search).get(name); } catch { return null; }
@@ -178,11 +182,11 @@ export const hub = {
     try {
       const before = U.level(hub.profile.xp).level;
       const res = await hub.backend.awardXp(amount, reason || hub.gameId || '');
-      hub.profile = { ...hub.profile, xp: res.xp };
+      hub.profile = { ...hub.profile, xp: res.xp, ...(res.coins != null ? { coins: res.coins } : {}) };
       hub._emitProfile();
       if (res.granted > 0) {
         const after = U.level(res.xp).level;
-        if (after > before) ui.toast(`Nivo ${after}!`, { icon: '⭐' });
+        if (after > before) ui.toast(`Nivo ${after}!${res.level_coins ? ` +${res.level_coins} 🪙` : ''}`, { icon: '⭐' });
       }
       return res;
     } catch (e) {
@@ -210,7 +214,11 @@ export const hub = {
     if (!hub.profile) return false;
     try {
       const fresh = await hub.backend.unlock({ game, key, title, icon });
-      if (fresh) ui.toast(`Dosežek odklenjen: ${title}`, { icon, duration: 3500 });
+      if (fresh) {
+        ui.toast(`Dosežek odklenjen: ${title} · +${E.COINS.ACHIEVEMENT} 🪙`, { icon, duration: 3500 });
+        await hub.refreshProfile();
+        await hub._questEvents([{ name: 'ach' }]);
+      }
       return fresh;
     } catch (e) {
       console.warn('unlock:', e.message);
@@ -224,6 +232,205 @@ export const hub = {
    */
   async getAchievements({ game = hub.gameId } = {}) {
     return hub.backend.getAchievements({ game });
+  },
+
+  /* ------------------------------ kovanci ----------------------------- */
+
+  /** Trenutno stanje kovancev. */
+  get coins() { return hub.profile?.coins || 0; },
+
+  _setCoins(coins) {
+    if (coins == null || !hub.profile) return;
+    hub.profile = { ...hub.profile, coins };
+    hub._emitProfile();
+  },
+
+  /**
+   * Sporoči odigrano igro: kovanci (igra, zmaga v multiplayerju, niz dni) in napredek nalog.
+   * Pokliči PO VSAKI odigrani igri (solo in multiplayer), enkrat na igralca.
+   * @param {{won?:boolean, players?:number, score?:number|null, daily?:boolean, game?:string}} [r]
+   *   won: zmaga (šteje le pri players ≥ 2) · players: število igralcev · score: rezultat (za naloge)
+   *   daily: odigran dnevni izziv
+   * @returns {Promise<{coins:number, granted:number, streak:number, streak_bonus:number}|null>}
+   */
+  async reportGame({ won = false, players = 1, score = null, daily = false, game = hub.gameId } = {}) {
+    if (!hub.profile || !game) return null;
+    let res = null;
+    try {
+      res = await hub.backend.reportGame({ game, won: !!won, players: Math.max(1, players | 0) });
+      hub._setCoins(res.coins);
+      if (res.streak_bonus > 0) ui.toast(`Niz ${U.plural(res.streak, 'dan', 'dneva', 'dnevi', 'dni')}: +${res.streak_bonus} 🪙`, { icon: '🔥', duration: 3000 });
+      const g = (res.game || 0) + (res.win || 0);
+      if (g > 0) ui.toast(`+${g} 🪙`, { icon: '🪙', duration: 1800 });
+    } catch (e) {
+      console.warn('reportGame:', e.message);
+    }
+    await hub._questEvents(Q.gameEvents({ game, won, players, score, daily }));
+    return res;
+  },
+
+  /**
+   * Sporoči poseben dogodek za naloge (npr. hub.reportEvent('reakcija:avg', 231)).
+   * @param {string} name 'igra:ime' (male črke, številke, : - _)
+   * @param {number} [value]
+   */
+  async reportEvent(name, value = 1) {
+    if (!hub.profile || !/^[a-z0-9:_-]{2,40}$/.test(name || '')) return;
+    await hub._questEvents([{ name, value }]);
+  },
+
+  /**
+   * Bonus kovanci iz igre (največ 100 na klic, skozi dnevno mejo 250).
+   * @returns {Promise<{coins:number, granted:number}>}
+   */
+  async awardCoins(amount, reason = '', ref = null) {
+    if (!hub.profile) return { coins: 0, granted: 0 };
+    try {
+      const res = await hub.backend.awardCoins(amount, reason || hub.gameId || '', ref);
+      hub._setCoins(res.coins);
+      return res;
+    } catch (e) {
+      console.warn('awardCoins:', e.message);
+      return { coins: hub.coins, granted: 0 };
+    }
+  },
+
+  /* ------------------------------ naloge ------------------------------ */
+
+  _games: null,
+  _gamesCached() {
+    if (!hub._games) hub._games = hub.games().catch(() => []);
+    return hub._games;
+  },
+
+  /** Današnje definicije nalog (3 dnevne + 2 tedenski). */
+  async _questDefs(day = U.dailySeed()) {
+    return Q.questsFor(day, await hub._gamesCached());
+  },
+
+  /**
+   * Naloge s stanjem.
+   * @returns {Promise<{id:string, slot:string, text:string, target:number, progress:number, done:boolean, claimed:boolean, reward:number, period:string}[]>}
+   */
+  async getQuests() {
+    const defs = await hub._questDefs();
+    if (!hub.profile) return defs.map(q => ({ ...q, progress: 0, data: {}, done: false, claimed: false }));
+    const periods = [...new Set(defs.map(q => q.period))];
+    let rows = [];
+    try { rows = await hub.backend.getQuestProgress(periods); } catch (e) { console.warn('getQuests:', e.message); }
+    const by = new Map(rows.map(r => [r.period + '|' + r.quest_id, r]));
+    const claimedSlots = new Set(rows.filter(r => r.claimed_at).map(r => r.period + '|' + r.quest_id.split('.')[0]));
+    return defs.map(q => {
+      const r = by.get(q.period + '|' + q.id);
+      const progress = Math.min(q.target, r?.progress || 0);
+      const claimed = !!r?.claimed_at || claimedSlots.has(q.period + '|' + q.slot);
+      return { ...q, progress: claimed ? q.target : progress, data: r?.data || {}, done: claimed || progress >= q.target, claimed };
+    });
+  },
+
+  _questQueue: Promise.resolve(),
+
+  /** Posodobi napredek nalog po dogodkih (zaporedno, da se klici ne prehitevajo). */
+  _questEvents(events) {
+    const run = async () => {
+      if (!hub.profile) return;
+      let quests;
+      try { quests = await hub.getQuests(); } catch { return; }
+      for (const q of quests) {
+        if (q.claimed || q.done) continue;
+        let st = { progress: q.progress, data: q.data };
+        let changed = false;
+        for (const ev of events) {
+          const next = Q.applyEvent(q, st, ev);
+          if (next) { st = next; changed = true; }
+        }
+        if (!changed) continue;
+        try {
+          await hub.backend.saveQuestProgress({ period: q.period, quest_id: q.id, progress: st.progress, data: st.data });
+        } catch (e) { console.warn('quest:', e.message); continue; }
+        if (st.progress >= q.target) ui.toast(`Naloga opravljena: ${q.text} · +${q.reward} 🪙 (prevzemi v hubu)`, { icon: '✅', duration: 4200 });
+      }
+      for (const cb of questListeners) { try { cb(); } catch (e) { console.error(e); } }
+    };
+    hub._questQueue = hub._questQueue.then(run, run);
+    return hub._questQueue;
+  },
+
+  /** Poslušaj spremembe nalog. Vrne odjavo. */
+  onQuests(cb) { questListeners.add(cb); return () => questListeners.delete(cb); },
+
+  /**
+   * Prevzemi nagrado opravljene naloge.
+   * @param {string} id id naloge (npr. 'h.win-1')
+   * @returns {Promise<{coins:number, granted:number, reward:number, bonus:number}>}
+   * @throws err.code 'claimed' | 'expired' | 'not_done' | 'invalid'
+   */
+  async claimQuest(id) {
+    const q = (await hub.getQuests()).find(x => x.id === id);
+    if (!q) throw codedError('invalid', 'Neznana naloga.');
+    if (q.claimed) throw codedError('claimed', 'Nagrada je že prevzeta.');
+    if (!q.done) throw codedError('not_done', 'Naloga še ni opravljena.');
+    const res = await hub.backend.claimQuest(q.period, q.id);
+    hub._setCoins(res.coins);
+    for (const cb of questListeners) { try { cb(); } catch (e) { console.error(e); } }
+    return res;
+  },
+
+  /* --------------------------- trgovina ------------------------------- */
+
+  /**
+   * Katalog s stanjem za trenutnega igralca.
+   * @returns {Promise<{items:Object[], offer:string[], coins:number, equipped:Object, owned:Set<string>, state:Object}>}
+   *   items[i]: predmet + { owned, locked, reason, priceToday, offer, equipped, free }
+   */
+  async getShop() {
+    const offer = K.dailyOffer(U.dailySeed());
+    const [inv, st] = hub.profile
+      ? await Promise.all([hub.backend.getInventory(), hub.backend.unlockState()])
+      : [[], { level: 1, achievements: [], streak: 0 }];
+    const owned = new Set(inv.map(i => i.item_id));
+    const eq = hub.profile?.equipped || {};
+    const items = K.CATALOG.filter(i => i.active !== false).map(it => {
+      const u = K.checkUnlock(it.unlock, st);
+      const free = K.isFree(it);
+      return {
+        ...it, owned: owned.has(it.id) || free, free, locked: !u.ok, reason: u.reason,
+        offer: offer.includes(it.id), priceToday: K.priceToday(it, offer), equipped: eq[it.kind] === it.id,
+      };
+    });
+    return { items, offer, coins: hub.coins, equipped: eq, owned, state: st };
+  },
+
+  /**
+   * Kupi predmet (ali odkleni, če je brezplačen s pogojem).
+   * @throws err.code 'not_enough_coins' | 'locked' | 'owned' | 'unavailable'
+   */
+  async buy(itemId) {
+    await hub._needProfile();
+    const it = K.item(itemId);
+    const res = it && it.price === 0 ? await hub.backend.unlockItem(itemId) : await hub.backend.buyItem(itemId);
+    if (res.coins != null) hub._setCoins(res.coins);
+    return res;
+  },
+
+  /**
+   * Opremi predmet v slot (null sname).
+   * @param {'emoji'|'bg'|'frame'|'name'|'title'|'badge'|'win'|'banner'} slot
+   * @param {string|null} itemId
+   */
+  async equip(slot, itemId = null) {
+    await hub._needProfile();
+    const equipped = await hub.backend.equip(slot, itemId);
+    hub.profile = { ...hub.profile, equipped: equipped || {} };
+    hub._emitProfile();
+    if (hub.room && !hub.room.left) hub.room._updateProfile(hub.profile);
+    return equipped;
+  },
+
+  /** Moj inventar: [{ item_id, acquired_at, source }]. */
+  async getInventory() {
+    if (!hub.profile) return [];
+    return hub.backend.getInventory();
   },
 
   /* ------------------------- seed in naključnost ----------------------- */
@@ -329,5 +536,5 @@ function withTimeout(p, ms) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('časovna omejitev')), ms))]);
 }
 
-export { ui, Room, U as util };
+export { ui, Room, U as util, E as economy, Q as quests, K as cosmetics };
 export default hub;

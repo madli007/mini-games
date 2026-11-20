@@ -113,3 +113,55 @@ a.dash-game:hover { transform: translateY(-3px); border-color: var(--gc); box-sh
 .dash-ach { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: rgba(255, 210, 63, .08); border: 1px solid rgba(255, 210, 63, .3); font-weight: 600; }
 
 .dash-foot { text-align: center; padding-top: var(--mg-s4); }
+
+/* profil s pasico */
+.dash-me { position: relative; flex-wrap: wrap; overflow: hidden; }
+.dash-me--banner { background: var(--bni); }
+.dash-me--banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(9, 10, 26, .82), rgba(9, 10, 26, .45)); pointer-events: none; }
+.dash-me > * { position: relative; }
+.dash-me .mg-avatar--lg { margin: 6px 4px 6px 6px; }
+.dash-me__name { display: flex; align-items: center; gap: 6px; }
+.dash-me__name b { overflow: hidden; text-overflow: ellipsis; }
+.dash-me__stats { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.dash-me__coins { color: var(--mg-yellow); text-decoration: none; font-weight: 700; }
+.dash-me__actions { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 420px) {
+  .dash-me__actions { flex-direction: row; width: 100%; }
+  .dash-me__actions > * { flex: 1; }
+}
+
+/* naloge */
+.dash-quests { display: flex; flex-direction: column; gap: 8px; }
+.dash-quests__sub { margin: 10px 0 0; font: 400 11px var(--mg-font-title); color: var(--mg-cyan); }
+.dash-quest {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .07);
+}
+.dash-quest.is-done:not(.is-claimed) { border-color: var(--mg-yellow); box-shadow: 0 0 12px rgba(255, 210, 63, .2); }
+.dash-quest.is-claimed { opacity: .6; }
+.dash-quest__tier { font: 400 8px var(--mg-font-title); text-transform: uppercase; padding: 4px 6px; border-radius: 6px; text-align: center; background: #263; color: var(--mg-green); }
+.dash-quest__tier--m { background: #2a2a10; color: var(--mg-yellow); }
+.dash-quest__tier--h { background: #3a1020; color: var(--mg-red); }
+.dash-quest__tier--w1, .dash-quest__tier--w2 { background: #102838; color: var(--mg-cyan); }
+.dash-quest__main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dash-quest__text { font-weight: 700; line-height: 1.15; }
+.dash-quest__bar { height: 6px; }
+.dash-quest__reward { font-weight: 700; color: var(--mg-yellow); white-space: nowrap; }
+.dash-quest__state { min-width: 84px; text-align: right; }
+.dash-quest-bonus { padding: 6px 12px; font-size: 14px; color: var(--mg-dim); }
+.dash-quest-bonus.is-done { color: var(--mg-green); }
+@media (max-width: 520px) {
+  .dash-quest { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'tier reward' 'main main' 'state state'; gap: 6px 10px; }
+  .dash-quest__tier { grid-area: tier; justify-self: start; }
+  .dash-quest__reward { grid-area: reward; }
+  .dash-quest__main { grid-area: main; }
+  .dash-quest__state { grid-area: state; text-align: left; }
+  .dash-quest__state .mg-btn { width: 100%; }
+}
+.dash-quests__sub span { font-family: var(--mg-font); font-size: 13px; letter-spacing: 0; }

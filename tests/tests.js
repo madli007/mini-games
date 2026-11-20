@@ -8,6 +8,10 @@ import { LocalBackend } from '../shared/adapters/local.js';
 import { Room } from '../shared/room.js';
 import * as RK from '../games/reakcija/logic.js';
 import * as S from '../shared/storage.js';
+import * as E from '../shared/economy.js';
+import * as Q from '../shared/quests.js';
+import * as K from '../shared/cosmetics.js';
+import * as SIM from './economy-sim.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -300,6 +304,242 @@ test('reakcija: zmagovalec kroga, lestvica, XP', () => {
   ok(RK.soloXp(190) > RK.soloXp(400));
   ok(RK.mpXp(true, 4) > RK.mpXp(false, 4));
   ok(RK.mpXp(true, 10) <= 500);
+});
+
+/* ------------------------------------------------------- naloge */
+test('naloge: ISO teden po ljubljanskem datumu', () => {
+  eq(Q.isoWeek('2026-11-20'), '2026-W47');
+  eq(Q.isoWeek('2026-11-23'), '2026-W48');      // ponedeljek
+  eq(Q.isoWeek('2026-11-22'), '2026-W47');      // nedelja
+  eq(Q.isoWeek('2026-01-01'), '2026-W01');
+  eq(Q.isoWeek('2027-01-01'), '2026-W53');
+  eq(Q.isoWeek('2024-12-30'), '2025-W01');
+  eq(Q.isoWeek('2021-01-03'), '2020-W53');
+  // nedelja 23:30 po Ljubljani (22:30 UTC) je še stari teden, 00:30 v ponedeljek že novi
+  eq(Q.weekPeriod(U.dailySeed(new Date('2026-11-22T22:30:00Z'))), 'w:2026-W47');
+  eq(Q.weekPeriod(U.dailySeed(new Date('2026-11-22T23:30:00Z'))), 'w:2026-W48');
+});
+test('naloge: generator je determinističen in isti za vse', (ctx) => {
+  const a = Q.questsFor('2026-11-20', ctx.games), b = Q.questsFor('2026-11-20', JSON.parse(JSON.stringify(ctx.games)));
+  eq(a, b);
+  eq(a.map(q => q.slot), ['e', 'm', 'h', 'w1', 'w2']);
+  ok(a.every(q => Q.QUEST_ID_RE.test(q.id) && Q.PERIOD_RE.test(q.period)), 'neveljaven id ali obdobje');
+  eq(a.map(q => q.reward), [E.COINS.QUEST.e, E.COINS.QUEST.m, E.COINS.QUEST.h, E.COINS.QUEST.w1, E.COINS.QUEST.w2]);
+  ok(a.slice(0, 3).every(q => q.period === 'd:2026-11-20'));
+  ok(a.slice(3).every(q => q.period === 'w:2026-W47'));
+  // tedenske so iste cel teden, dnevne se menjajo
+  const mon = Q.questsFor('2026-11-16', ctx.games), sun = Q.questsFor('2026-11-22', ctx.games);
+  eq(mon.slice(3).map(q => q.id), sun.slice(3).map(q => q.id));
+  const days = Array.from({ length: 14 }, (_, i) => Q.questsFor(E.addDays('2026-11-01', i), ctx.games).slice(0, 3).map(q => q.id).join());
+  ok(new Set(days).size >= 8, 'dnevne naloge se premalo menjajo');
+});
+test('naloge: predloge iz games.json in le za igre live', (ctx) => {
+  const all = Q.expandTemplates(ctx.games);
+  ok(all.some(t => t.id === 'reakcija-avg-260' && t.cmp === 'lte'), 'manjka predloga reakcije');
+  ok(all.some(t => t.id === 'play-pinball'), 'manjka play-pinball');
+  ok(!all.some(t => t.id.includes('ladjice')), 'igra soon ne sme imeti nalog');
+  ok(all.every(t => ['e', 'm', 'h', 'w'].includes(t.tier) && t.target >= 1), 'neveljaven tier/target');
+  ok(all.every(t => Q.QUEST_ID_RE.test('w1.' + t.id)), 'predolg ali neveljaven id predloge');
+  // brez iger za več igralcev ni nalog za multiplayer
+  const solo = ctx.games.filter(g => g.id === 'pinball');
+  ok(!Q.expandTemplates(solo).some(t => ['mp', 'win', 'party'].includes(t.event)), 'mp naloga brez mp igre');
+});
+test('naloge: napredek (štetje, različne igre, prag)', () => {
+  const count = { event: 'play', target: 3 };
+  let st = { progress: 0, data: {} };
+  for (const ev of Q.gameEvents({ game: 'reakcija' })) st = Q.applyEvent(count, st, ev) || st;
+  eq(st.progress, 1);
+  const distinct = { event: 'distinct', target: 2 };
+  let d = { progress: 0, data: {} };
+  d = Q.applyEvent(distinct, d, { name: 'play', game: 'a' }) || d;
+  eq(Q.applyEvent(distinct, d, { name: 'play', game: 'a' }), null);
+  d = Q.applyEvent(distinct, d, { name: 'play', game: 'b' }) || d;
+  eq(d.progress, 2);
+  const lte = { event: 'reakcija:avg', target: 1, cmp: 'lte', goal: 259 };
+  eq(Q.applyEvent(lte, { progress: 0 }, { name: 'reakcija:avg', value: 260 }), null);
+  eq(Q.applyEvent(lte, { progress: 0 }, { name: 'reakcija:avg', value: 259 }).progress, 1);
+  const gte = { event: 'score:pinball', target: 1, cmp: 'gte', goal: 500000 };
+  eq(Q.applyEvent(gte, { progress: 0 }, Q.gameEvents({ game: 'pinball', score: 600000 }).at(-1)).progress, 1);
+  const win = { event: 'win', target: 1 };
+  ok(!Q.gameEvents({ game: 'x', won: true, players: 1 }).some(e => e.name === 'win'), 'solo zmaga ne šteje');
+  ok(Q.gameEvents({ game: 'x', won: true, players: 2 }).some(e => e.name === 'win'));
+  eq(Q.applyEvent(win, { progress: 1 }, { name: 'win' }), null);   // že opravljena
+});
+
+/* ------------------------------------------------------- ekonomija */
+test('ekonomija: niz dni, dnevna meja, popust', () => {
+  eq(E.nextStreak(null, '2026-11-20', 0), { streak: 1, first: true });
+  eq(E.nextStreak('2026-11-19', '2026-11-20', 4), { streak: 5, first: true });
+  eq(E.nextStreak('2026-11-18', '2026-11-20', 4), { streak: 1, first: true });
+  eq(E.nextStreak('2026-11-20', '2026-11-20', 4), { streak: 4, first: false });
+  eq(E.nextStreak('2026-12-31', '2027-01-01', 2).streak, 3);
+  eq([1, 2, 7, 30].map(E.streakBonus), [5, 10, 35, 35]);
+  eq(E.grantableCoins(100, 200), 50);
+  eq(E.grantableCoins(100, 250), 0);
+  eq(E.grantableCoins(500, 0, E.COINS.PER_CALL), 100);
+  eq([2, 10, 25].map(E.levelReward), [10, 50, 100]);
+  eq(E.offerPrice(250), 187);
+  eq(E.offerPrice(3500), 2625);
+});
+test('ekonomija: simulacija 30 dni (tipičen in zelo aktiven igralec)', () => {
+  const leg = K.CATALOG.filter(i => i.rarity === 'legendary').map(i => i.price);
+  const cheapLeg = Math.min(...leg), dearLeg = Math.max(...leg);
+  const typ = SIM.simulate(SIM.PLAYERS.typical);
+  const max = SIM.simulate(SIM.PLAYERS.max);
+  const avg = typ.total.at(-1) / 30;
+  // tipičen: vsak dan nekaj malega, vsak teden nekaj redkega, legendarno v 3–5 tednih
+  ok(typ.daily.filter(d => d > 0).every(d => d >= 50), 'aktiven dan naj prinese vsaj za navaden predmet (50)');
+  ok(SIM.dayToAfford(typ.total, 400) <= 7, 'redek predmet (≤400) v prvem tednu');
+  const dLeg = SIM.dayToAfford(typ.total, cheapLeg);
+  ok(dLeg >= 21 && dLeg <= 35, `najcenejši legendarni po ${dLeg} dneh (cilj 21–35)`);
+  ok(SIM.dayToAfford(typ.total, dearLeg) == null || SIM.dayToAfford(typ.total, dearLeg) >= 28, 'najdražji legendarni ne prej kot v 4 tednih');
+  // maksimalen: dnevna meja drži, legendarno ne prej kot v 14 dneh
+  ok(max.daily.every(d => d <= E.COINS.PER_DAY), 'preseženа dnevna meja');
+  ok(SIM.dayToAfford(max.total, cheapLeg) >= 14, 'legendarno prej kot v 14 dneh');
+  // nihče ne more v enem dnevu »pokupiti vsega«
+  const all = K.CATALOG.reduce((a, i) => a + i.price, 0);
+  ok(E.COINS.PER_DAY * 30 < all, 'v 30 dneh pri maksimumu se ne da kupiti vsega');
+  return `tipičen ${avg.toFixed(0)} 🪙/dan, legendarno ${dLeg}. dan; maksimalen ${E.COINS.PER_DAY}/dan, legendarno ${SIM.dayToAfford(max.total, cheapLeg)}. dan`;
+});
+
+/* ------------------------------------------------------- katalog */
+test('katalog: vsaj 60 predmetov, veljavni podatki, cene po redkosti', () => {
+  ok(K.CATALOG.length >= 60, 'premalo predmetov');
+  const ids = new Set();
+  const RANGE = { common: [0, 150], rare: [0, 450], epic: [0, 1200], legendary: [3500, 4500] };
+  for (const it of K.CATALOG) {
+    ok(/^[a-z0-9-]{1,40}$/.test(it.id), 'id ' + it.id);
+    ok(!ids.has(it.id), 'podvojen id ' + it.id); ids.add(it.id);
+    ok(K.SLOTS.includes(it.kind), 'vrsta ' + it.id);
+    ok(K.RARITIES.includes(it.rarity), 'redkost ' + it.id);
+    ok(Number.isInteger(it.price) && it.price >= RANGE[it.rarity][0] && it.price <= RANGE[it.rarity][1], 'cena ' + it.id);
+    ok(it.price > 0 || it.unlock, 'brezplačen predmet brez pogoja: ' + it.id);
+    if (['emoji', 'bg', 'title', 'badge', 'win', 'banner'].includes(it.kind)) ok(it.value, 'manjka value ' + it.id);
+  }
+  ok(K.CATALOG.filter(i => i.kind === 'frame').length >= 15, 'premalo okvirjev');
+  ok(K.CATALOG.filter(i => i.kind === 'emoji').length >= 18, 'premalo emojijev');
+  for (const s of K.SLOTS) ok(K.CATALOG.some(i => i.kind === s), 'prazen slot ' + s);
+  ok(K.CATALOG.some(i => i.unlock?.level) && K.CATALOG.some(i => i.unlock?.achievement) && K.CATALOG.some(i => i.unlock?.streak), 'manjkajo pogoji');
+});
+test('katalog = SQL (public.shop_items v schema.sql)', (ctx) => {
+  ok(ctx.schemaSql, 'schema.sql ni naložen');
+  const block = ctx.schemaSql.match(/-- SHOP_ITEMS:BEGIN[\s\S]*?-- SHOP_ITEMS:END/);
+  ok(block, 'v schema.sql manjka blok SHOP_ITEMS');
+  const rows = [...block[0].matchAll(/\('([a-z0-9-]+)', '(\w+)', '(\w+)', (\d+), (null|'([^']*)'::jsonb), (true|false)\)/g)]
+    .map(m => ({ id: m[1], kind: m[2], rarity: m[3], price: +m[4], unlock: m[6] ? JSON.parse(m[6]) : null, active: m[7] === 'true' }));
+  eq(rows.length, K.CATALOG.length, 'število predmetov:');
+  const byId = new Map(rows.map(r => [r.id, r]));
+  for (const it of K.CATALOG) {
+    const r = byId.get(it.id);
+    ok(r, 'v SQL manjka ' + it.id + ' (node tools/shop-sql.mjs)');
+    eq([r.kind, r.rarity, r.price, r.unlock, r.active], [it.kind, it.rarity, it.price, it.unlock || null, it.active !== false], it.id + ':');
+  }
+});
+test('katalog: dnevna ponudba (4 plačljivi, isti kot SQL)', () => {
+  const o = K.dailyOffer('2026-11-20');
+  eq(o.length, 4);
+  eq(new Set(o).size, 4);
+  ok(o.every(id => K.item(id).price > 0));
+  eq(K.dailyOffer('2026-11-20'), o);
+  // referenčne vrednosti iz private.mg_daily_offer (Postgres) — algoritem mora ostati enak
+  eq(o, ['bg-mint', 'name-gold', 'emoji-eagle', 'badge-trophy']);
+  eq(K.dailyOffer('2026-11-23'), ['emoji-dino', 'emoji-wizard', 'title-legenda', 'frame-ice']);
+  eq(U.rng('2026-11-20:shop').shuffle(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']).join(''), 'cdjihgebfa');
+});
+test('katalog: pogoji za odklep', () => {
+  eq(K.checkUnlock({ level: 10 }, { level: 9 }), { ok: false, reason: 'Odkleni na nivoju 10' });
+  ok(K.checkUnlock({ level: 10 }, { level: 10 }).ok);
+  ok(!K.checkUnlock({ achievement: 'reakcija:bliskovit' }, { achievements: [] }).ok);
+  ok(K.checkUnlock({ achievement: 'reakcija:bliskovit' }, { achievements: ['reakcija:bliskovit'] }).ok);
+  ok(!K.checkUnlock({ streak: 7 }, { streak: 6 }).ok);
+  ok(K.checkUnlock({ free: true }, {}).ok && K.checkUnlock(null, {}).ok);
+});
+
+/* ------------------------------------------------------- lokalni adapter: kovanci */
+async function rich(b, coins) {
+  const all = b._profiles(); all[b.userId].coins = coins; S.save('db:profiles', all);
+}
+test('lokalno: reportGame (igra, zmaga, niz) in dnevna meja', async () => {
+  clearLocal();
+  const [a] = await users('c1');
+  const r1 = await a.reportGame({ game: 'reakcija', won: true, players: 3 });
+  eq([r1.game, r1.win, r1.streak, r1.streak_bonus, r1.first], [E.COINS.GAME, E.COINS.WIN, 1, 5, true]);
+  const r2 = await a.reportGame({ game: 'reakcija', won: true, players: 1 });
+  eq([r2.game, r2.win, r2.streak_bonus], [E.COINS.GAME, 0, 0]);
+  await throwsCode(() => a.reportGame({ game: '<x>' }), 'invalid');
+  for (let i = 0; i < 40; i++) await a.reportGame({ game: 'reakcija', won: true, players: 2 });
+  const p = await a.getProfile();
+  ok(p.coins <= E.COINS.PER_DAY, 'presežena dnevna meja: ' + p.coins);
+  eq(a._earnedToday(), p.coins);
+  const led = a._ledger();
+  eq([led.filter(l => l.reason === 'game').length, led.filter(l => l.reason === 'win').length], [E.COINS.GAMES_PER_DAY, E.COINS.WINS_PER_DAY]);
+  eq(p.coins, 5 + E.COINS.GAMES_PER_DAY * E.COINS.GAME + E.COINS.WINS_PER_DAY * E.COINS.WIN);
+  eq((await a.awardCoins(500)).granted, Math.min(E.COINS.PER_CALL, E.COINS.PER_DAY - p.coins));
+  for (let i = 0; i < 5; i++) await a.awardCoins(100);
+  eq((await a.getProfile()).coins, E.COINS.PER_DAY);
+  eq((await a.awardCoins(100)).granted, 0);
+});
+test('lokalno: nakup (premalo, zaklenjeno, uspeh, že v lasti, popust)', async () => {
+  clearLocal();
+  const [a] = await users('c2');
+  await throwsCode(() => a.buyItem('frame-neon-pink'), 'not_enough_coins');
+  await throwsCode(() => a.buyItem('nic'), 'unavailable');
+  await rich(a, 5000);
+  await throwsCode(() => a.buyItem('frame-crown'), 'locked');            // nivo 10
+  const offer = K.dailyOffer(U.dailySeed());
+  const normal = K.CATALOG.find(i => i.price > 0 && !i.unlock && !offer.includes(i.id));
+  const r = await a.buyItem(normal.id);
+  eq([r.price, r.coins], [normal.price, 5000 - normal.price]);
+  await throwsCode(() => a.buyItem(normal.id), 'owned');
+  const deal = K.item(offer.find(id => !K.item(id).unlock));
+  if (deal) eq((await a.buyItem(deal.id)).price, E.offerPrice(deal.price));
+  eq(a._ledger().filter(l => l.amount < 0).length, deal ? 2 : 1);
+});
+test('lokalno: odklep s pogojem (dosežek) in opremljanje', async () => {
+  clearLocal();
+  const [a] = await users('c3');
+  await throwsCode(() => a.unlockItem('frame-bolt'), 'locked');
+  await throwsCode(() => a.unlockItem('frame-neon-pink'), 'not_free');
+  await throwsCode(() => a.equip('frame', 'frame-bolt'), 'not_owned');
+  await a.unlock({ game: 'reakcija', key: 'bliskovit', title: 'B' });
+  eq((await a.getProfile()).coins, E.COINS.ACHIEVEMENT);                 // +15 za dosežek
+  await a.unlockItem('frame-bolt');
+  await throwsCode(() => a.unlockItem('frame-bolt'), 'owned');
+  eq(await a.equip('frame', 'frame-bolt'), { frame: 'frame-bolt' });
+  eq(await a.equip('title', 'title-novinec'), { frame: 'frame-bolt', title: 'title-novinec' });   // brezplačen
+  await throwsCode(() => a.equip('title', 'frame-thin'), 'invalid');
+  await throwsCode(() => a.equip('hat', 'frame-thin'), 'invalid');
+  eq(await a.equip('frame', null), { title: 'title-novinec' });
+  ok((await a.getInventory()).some(i => i.item_id === 'frame-bolt' && i.source === 'unlock'));
+});
+test('lokalno: naloge (napredek, prevzem enkrat, bonus, poteklo)', async () => {
+  clearLocal();
+  const [a] = await users('c4');
+  const d = Q.dayPeriod(U.dailySeed()), w = Q.weekPeriod(U.dailySeed());
+  eq(await a.saveQuestProgress({ period: d, quest_id: 'e.play-3', progress: 2 }), 2);
+  eq(await a.saveQuestProgress({ period: d, quest_id: 'e.play-3', progress: 1 }), 2);   // le narašča
+  const c1 = await a.claimQuest(d, 'e.play-3');
+  eq([c1.reward, c1.bonus], [E.COINS.QUEST.e, 0]);
+  await throwsCode(() => a.claimQuest(d, 'e.play-3'), 'claimed');
+  await throwsCode(() => a.claimQuest(d, 'e.drugo'), 'claimed');        // en prevzem na slot
+  await throwsCode(() => a.claimQuest('d:2020-01-01', 'm.x'), 'expired');
+  await throwsCode(() => a.claimQuest(d, 'w1.x'), 'invalid');
+  await throwsCode(() => a.claimQuest(d, 'zz.x'), 'invalid');
+  await a.claimQuest(d, 'm.play-5');
+  const c3 = await a.claimQuest(d, 'h.win-1');
+  eq(c3.bonus, E.COINS.ALL_DAILY_BONUS);
+  const cw = await a.claimQuest(w, 'w2.w-play-25');
+  ok(cw.granted <= cw.reward, 'tedenska');
+  ok((await a.getProfile()).coins <= E.COINS.PER_DAY, 'dnevna meja');
+  const rows = await a.getQuestProgress([d]);
+  eq(rows.filter(r => r.claimed_at).length, 3);
+});
+test('lokalno: nagrada za nivo', async () => {
+  clearLocal();
+  const [a] = await users('c5');
+  const r = await a.awardXp(275);        // nivo 1 → 3
+  eq(r.level_coins, E.levelReward(2) + E.levelReward(3));
+  eq(r.coins, r.level_coins);
 });
 
 /**

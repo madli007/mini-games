@@ -32,7 +32,25 @@
       "status": { "type": "string", "enum": ["live", "soon"] },
       "scoreOrder": { "type": "string", "enum": ["asc", "desc"], "description": "asc = manjši rezultat je boljši (npr. čas). Privzeto desc." },
       "scoreUnit": { "type": "string", "maxLength": 10, "description": "Enota rezultata za prikaz (npr. ms)." },
-      "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Barva kartice na dashboardu." }
+      "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Barva kartice na dashboardu." },
+      "quests": {
+        "type": "array",
+        "description": "Lastne predloge nalog (glej shared/quests.js). Id naloge postane '<igra>-<id>'.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "tier", "text", "event", "target"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9-]{1,24}$" },
+            "tier": { "type": "string", "enum": ["e", "m", "h", "w"], "description": "e lahka, m srednja, h težka (dnevne), w tedenska" },
+            "text": { "type": "string", "minLength": 5, "maxLength": 70 },
+            "event": { "type": "string", "pattern": "^[a-z0-9:_-]{2,40}$", "description": "play:<igra>, daily:<igra>, score:<igra> ali dogodek iz hub.reportEvent" },
+            "target": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "cmp": { "type": "string", "enum": ["lte", "gte"] },
+            "goal": { "type": "number" }
+          }
+        }
+      }
     }
   }
 }

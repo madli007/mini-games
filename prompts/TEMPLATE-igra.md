@@ -21,6 +21,7 @@
 - **Postavitev zaslona:** `<npr. host na TV-ju kaže mapo, igralci na telefonih imajo kontrole>`
 - **Dosežki (vsaj 3):** `<ključ: naslov — pogoj>`
 - **XP:** `<npr. 25 za odigrano igro, +50 za zmago>`
+- **Naloge (neobvezno):** `<npr. h: »V igri X doseži 1000 točk« → event score:<id>, cmp gte, goal 1000>`
 - **Posebnosti / želje:** `<grafika, zvok, powerupi, nastavitve v lobbyju …>`
 
 ---
@@ -38,12 +39,16 @@ dnevnik, »Ni bilo preverjeno«).
 
 ### Tehnično
 - Igra v `games/<id>/`, **brez build koraka**, ES moduli, relativne poti, besedila v slovenščini.
-- `<body class="mg">`, `<link rel="stylesheet" href="../../shared/ui.css">`, svoj CSS le za posebnosti igre.
+- `<body class="mg">`, `<link rel="stylesheet" href="../../shared/ui.css">` in `../../shared/cosmetics.css`, svoj CSS le za posebnosti igre.
 - `import { hub, ui } from '../../shared/hub.js'`; `await hub.init({ gameId: '<id>' })` (`scoreOrder: 'asc'`,
   če je manj bolje); `ui.header({ title })`.
 - Uporabi `shared/` za profil, XP (`hub.awardXp`), dosežke (`hub.unlock`), lestvice (`hub.submitScore`,
   `ui.leaderboard`), dnevni seed (`hub.dailySeed`, `hub.rng`), sobe (`hub.createRoom`, `hub.joinRoom`,
   `hub.roomFromUrl`, `ui.lobby`), konec igre (`ui.results`), `ui.toast`, `ui.modal`, `ui.countdown`.
+- **Po vsaki odigrani igri pokliči `hub.reportGame({ won, players, score, daily })`** (kovanci, niz dni, dnevne
+  naloge) — v solo in v multiplayerju, enkrat na igralca. Posebne dosežke za naloge sporoči s
+  `hub.reportEvent('<id>:<ime>', vrednost)`; igra lahko v `games.json` doda svoje predloge nalog (`quests`).
+  Igralce prikazuj z `ui.who(p)` / `ui.avatar(p)` (p z `equipped`, npr. iz `room.players`), da se vidi kozmetika.
 - Multiplayer: host vodi igro in preverja pravila; stanje pošilja z `room.send`. Podpri **prenos hosta**
   (`room.on('hostChanged')` → nov host nadaljuje iz zadnjega znanega stanja) in **ponovno povezavo**
   (osvežitev strani → `joinRoom(hub.roomFromUrl())` → zahtevaj sinhronizacijo stanja od hosta).

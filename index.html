@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="shared/ui.css">
+<link rel="stylesheet" href="shared/cosmetics.css">
 <link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="mg">
@@ -24,9 +25,17 @@
         </form>
         <div id="joinErr" class="mg-error" role="alert"></div>
       </div>
-      <div class="mg-card dash-me" id="meCard">
+      <div class="mg-card dash-me mg-banner" id="meCard">
         <div class="mg-empty"><span class="mg-spin"></span></div>
       </div>
+    </section>
+
+    <section class="mg-card dash-section" id="questsCard">
+      <div class="mg-row mg-row--between">
+        <h2 class="mg-title" style="margin:0">Dnevne naloge</h2>
+        <span class="mg-badge mg-badge--cyan" id="questTimer" title="Nove dnevne naloge in nova dnevna ponudba v trgovini ob polnoči (Ljubljana)">…</span>
+      </div>
+      <div id="quests" class="dash-quests"><div class="mg-empty"><span class="mg-spin"></span></div></div>
     </section>
 
     <section class="mg-card dash-section" id="lobbiesCard">

@@ -10,8 +10,11 @@
 
 import * as S from '../storage.js';
 import {
-  uuid, dailySeed, grantableXp, bestPerUser, makeRoomCode, normalizeRoomCode,
+  uuid, dailySeed, grantableXp, bestPerUser, makeRoomCode, normalizeRoomCode, level as levelOf,
 } from '../util.js';
+import { COINS, grantableCoins, levelReward, nextStreak, gameRewards, offerPrice } from '../economy.js';
+import { item as catalogItem, checkUnlock, isFree, dailyOffer, SLOTS } from '../cosmetics.js';
+import { PERIOD_RE, QUEST_ID_RE, dayPeriod, weekPeriod } from '../quests.js';
 
 const LEASE_MS = 6000;           // glavni profil je zaseden, dokler ga zavihek osvežuje
 const PRESENCE_BEAT = 1000;      // presence utrip
@@ -26,6 +29,11 @@ export function codedError(code, message) {
   const e = new Error(message || code);
   e.code = code;
   return e;
+}
+
+/** Profil z vsemi polji (stari lokalni profili nimajo kovancev in opreme). */
+function withDefaults(p) {
+  return { coins: 0, equipped: {}, streak: 0, best_streak: 0, streak_day: null, ...p };
 }
 
 /** Ustvari BroadcastChannel ali null (če ga okolje nima). */
@@ -85,7 +93,8 @@ export class LocalBackend {
   _profiles() { return S.load('db:profiles', {}); }
 
   async getProfile(id = this.userId) {
-    return this._profiles()[id] || null;
+    const p = this._profiles()[id];
+    return p ? withDefaults(p) : null;
   }
 
   async saveProfile({ nickname, avatar }) {
@@ -99,16 +108,16 @@ export class LocalBackend {
       : { id: this.userId, nickname: nick, avatar, xp: 0, created_at: now(), updated_at: now() };
     all[this.userId] = p;
     S.save('db:profiles', all);
-    return p;
+    return withDefaults(p);
   }
 
   async getProfiles(ids) {
     const all = this._profiles();
-    return ids.map(id => all[id]).filter(Boolean);
+    return ids.map(id => all[id]).filter(Boolean).map(withDefaults);
   }
 
   async topXp(limit = 10) {
-    return Object.values(this._profiles()).sort((a, b) => b.xp - a.xp).slice(0, limit);
+    return Object.values(this._profiles()).map(withDefaults).sort((a, b) => b.xp - a.xp).slice(0, limit);
   }
 
   /* --------------------------------- XP ---------------------------------- */
@@ -121,14 +130,206 @@ export class LocalBackend {
     const log = S.load('db:xplog', {});
     const mine = log[this.userId]?.day === day ? log[this.userId] : { day, used: 0 };
     const granted = grantableXp(amount, mine.used);
+    let levelCoins = 0;
     if (granted > 0) {
       mine.used += granted;
       log[this.userId] = mine;
       S.save('db:xplog', log);
+      const before = levelOf(p.xp).level;
       p.xp += granted;
       S.save('db:profiles', all);
+      for (let l = before + 1; l <= levelOf(p.xp).level; l++) levelCoins += this._grant(levelReward(l), 'level', String(l));
     }
-    return { xp: p.xp, granted, reason };
+    return { xp: p.xp, granted, reason, coins: (await this.getProfile()).coins, level_coins: levelCoins };
+  }
+
+  /* ------------------------------ kovanci -------------------------------- */
+  // Enaka pravila kot private.grant_coins / report_game / buy_item … v schema.sql.
+
+  _ledger(uid = this.userId) { return S.load('db:ledger', {})[uid] || []; }
+
+  /** Zasluženo danes (pozitivni vnosi). */
+  _earnedToday(uid = this.userId) {
+    const d = dailySeed();
+    return this._ledger(uid).filter(l => l.day === d && l.amount > 0).reduce((a, l) => a + l.amount, 0);
+  }
+
+  _log(amount, reason, ref = null) {
+    S.update('db:ledger', all => {
+      const list = all[this.userId] || [];
+      list.push({ day: dailySeed(), amount, reason, ref, created_at: now() });
+      all[this.userId] = list.slice(-800);
+      return all;
+    }, {});
+  }
+
+  /** Podeli kovance skozi dnevno mejo. Vrne podeljeno. */
+  _grant(amount, reason, ref = null, perCall = Infinity) {
+    const all = this._profiles();
+    const p = all[this.userId];
+    if (!p) return 0;
+    const g = grantableCoins(amount, this._earnedToday(), perCall);
+    if (g > 0) {
+      this._log(g, reason, ref);
+      p.coins = (p.coins || 0) + g;
+      S.save('db:profiles', all);
+    }
+    return g;
+  }
+
+  async awardCoins(amount, reason = '', ref = null) {
+    if (!(await this.getProfile())) throw codedError('no_profile');
+    const granted = this._grant(amount, 'bonus:' + String(reason || '').slice(0, 30), ref, COINS.PER_CALL);
+    return { coins: (await this.getProfile()).coins, granted };
+  }
+
+  async reportGame({ game, won = false, players = 1 }) {
+    const all = this._profiles();
+    const p = all[this.userId];
+    if (!p) throw codedError('no_profile', 'Najprej izberi vzdevek.');
+    if (!/^[a-z0-9-]{1,32}$/.test(game || '')) throw codedError('invalid');
+    const d = dailySeed();
+    const st = nextStreak(p.streak_day || null, d, p.streak || 0);
+    if (st.first) {
+      p.streak = st.streak;
+      p.best_streak = Math.max(p.best_streak || 0, st.streak);
+      p.streak_day = d;
+      S.save('db:profiles', all);
+    }
+    const today = this._ledger().filter(l => l.day === d);
+    const rw = gameRewards({
+      won, players, firstToday: st.first, streak: st.streak,
+      gamesToday: today.filter(l => l.reason === 'game').length, winsToday: today.filter(l => l.reason === 'win').length,
+    });
+    const gSt = rw.streak ? this._grant(rw.streak, 'streak', String(st.streak)) : 0;
+    const gGame = rw.game ? this._grant(rw.game, 'game', game) : 0;
+    const gWin = rw.win ? this._grant(rw.win, 'win', game) : 0;
+    return {
+      coins: (await this.getProfile()).coins, granted: gSt + gGame + gWin, game: gGame, win: gWin,
+      streak: st.streak, streak_bonus: gSt, first: st.first,
+    };
+  }
+
+  /* ------------------------- trgovina in oprema -------------------------- */
+
+  _inv(uid = this.userId) { return S.load('db:inventory', {})[uid] || {}; }
+
+  async getInventory(userId = this.userId) {
+    return Object.entries(this._inv(userId)).map(([item_id, v]) => ({ user_id: userId, item_id, ...v }));
+  }
+
+  /** Stanje za preverjanje pogojev (nivo, dosežki, niz). */
+  async unlockState(uid = this.userId) {
+    const p = await this.getProfile(uid);
+    const ach = (await this.getAchievements({ userId: uid })).map(a => a.game + ':' + a.key);
+    return { level: levelOf(p?.xp || 0).level, achievements: ach, streak: Math.max(p?.streak || 0, p?.best_streak || 0) };
+  }
+
+  _addInv(itemId, source) {
+    S.update('db:inventory', all => {
+      all[this.userId] = { ...(all[this.userId] || {}), [itemId]: { acquired_at: now(), source } };
+      return all;
+    }, {});
+  }
+
+  async buyItem(itemId) {
+    const all = this._profiles();
+    const p = all[this.userId];
+    if (!p) throw codedError('no_profile');
+    const it = catalogItem(itemId);
+    if (!it || it.active === false) throw codedError('unavailable', 'Predmet ni na voljo.');
+    if (this._inv()[it.id]) throw codedError('owned', 'Ta predmet že imaš.');
+    if (!checkUnlock(it.unlock, await this.unlockState()).ok) throw codedError('locked', 'Predmet je zaklenjen.');
+    const price = dailyOffer(dailySeed()).includes(it.id) ? offerPrice(it.price) : it.price;
+    if ((p.coins || 0) < price) throw codedError('not_enough_coins', 'Premalo kovancev.');
+    p.coins = (p.coins || 0) - price;
+    S.save('db:profiles', all);
+    this._addInv(it.id, price > 0 ? 'buy' : 'unlock');
+    if (price > 0) this._log(-price, 'buy', it.id);
+    return { coins: p.coins, price, item: it.id };
+  }
+
+  async unlockItem(itemId) {
+    if (!(await this.getProfile())) throw codedError('no_profile');
+    const it = catalogItem(itemId);
+    if (!it || it.active === false) throw codedError('unavailable', 'Predmet ni na voljo.');
+    if (it.price > 0) throw codedError('not_free', 'Predmet je treba kupiti.');
+    if (this._inv()[it.id]) throw codedError('owned', 'Ta predmet že imaš.');
+    if (!checkUnlock(it.unlock, await this.unlockState()).ok) throw codedError('locked', 'Predmet je zaklenjen.');
+    this._addInv(it.id, 'unlock');
+    return { item: it.id };
+  }
+
+  async equip(slot, itemId = null) {
+    if (!SLOTS.includes(slot)) throw codedError('invalid', 'Neznan slot.');
+    const all = this._profiles();
+    const p = all[this.userId];
+    if (!p) throw codedError('no_profile');
+    const eq = { ...(p.equipped || {}) };
+    if (itemId == null) delete eq[slot];
+    else {
+      const it = catalogItem(itemId);
+      if (!it || it.kind !== slot) throw codedError('invalid', 'Napačen predmet.');
+      if (!this._inv()[it.id] && !(isFree(it) && it.active !== false)) throw codedError('not_owned', 'Tega predmeta nimaš.');
+      eq[slot] = it.id;
+    }
+    p.equipped = eq;
+    S.save('db:profiles', all);
+    return eq;
+  }
+
+  /* ------------------------------- naloge -------------------------------- */
+
+  _quests(uid = this.userId) { return S.load('db:quests', {})[uid] || {}; }
+
+  async getQuestProgress(periods) {
+    const mine = this._quests();
+    return Object.entries(mine)
+      .map(([k, v]) => { const [period, quest_id] = k.split('|'); return { period, quest_id, progress: v.progress, data: v.data || {}, claimed_at: v.claimed_at || null }; })
+      .filter(r => periods.includes(r.period));
+  }
+
+  async saveQuestProgress({ period, quest_id, progress, data = {} }) {
+    if (!PERIOD_RE.test(period) || !QUEST_ID_RE.test(quest_id)) throw codedError('invalid');
+    let out = 0;
+    S.update('db:quests', all => {
+      const mine = all[this.userId] || {};
+      const cut = Date.now() - 21 * 864e5;
+      for (const [kk, v] of Object.entries(mine)) if (v.updated && v.updated < cut) delete mine[kk];
+      const k = period + '|' + quest_id;
+      const cur = mine[k] || { progress: 0, data: {}, claimed_at: null };
+      out = Math.max(cur.progress || 0, Math.max(0, Math.min(1000, progress | 0)));
+      mine[k] = { ...cur, progress: out, data, updated: Date.now() };
+      all[this.userId] = mine;
+      return all;
+    }, {});
+    return out;
+  }
+
+  async claimQuest(period, questId) {
+    if (!(await this.getProfile())) throw codedError('no_profile');
+    if (!PERIOD_RE.test(period || '') || !QUEST_ID_RE.test(questId || '')) throw codedError('invalid');
+    const slot = questId.split('.')[0];
+    const d = dailySeed();
+    if (period === dayPeriod(d)) { if (!['e', 'm', 'h'].includes(slot)) throw codedError('invalid'); }
+    else if (period === weekPeriod(d)) { if (!['w1', 'w2'].includes(slot)) throw codedError('invalid'); }
+    else throw codedError('expired', 'Naloga je potekla.');
+    const claimedSlots = Object.entries(this._quests())
+      .filter(([k, v]) => k.startsWith(period + '|') && v.claimed_at)
+      .map(([k]) => k.split('|')[1].split('.')[0]);
+    if (claimedSlots.includes(slot)) throw codedError('claimed', 'Nagrada je že prevzeta.');
+    S.update('db:quests', all => {
+      const m = all[this.userId] || {};
+      const k = period + '|' + questId;
+      m[k] = { progress: 0, data: {}, ...(m[k] || {}), claimed_at: now(), updated: Date.now() };
+      all[this.userId] = m;
+      return all;
+    }, {});
+    const reward = COINS.QUEST[slot];
+    const g = this._grant(reward, 'quest', period + '/' + slot);
+    let bonus = 0;
+    if (['e', 'm', 'h'].includes(slot) && claimedSlots.length + 1 === 3) bonus = this._grant(COINS.ALL_DAILY_BONUS, 'quest_bonus', period);
+    return { coins: (await this.getProfile()).coins, granted: g + bonus, reward, bonus };
   }
 
   /* ------------------------------ lestvice ------------------------------- */
@@ -146,6 +347,7 @@ export class LocalBackend {
     return best.map(r => ({
       user_id: r.user_id, score: r.score, created_at: r.created_at,
       nickname: all[r.user_id]?.nickname || '???', avatar: all[r.user_id]?.avatar || { emoji: '❔', color: '#888' },
+      equipped: all[r.user_id]?.equipped || {},
     }));
   }
 
@@ -162,6 +364,7 @@ export class LocalBackend {
     if (list.some(a => a.user_id === this.userId && a.game === game && a.key === key)) return false;
     list.push({ user_id: this.userId, game, key, title, icon, unlocked_at: now() });
     S.save('db:ach', list);
+    this._grant(COINS.ACHIEVEMENT, 'ach', game + ':' + key);
     return true;
   }
 
@@ -296,7 +499,7 @@ export class LocalBackend {
       const host = await this.getProfile(r.host_id);
       if (!host) continue;
       out.push({
-        code: r.code, game: r.game, host_id: r.host_id, host_nickname: host.nickname, host_avatar: host.avatar,
+        code: r.code, game: r.game, host_id: r.host_id, host_nickname: host.nickname, host_avatar: host.avatar, host_equipped: host.equipped || {},
         players: this._players(r.code).length, max_players: r.max_players, created_at: r.created_at, updated_at: r.updated_at,
       });
     }

@@ -2,8 +2,8 @@
 
 Hub za zbirko spletnih iger, ki jih igramo s prijatelji (do 10 ljudi): **dashboard** s seznamom iger,
 profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shared/`) za vse igre
-(prijava, profil, XP, lestvice, dosežki, lobby z room kodo, realtime, dnevni seed, skupni UI) in
-**register iger** (`games.json`).
+(prijava, profil, XP, lestvice, dosežki, lobby z room kodo, realtime, dnevni seed, skupni UI),
+**kovanci, dnevne naloge in trgovina s kozmetiko** (`shop.html`) ter **register iger** (`games.json`).
 
 - Objavljeno: **https://madli007.github.io/mini-games/**
 - Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija) in 14 napovedanih.
@@ -69,7 +69,11 @@ GitHub Pages je statičen, zato je publishable/anon ključ javen. Vsa zaščita 
   500 XP na klic in 5000 XP na dan (po Europe/Ljubljana);
 - sobe ustvarjaš in se jim pridružiš prek RPC (`create_room`, `join_room`: polna soba, že začeta igra);
   sobo ureja samo host; `room_state` in `moves` pišejo le člani sobe;
-- `security definer` funkcije so v neizpostavljeni shemi `private`; Supabase advisors (security) so čisti.
+- **kovanci, nakupi, oprema in naloge** gredo samo prek RPC z omejitvami (dnevna meja 250, en prevzem na
+  nalogo, cene in pogoji na strežniku);
+- `security definer` funkcije so v neizpostavljeni shemi `private`. Supabase advisors: performance le
+  »unused index« (INFO), security le »Anonymous Access Policies« (namerno — vsi igralci so anonimni
+  uporabniki) in »Leaked Password Protection« (gesel ne uporabljamo).
 
 **Lestvice so »na časten način«.** Brez lastnega strežnika, ki bi sam izračunal rezultat, ni mogoče
 preprečiti, da si kdo iz konzole brskalnika vpiše izmišljen rezultat. Za igro med prijatelji je to
@@ -88,17 +92,20 @@ Repo: `madli007/mini-games`, veja `main`.
 ## Struktura
 
 ```
-index.html  dashboard.js  dashboard.css   dashboard
+index.html  dashboard.js  dashboard.css   dashboard (+ dnevne naloge)
+shop.html  shop.js  shop.css              trgovina in garderoba
 games.json  games.schema.json             register iger + JSON Schema
 shared/                                   skupni API (dokumentacija: shared/README.md)
   hub.js room.js ui.js ui.css util.js storage.js config.js
+  economy.js quests.js cosmetics.js cosmetics.css   kovanci, naloge, katalog kozmetike
   adapters/local.js adapters/supabase.js adapters/types.js
 games/reakcija/                           demo igra (index.html, game.js, logic.js, game.css)
 games/pinball/                            kopija ALU PINBALL 2.0 (izvirnik v repoju pinball)
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/                           SQL posameznih iger (če ga potrebujejo)
-tests/  tests.html                        testi brez build koraka
-prompts/01-hub.md                         prompt, s katerim je nastal hub
+tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
+tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
+prompts/01-hub.md, 02-trgovina.md         prompta, s katerima sta nastala hub in trgovina
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 CLAUDE.md                                 pravila repoja za AI agente
 PROGRESS.md                               dnevnik dela
@@ -117,7 +124,7 @@ Najmanjša igra:
 ```html
 <!doctype html><html lang="sl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="../../shared/ui.css"></head>
+<link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="../../shared/cosmetics.css"></head>
 <body class="mg"><main class="mg-container"><button class="mg-btn mg-btn--primary" id="b">Klikni</button></main>
 <script type="module">
   import { hub, ui } from '../../shared/hub.js';
@@ -125,10 +132,32 @@ Najmanjša igra:
   ui.header({ title: 'Moja igra' });
   let n = 0;
   document.getElementById('b').onclick = async () => {
-    if (++n === 10) { await hub.submitScore(n); await hub.awardXp(20, 'klik'); ui.toast('Bravo!'); }
+    if (++n === 10) { await hub.submitScore(n); await hub.awardXp(20, 'klik'); await hub.reportGame({ score: n }); ui.toast('Bravo!'); }
   };
 </script></body></html>
 ```
+
+## Kovanci, naloge in trgovina
+
+- **Kovanci (🪙)** se služijo z igranjem (vsaka igra kliče `hub.reportGame`): odigrana igra 4 (20 iger na dan),
+  zmaga v multiplayerju +8 (10 na dan), dnevne naloge 15/25/40 + 25 za vse tri, tedenski nalogi 100/150,
+  nov nivo 5 × nivo (največ 100), prvi odklep dosežka 15, niz zaporednih dni 5 × dan (največ 35).
+  **Dnevna meja: 250 kovancev** (vsi viri skupaj). Uglasitev in simulacija 30 dni: `PROGRESS.md`, `tests/economy-sim.js`.
+- **Naloge**: 3 dnevne (lahka, srednja, težka) in 2 tedenski, za vse igralce isti dan enake (generator
+  `shared/quests.js` iz dnevnega seeda in iger `live`). Napredek beleži klient (»na časten način«),
+  nagrado prevzameš na dashboardu (RPC `claim_quest`, enkrat na nalogo).
+- **Trgovina** (`shop.html`): 94 kozmetičnih predmetov (okvirji, emoji, ozadja, barve vzdevka, naslovi, značke,
+  učinki ob zmagi, pasice), vse iz CSS/emoji. Redkosti: navadno (≤150), redko (≤450), epsko (600–1000),
+  legendarno (3500–4500). Nekateri se odklenejo z nivojem, dosežkom ali nizom dni. Vsak dan 4 predmeti s 25 %
+  popustom. Zavihek **Moje** je garderoba.
+- Opremljena kozmetika se vidi povsod, kjer hub nariše igralca (`ui.who`, `ui.avatar`): glava, lobby,
+  lestvice, stopničke; zmagovalčev učinek se pokaže na končnem zaslonu.
+- **Pravi denar ni del projekta.** »Plačljivo« pomeni plačljivo s kovanci. Plačila (Stripe ipd.) bi zahtevala
+  lasten strežnik, obračun davkov in pogoje uporabe, kar za igro med prijatelji ni smiselno.
+- Cene in pogoje pozna strežnik (`public.shop_items`); kovancev in opreme ni mogoče pisati neposredno
+  (samo RPC `report_game`, `award_coins`, `buy_item`, `unlock_item`, `equip`, `claim_quest`). Katalog v
+  `shared/cosmetics.js` se mora ujemati s tabelo: po spremembi `node tools/shop-sql.mjs` → blok `SHOP_ITEMS`
+  v `supabase/schema.sql` (test »katalog = SQL« to preveri) → poženi shemo.
 
 ## Profil
 

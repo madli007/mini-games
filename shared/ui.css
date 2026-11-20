@@ -282,6 +282,26 @@ h3.mg-title { font-size: 11px; color: var(--mg-dim); }
   max-width: 220px;
 }
 .mg-profile-chip:hover { border-color: var(--mg-cyan); }
+.mg-coin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 2px solid #6b5410;
+  background: linear-gradient(#2a2208, #1a1505);
+  color: var(--mg-yellow);
+  font: 700 16px var(--mg-font);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+}
+body.mg a.mg-coin-chip { color: var(--mg-yellow); }
+.mg-coin-chip:hover { border-color: var(--mg-yellow); }
+.mg-coin-chip > span { font-family: var(--mg-emoji); }
+.mg-bump { animation: mg-bump .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes mg-bump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .mg-profile-chip__info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mg-profile-chip__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; }
 .mg-profile-chip__lvl { font-family: var(--mg-font-title); font-size: 8px; color: var(--mg-yellow); line-height: 1; }
@@ -480,4 +500,5 @@ body.mg a.mg-btn { color: var(--f); }
   .mg-profile-chip .mg-avatar { width: 30px; height: 30px; font-size: 17px; }
   .mg-profile-chip .mg-xpbar { width: 48px; }
   .mg-header__back { padding: 6px 10px; }
+  .mg-coin-chip { padding: 5px 7px; font-size: 14px; gap: 3px; }
 }

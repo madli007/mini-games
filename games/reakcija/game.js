@@ -176,6 +176,8 @@ async function soloFinish(results, seed) {
   await hub.submitScore(avg, { seed, meta: { times, early } });
   const xp = soloXp(avg);
   const { granted } = await hub.awardXp(xp, 'reakcija: dnevni izziv');
+  // kovanci in naloge (ne čakamo — rezultat se pokaže takoj)
+  hub.reportGame({ players: 1, score: avg, daily: true }).then(() => hub.reportEvent('reakcija:avg', avg));
   if (best != null && best < 200) await unlock('pod-200');
   if (!early) await unlock('mirna-roka');
   if (avg < 250) await unlock('bliskovit');
@@ -307,7 +309,7 @@ function publicState() {
 
 async function startMp(settings) {
   mp = freshMp(settings.rounds || 5);
-  for (const p of room.players) mp.names[p.id] = { nickname: p.nickname, avatar: p.avatar };
+  for (const p of room.players) mp.names[p.id] = { nickname: p.nickname, avatar: p.avatar, equipped: p.equipped || {} };
   show('play');
   $('#mpScores').classList.remove('mg-hidden');
   setZone('idle', 'Pripravi se', `${mp.rounds} krogov`);
@@ -346,7 +348,7 @@ async function hostLoop(from) {
         totals[id] = (totals[id] || 0) + t.ms;
         counts[id] = (counts[id] || 0) + 1;
         const p = room.players.find(x => x.id === id);
-        if (p) names[id] = { nickname: p.nickname, avatar: p.avatar };
+        if (p) names[id] = { nickname: p.nickname, avatar: p.avatar, equipped: p.equipped || {} };
       }
       if (winnerId) wins[winnerId] = (wins[winnerId] || 0) + 1;
       room.send('roundResult', { r, times, winnerId, totals, counts, wins, names, rounds: mp.rounds });
@@ -427,13 +429,17 @@ async function showFinal({ standings: st, names, players }) {
   let xp = 0;
   if (meIn) {
     ({ granted: xp } = await hub.awardXp(mpXp(iWon, players), 'reakcija: dvoboj'));
+    const mine = st.find(s => s.id === hub.userId);
+    hub.reportGame({ won: iWon, players, score: mine?.avg ?? null })
+      .then(() => hub.reportEvent('reakcija:duel'))
+      .then(() => mine && hub.reportEvent('reakcija:avg', mine.avg));
     if (iWon) await unlock('zmaga-mp');
     if (players >= 4) await unlock('druzabnez');
     if (mp.myTimes.some(t => t && !t.early && !t.slow && t.ms < 200)) await unlock('pod-200');
   }
   setZone('result', iWon ? 'ZMAGA!' : 'Konec', iWon ? 'Najhitrejši v sobi' : `Zmagal je ${names[winner]?.nickname || '???'}`);
   const list = st.map(s => ({
-    id: s.id, nickname: names[s.id]?.nickname || '???', avatar: names[s.id]?.avatar,
+    id: s.id, nickname: names[s.id]?.nickname || '???', avatar: names[s.id]?.avatar, equipped: names[s.id]?.equipped || {},
     scoreText: `${s.avg} ms · ${s.wins}👑`, xp: s.id === hub.userId ? xp : 0,
   }));
   const v = await ui.results(list, { title: 'Rezultati dvoboja', again: room?.isHost ? 'Nova runda' : 'Nazaj v lobby' });

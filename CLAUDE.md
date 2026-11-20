@@ -5,13 +5,15 @@ Zbirka spletnih iger za igranje s prijatelji (do 10 ljudi). Statična stran na G
 
 ## Struktura
 ```
-index.html, dashboard.js, dashboard.css   dashboard (seznam iger, profil, lobbyji, lestvica, dosežki)
+index.html, dashboard.js, dashboard.css   dashboard (seznam iger, profil, naloge, lobbyji, lestvica, dosežki)
+shop.html, shop.js, shop.css             trgovina s kozmetiko in garderoba
 games.json, games.schema.json             register iger (+ JSON Schema)
 shared/                                   skupni API za igre — dokumentacija: shared/README.md
 games/<id>/                               ena igra = ena mapa (index.html + svoji moduli)
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/<id>.sql                   lastne tabele posamezne igre (če jih potrebuje)
-tests/, tests.html                        testi brez build koraka
+tests/, tests.html                        testi brez build koraka (tudi simulacija ekonomije)
+tools/shop-sql.mjs                        SQL blok kataloga za schema.sql
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 PROGRESS.md                               dnevnik dela
 ```
@@ -33,6 +35,10 @@ PROGRESS.md                               dnevnik dela
   in mora preživeti **prenos hosta** (`hostChanged`) — stanje redno pošiljaj vsem.
 - Potezne/asinhrone igre: `room.setState(..., { expectedVersion })` in `room.pushMove`.
 - Lestvice so »na časten način« (brez strežnika ni anti-cheata). XP samo prek `hub.awardXp` (RPC z omejitvami).
+- **Vsaka igra po vsaki odigrani igri kliče `hub.reportGame({ won, players, score, daily })`** (kovanci, niz dni,
+  dnevne/tedenske naloge). Kovanci, nakupi in oprema samo prek RPC (`report_game`, `buy_item`, `equip`, `claim_quest`);
+  katalog kozmetike `shared/cosmetics.js` se mora ujemati s `shop_items` v `schema.sql` (`node tools/shop-sql.mjs`).
+- Igralce prikazuj z `ui.who(p)` / `ui.avatar(p)` (z `equipped`), ne z lastnim HTML-jem — tako se kozmetika vidi povsod.
 
 ## Supabase in varnost
 - Publishable/anon ključ je javen (`shared/config.js`). **Service role ključa nikoli ne daj v repo.**
@@ -47,7 +53,7 @@ PROGRESS.md                               dnevnik dela
 ## Nova igra — kontrolni seznam
 1. Mapa `games/<id>/` z `index.html` (`<body class="mg">`, `../../shared/ui.css`) in moduli.
 2. `await hub.init({ gameId: '<id>' })`, `ui.header({ title })`.
-3. Čisto logiko daj v ločen modul (npr. `logic.js`) in jo dodaj v `tests/tests.js`.
+3. Čisto logiko daj v ločen modul (npr. `logic.js`) in jo dodaj v `tests/tests.js`. Po vsaki igri `hub.reportGame(...)`.
 4. V `games.json` spremeni vnos iz `"status": "soon"` v `"live"` (ali dodaj nov vnos po `games.schema.json`).
 5. Preverjanja (spodaj), posodobi `PROGRESS.md`, commit.
 

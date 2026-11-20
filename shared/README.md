@@ -26,6 +26,9 @@ Igre **ne vedo**, ali teče Supabase ali offline način — API je isti.
 | `room.js` | razred `Room` (lobby, broadcast, presence, prenos hosta, stanje, poteze) |
 | `ui.js`, `ui.css` | skupni gradniki in izgled |
 | `util.js` | čista logika (PRNG, dnevni seed, kode sob, nivoji, validator sheme) |
+| `economy.js` | kovanci: viri, omejitve, niz dni, popust (čista logika) |
+| `quests.js` | generator dnevnih/tedenskih nalog in napredek (čista logika) |
+| `cosmetics.js`, `cosmetics.css` | katalog kozmetike (94 predmetov), dnevna ponudba, pogoji; izgled |
 | `storage.js` | varen `localStorage` (vse v `try/catch`) |
 | `config.js` | Supabase URL in javni ključ (prazno = offline) |
 | `adapters/local.js` | offline: `localStorage` + `BroadcastChannel` |
@@ -45,7 +48,8 @@ Večkratni klici vrnejo isto obljubo. Po `init`:
 
 | Lastnost | Pomen |
 |---|---|
-| `hub.profile` | `{ id, nickname, avatar: { emoji, color }, xp }` ali `null` |
+| `hub.profile` | `{ id, nickname, avatar: { emoji, color }, xp, coins, equipped, streak, best_streak, streak_day }` ali `null` |
+| `hub.coins` | stanje kovancev |
 | `hub.userId` | id prijavljenega |
 | `hub.mode` | `'supabase'` ali `'local'` |
 | `hub.offline` | `true`, če teče offline način |
@@ -87,6 +91,48 @@ const all = await hub.getAchievements({ game: null });                // vseh ig
 ```
 `key`: male črke, številke, `-`, `_` (do 40 znakov).
 
+Prvi odklep dosežka prinese tudi **15 kovancev** in šteje za naloge (»Odkleni nov dosežek«).
+
+### Kovanci, naloge, trgovina, kozmetika
+**Vsaka igra po vsaki odigrani igri pokliče `hub.reportGame`** (solo in multiplayer, enkrat na igralca):
+```js
+await hub.reportGame({ won: true, players: 4, score: 231, daily: true });
+//   won: zmaga (šteje le pri players ≥ 2) · players: število igralcev · score: rezultat (za naloge)
+//   daily: odigran dnevni izziv · vrne { coins, granted, streak, streak_bonus } ali null
+await hub.reportEvent('reakcija:avg', 231);   // poseben dogodek za naloge (ime 'igra:ime')
+await hub.awardCoins(20, 'bonus');            // bonus iz igre: ≤100 na klic, skozi dnevno mejo
+hub.coins                                     // trenutno stanje (tudi hub.profile.coins)
+```
+Kovanci: igra 4 (20/dan), zmaga v MP +8 (10/dan), naloge e15 · m25 · h40 · tedenski 100/150, vse 3 dnevne +25,
+nov nivo 5 × nivo (≤100), dosežek 15, niz dni 5 × dan (≤35, ob prvi igri dneva). **Dnevna meja 250** (strežnik).
+Številke: `shared/economy.js` (`COINS`) — iste so v `schema.sql` in `adapters/local.js`.
+
+```js
+const quests = await hub.getQuests();
+// [{ id: 'h.win-1', slot: 'e'|'m'|'h'|'w1'|'w2', text, target, progress, done, claimed, reward, period }]
+await hub.claimQuest('h.win-1');               // napake: claimed, not_done, expired, invalid
+hub.onQuests(() => refresh());                 // napredek se je spremenil
+
+const shop = await hub.getShop();
+// { items: [{ id, kind, name, desc, rarity, price, priceToday, offer, owned, locked, reason, equipped, free }],
+//   offer: [4 id-ji dnevne ponudbe], coins, equipped, state: { level, achievements, streak } }
+await hub.buy('frame-neon-pink');              // napake: not_enough_coins, locked, owned, unavailable
+await hub.equip('frame', 'frame-neon-pink');   // null sname; napake: not_owned, invalid
+await hub.getInventory();                      // [{ item_id, acquired_at, source }]
+```
+- **Naloge** (`quests.js`): 3 dnevne (lahka/srednja/težka) + 2 tedenski (ISO teden po Ljubljani), za vse enake.
+  Igra lahko v `games.json` doda svoje predloge: `"quests": [{ "id": "avg-260", "tier": "h", "text": "…",
+  "event": "reakcija:avg", "target": 1, "cmp": "lte", "goal": 259 }]` (`tier` e/m/h/w; `event` je
+  `play:<igra>`, `daily:<igra>`, `score:<igra>` ali ime iz `hub.reportEvent`; `cmp`/`goal` = prag vrednosti).
+  Splošni dogodki iz `reportGame`: `play`, `play:<igra>`, `mp` (≥2), `win`, `party` (≥4), `daily`, `distinct`, `ach`.
+- **Sloti opreme** (`profile.equipped`): `emoji`, `bg`, `frame`, `name`, `title`, `badge`, `win`, `banner`
+  (id-ji iz `cosmetics.js`). `equipped` je tudi v `room.players[i]`, v vrsticah `getLeaderboard`, `topXp`
+  in `listLobbies` (`host_equipped`).
+- **Prikaz:** `ui.who(p)` in `ui.avatar(p, size)` sama narišeta okvir, ozadje, premium emoji, barvo vzdevka,
+  značko in naslov — **podaj celega igralca** (`{ nickname, avatar, equipped }`), ne le `p.avatar`.
+  `ui.results` pokaže zmagovalčev učinek (`players[0].equipped.win`); `ui.winFx('confetti')` ga sproži ročno.
+  Animacije spoštujejo `prefers-reduced-motion`. CSS: `cosmetics.css` (naloži za `ui.css`; hub ga doda sam).
+
 ### Dnevni seed in naključnost
 ```js
 const seed = hub.dailySeed();          // '2026-11-20' po Europe/Ljubljana — isti za vse cel dan
@@ -117,7 +163,7 @@ vrne v isto sobo** z istim profilom (tudi med igro: pokliči `joinRoom(hub.roomF
 | Lastnost | Pomen |
 |---|---|
 | `room.code` | 4-znakovna koda (brez O/0, I/1) |
-| `room.players` | prisotni: `[{ id, nickname, avatar, isHost, ready, joinedAt }]`, po času pridružitve |
+| `room.players` | prisotni: `[{ id, nickname, avatar, equipped, isHost, ready, joinedAt }]`, po času pridružitve |
 | `room.me`, `room.isHost`, `room.hostId` | jaz / ali sem host / id hosta |
 | `room.status` | `'lobby'` · `'playing'` · `'finished'` |
 | `room.settings`, `room.maxPlayers` | nastavitve iz `createRoom` / `start` |
@@ -210,8 +256,9 @@ ui.lobby(el, room, {
 const choice = await ui.results(sortedPlayers.map(p => ({ ...p, scoreText: p.score + ' točk', xp: 50 })),
   { again: 'Še enkrat' });                            // 'again' | 'hub' | null
 ui.profileModal();
-ui.avatar(p.avatar, 'sm' | '' | 'lg');                // HTML niz
-ui.who(p);                                            // HTML: avatar + vzdevek
+ui.avatar(p, 'sm' | '' | 'lg' | 'xl');                // HTML: avatar z okvirjem, ozadjem, emojijem (p = igralec ali {emoji,color})
+ui.who(p);                                            // HTML: avatar + vzdevek + značka + naslov (z opremo)
+ui.name(p); ui.coins(1240);                           // vzdevek z barvo · '1.240'
 ui.esc(text);                                         // escape za HTML
 ```
 
@@ -237,5 +284,5 @@ ui.esc(text);                                         // escape za HTML
   multiplayer preizkusiš sam v dveh ali treh zavihkih;
 - `?igralec=2` (v obeh načinih) vsili ločeno identiteto — uporabno za testiranje s Supabase.
 
-Omejitve XP (500/klic, 5000/dan) in pravila sob (polna, začeta, prevzem hosta) so v obeh
-adapterjih enaka.
+Omejitve XP (500/klic, 5000/dan), kovancev (dnevna meja 250, števci iger in zmag, en prevzem na nalogo),
+pravila nakupa/opreme in pravila sob (polna, začeta, prevzem hosta) so v obeh adapterjih enaka (testi).

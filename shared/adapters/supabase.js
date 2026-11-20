@@ -6,10 +6,11 @@
    ===================================================================== */
 
 import { codedError } from './local.js';
-import { normalizeRoomCode } from '../util.js';
+import { normalizeRoomCode, level as levelOf } from '../util.js';
 
 const KNOWN = ['room_not_found', 'room_started', 'room_full', 'version_conflict', 'not_next_host',
-  'no_profile', 'not_authenticated', 'too_many_rooms', 'move_conflict'];
+  'no_profile', 'not_authenticated', 'too_many_rooms', 'move_conflict',
+  'not_enough_coins', 'not_owned', 'not_free', 'locked', 'owned', 'unavailable', 'claimed', 'expired'];
 const MESSAGES = {
   room_not_found: 'Soba s to kodo ne obstaja.',
   room_started: 'Igra v tej sobi se je že začela.',
@@ -18,6 +19,14 @@ const MESSAGES = {
   nickname_taken: 'Ta vzdevek je že zaseden.',
   no_profile: 'Najprej izberi vzdevek.',
   too_many_rooms: 'Ustvaril si preveč sob. Počakaj malo.',
+  not_enough_coins: 'Premalo kovancev.',
+  locked: 'Predmet je zaklenjen.',
+  owned: 'Ta predmet že imaš.',
+  unavailable: 'Predmet ni na voljo.',
+  not_free: 'Predmet je treba kupiti.',
+  not_owned: 'Tega predmeta nimaš.',
+  claimed: 'Nagrada je že prevzeta.',
+  expired: 'Naloga je potekla.',
 };
 
 /** Pretvori napako Supabase v codedError z znano oznako. */
@@ -118,13 +127,63 @@ export class SupabaseBackend {
   }
 
   async topXp(limit = 10) {
-    return check(await this.client.from('profiles').select('id,nickname,avatar,xp').order('xp', { ascending: false }).limit(limit));
+    return check(await this.client.from('profiles').select('id,nickname,avatar,xp,equipped').order('xp', { ascending: false }).limit(limit));
   }
 
   /* --------------------------------- XP ---------------------------------- */
 
   async awardXp(amount, reason) {
     return check(await this.client.rpc('award_xp', { amount: Math.floor(amount), reason: reason || null }));
+  }
+
+  /* ------------------------------ kovanci -------------------------------- */
+
+  async awardCoins(amount, reason = '', ref = null) {
+    return check(await this.client.rpc('award_coins', { amount: Math.floor(amount), reason: reason || null, ref }));
+  }
+
+  async reportGame({ game, won = false, players = 1 }) {
+    return check(await this.client.rpc('report_game', { p_game: game, p_won: !!won, p_players: Math.max(1, players | 0) }));
+  }
+
+  /* ------------------------- trgovina in oprema -------------------------- */
+
+  async getInventory(userId = this.userId) {
+    return check(await this.client.from('inventory').select('user_id,item_id,acquired_at,source').eq('user_id', userId));
+  }
+
+  /** Stanje za preverjanje pogojev (nivo, dosežki, niz) — prikaz v trgovini; strežnik preveri sam. */
+  async unlockState(uid = this.userId) {
+    const p = await this.getProfile(uid);
+    const ach = check(await this.client.from('achievements').select('game,key').eq('user_id', uid));
+    return { level: levelOf(p?.xp || 0).level, achievements: ach.map(a => a.game + ':' + a.key), streak: Math.max(p?.streak || 0, p?.best_streak || 0) };
+  }
+
+  async buyItem(itemId) {
+    return check(await this.client.rpc('buy_item', { p_item: itemId }));
+  }
+
+  async unlockItem(itemId) {
+    return check(await this.client.rpc('unlock_item', { p_item: itemId }));
+  }
+
+  async equip(slot, itemId = null) {
+    return check(await this.client.rpc('equip', { p_slot: slot, p_item: itemId }));
+  }
+
+  /* ------------------------------- naloge -------------------------------- */
+
+  async getQuestProgress(periods) {
+    return check(await this.client.from('quest_progress').select('period,quest_id,progress,data,claimed_at')
+      .eq('user_id', this.userId).in('period', periods));
+  }
+
+  async saveQuestProgress({ period, quest_id, progress, data = {} }) {
+    return check(await this.client.rpc('set_quest_progress', { p_period: period, p_quest_id: quest_id, p_progress: progress, p_data: data }));
+  }
+
+  async claimQuest(period, questId) {
+    return check(await this.client.rpc('claim_quest', { p_period: period, p_quest_id: questId }));
   }
 
   /* ------------------------------ lestvice ------------------------------- */

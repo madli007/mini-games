@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="MINI GAMES — trgovina s kozmetiko: okvirji, emoji, naslovi, učinki.">
+<title>Trgovina · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23090a1a'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%23ffd23f'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23c99a10'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="shared/ui.css">
+<link rel="stylesheet" href="shared/cosmetics.css">
+<link rel="stylesheet" href="shop.css">
+</head>
+<body class="mg">
+  <main class="mg-container shop">
+    <section class="mg-card shop-hero" id="hero">
+      <div class="mg-empty"><span class="mg-spin"></span></div>
+    </section>
+
+    <section class="mg-card shop-offer" id="offerCard">
+      <div class="mg-row mg-row--between">
+        <h2 class="mg-title" style="margin:0">Dnevna ponudba <span class="mg-badge mg-badge--pink">−25 %</span></h2>
+        <span class="mg-badge mg-badge--cyan" id="offerTimer">…</span>
+      </div>
+      <div class="shop-grid shop-grid--offer" id="offer"></div>
+    </section>
+
+    <section class="shop-catalog">
+      <div class="mg-tabs shop-tabs" role="tablist" id="tabs"></div>
+      <div class="shop-filters" id="filters" role="group" aria-label="Redkost"></div>
+      <div id="panel"></div>
+    </section>
+  </main>
+  <noscript><p style="color:#fff;text-align:center">Za trgovino potrebuješ JavaScript.</p></noscript>
+  <script type="module" src="shop.js"></script>
+</body>
+</html>

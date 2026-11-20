@@ -1,6 +1,6 @@
 # PROGRESS — MINI GAMES hub
 
-Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026).
+Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026). Nadaljevanje: kovanci in trgovina (spodaj).
 
 ## Načrt
 
@@ -59,8 +59,112 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026).
 - **Realne naprave** (iOS Safari, Android Chrome) — preizkušeno le v emulaciji 375×812.
 - **GitHub Pages** — repo ni bil pushan (po navodilih).
 
+---
+
+# Kovanci, naloge, trgovina in kozmetika
+
+Prompt: `prompts/02-trgovina.md`. Stanje: **končano** (20. 11. 2026).
+
+## Načrt
+
+- [x] `shared/economy.js` (viri kovancev, omejitve, niz dni, popust), `shared/quests.js` (generator + napredek),
+      `shared/cosmetics.js` (94 predmetov) + `shared/cosmetics.css` (vse CSS/emoji, brez slik)
+- [x] Shema: `profiles.coins/equipped/streak/best_streak/streak_day` (niso v `grant update`), `shop_items`,
+      `inventory`, `coin_ledger`, `quest_progress`; RPC `award_coins`, `report_game`, `buy_item`, `unlock_item`,
+      `equip`, `claim_quest`, `set_quest_progress`; `award_xp` podeli nagrado za nivo; trigger na `achievements`
+      (+15); `get_leaderboard` in `list_lobbies` vračata `equipped`
+- [x] Pognano na projektu `mini-games` (4 migracije `economy_1…4`), advisors pregledani
+- [x] RLS z lažnimi JWT: 49 scenarijev (spodaj), testni uporabniki izbrisani
+- [x] Lokalni adapter zrcali vsa pravila (testi)
+- [x] Hub API: `hub.coins`, `reportGame`, `reportEvent`, `awardCoins`, `getQuests`, `claimQuest`, `onQuests`,
+      `getShop`, `buy`, `equip`, `getInventory`; `equipped` v presence sob
+- [x] `ui.who` / `ui.avatar` samodejno rišeta opremo; kovanci v glavi (klik → trgovina); `ui.results` + `ui.winFx`
+- [x] Dashboard: kartica »Dnevne naloge« (3 + 2, vrstice napredka, Prevzemi, bonus, odštevanje do polnoči),
+      profil s pasico, kovanci, nizom in gumbom Trgovina
+- [x] `shop.html`: zavihki po vrsti, filter redkosti, dnevna ponudba, predogled na mojem avatarju, potrditev,
+      animacija ob nakupu, zavihek »Moje« (garderoba)
+- [x] `hub.reportGame` v Reakciji (solo + dvoboj) in pinballu; `reportEvent('reakcija:avg' | 'reakcija:duel')`;
+      lastne naloge v `games.json` (Reakcija 3, pinball 2) + razširjena `games.schema.json`
+- [x] Testi 42/42 (`node tests/run-node.mjs`, `tests.html`), pinball 38/38
+- [x] Dokumentacija: `README.md`, `shared/README.md`, `CLAUDE.md`, `prompts/TEMPLATE-igra.md`
+
+## Ekonomija — uglasitev
+
+Izhodiščna tabela iz prompta ni bila skladna sama s sabo: pri dnevni meji 600 in legendarnem predmetu 1500–2500
+bi ga maksimalen igralec kupil v **3–4 dneh** (cilj: ne prej kot v 14). Ker sta cilja »tipičen igralec v 3–5 tednih«
+in »maksimalen ne prej kot v 14 dneh« skupaj zahtevala, da je dnevna meja največ ~2× tipičnega zaslužka, sem:
+
+| Vir | Prompt | Zdaj |
+|---|---|---|
+| odigrana igra | 5 (20/dan) | **4** (20/dan) |
+| zmaga v MP | +10 | **+8** (10 zmag/dan šteje) |
+| dnevne naloge | 30–60 | **15 / 25 / 40** |
+| vse 3 dnevne | +50 | **+25** |
+| tedenski | 150–250 | **100 / 150** |
+| nov nivo | 25 × nivo (≤300) | **5 × nivo (≤100)** |
+| dosežek | 20 | **15** |
+| niz dni | 10 … 70 | **5 × dan (5 … 35)** |
+| dnevna meja | 600 | **250** |
+| award_coins na klic | 300 | **100** |
+
+Cene: navadno 50–150 (nekaj brezplačnih), redko 250–400, epsko 600–1000, **legendarno 3500–4500** (prej 1500–2500).
+
+Simulacija 30 dni (`tests/economy-sim.js`, test »ekonomija: simulacija«):
+- **tipičen** (~20 min: 8 iger, 3 v MP, ~1 zmaga, lahka naloga skoraj vedno, srednja 75 %, težka 35 %,
+  tedenski 90 % / 60 %, en izpuščen dan na teden): **~132 🪙/dan** → navaden predmet že prvi dan,
+  redek (≤400) v 3 dneh, epski (1000) v ~8 dneh, **najcenejši legendarni (3500) 26. dan**, najdražji (4500) po 30. dnevu.
+  Dan s prevzemom tedenskih nalog lahko zadene mejo 250 (tedenska nagrada se takrat delno izgubi).
+- **maksimalen** (60 iger, vse zmage, vse naloge): vsak dan točno 250 → legendarni **najprej 14. dan**.
+- Vseh 94 predmetov stane 47.780 🪙 → tudi pri maksimumu več kot 6 mesecev.
+
+## Dnevnik (trgovina)
+
+- **Napaka v obstoječi `schema.sql`:** ovojnice v `public` so imele `as $` / `$;` namesto `$$` (datoteke se ni dalo
+  pognati; v bazi je bila pravilna verzija). Popravljeno.
+- **Dnevna ponudba na strežniku:** `util.rng` (cyrb53 + mulberry32 + Fisher–Yates) sem prenesel v SQL
+  (`private.mg_hash`, `mg_shuffle`, `mg_daily_offer`; 32-bitno množenje razbito na 16-bitne dele). Rezultat je bit za
+  bit enak JS (preverjeno za več dni; referenčni vektor je v testu). Popust izračuna strežnik sam.
+- **Prevzem nalog:** strežnik ne pozna generatorja, zato je id naloge `<slot>.<predloga>`; nagrado izračuna iz slota,
+  dovoli le trenutni dan/teden in **en prevzem na slot** (delni unikatni indeks) → največ 3 dnevne + 2 tedenski
+  nagradi, tudi če bi klient podtaknil drug id. Napredek je »na časten način«.
+- **Kozmetika v CSS:** `cosmetics.css` se je sprva nalagal pred pravili `.mg-avatar` iz `ui.css` in ta so povozila
+  ozadja/okvirje → zdaj ga strani vključijo za `ui.css` (hub ga doda sam, če manjka, npr. v pinballu).
+- **Reakcija:** `reportGame`/`reportEvent` se ne čakata več pred končnim zaslonom (na Supabase je bil zamik ~2 s).
+- **RLS z lažnimi JWT (49 scenarijev, vsi pravilni):** nakup brez kovancev (`not_enough_coins`), nakup s tujim
+  pogojem (nivo 10 → `locked`), odklep brez dosežka (`locked`) in po njem (ok, +15), odklep plačljivega (`not_free`),
+  nakup neaktivnega/neobstoječega (`unavailable`), dvojni nakup (`owned`), neposreden `update coins`/`equipped`
+  in `insert` s `coins` (`permission denied`), neposreden zapis v `inventory`/`coin_ledger`/`shop_items`, klic
+  `private.grant_coins` (zavrnjeno), opremljanje nekupljenega/pogojnega/napačnega slota, dvojni prevzem naloge
+  in prevzem drugega id-ja v istem slotu (`claimed`), stara naloga (`expired`), napačen slot (`invalid`),
+  `claimed_at` neposredno (zavrnjeno), napredek le narašča, bonus +25 ob tretji dnevni, dnevna meja 250
+  (tedenska 150 → dobljenih 128, `award_coins` po meji 0), `award_coins(500)` ≤ 100, nagrada za nivo (1 → 3: 10 + 15),
+  drugi igralec bere tuj inventar in `equipped`, ne pa `coin_ledger` in `quest_progress`; tujega napredka ne more spremeniti.
+- **Brskalnik offline (2 zavihka):** dnevni izziv v Reakciji → kovanci (niz + igra + dosežki), toast »Naloga
+  opravljena«, prevzem na dashboardu, nakup okvirja prek UI (potrditev, animacija, »Opremi zdaj«), nakup
+  legendarnega okvirja, neon vzdevka, naslova, značke in ognjemeta, garderoba (Opremi/Sneži), gost v lobbyju vidi
+  opremo, dvoboj do konca → stopničke z opremo, ognjemet ob zmagi, poraženec dobi 4 + 5 🪙. Konzola brez napak.
+- **Brskalnik s Supabase (`?igralec=1`, `?igralec=2`):** TestAna: dnevni izziv (54 🪙 v `coin_ledger`), napredek nalog
+  v `quest_progress`, prevzem (69 🪙), nakup naslova prek UI in okvirja/barve vzdevka/značke/učinka (testni kovanci
+  dodeljeni v SQL), strežnik zavrne zaklenjeno krono in nekupljen okvir. TestBor vidi iste naloge, TestAnino opremo
+  v seznamu lobbyjev (`host_equipped`), v lobbyju (presence), na stopničkah in na lestvici (`get_leaderboard`).
+  Testna profila na koncu izbrisana; `scores` (pinball) nedotaknjena (10 vrstic).
+- **Telefon 375×812:** dashboard (naloge v dveh vrsticah, gumb Prevzemi čez celo širino), trgovina (2 stolpca),
+  glava s kovanci. Popravljeno: odrezan neon sij vzdevka, pisava podnaslova tedenskih nalog.
+
+## Ni bilo preverjeno (trgovina)
+
+- **Pinball do konca igre** — `hub.reportGame` je dodan v `hubXp` ob »KONEC IGRE«; preverjeno le, da se pinball
+  naloži brez napak in da `reportGame({ game: 'pinball', score })` iz konzole podeli kovance in napredek nalog.
+- **Prehod polnoči v živo** (nove naloge in ponudba ob 00:00 po Ljubljani) — logika je testirana (ISO teden,
+  ljubljanski dan), odštevanje deluje, samega trenutka prehoda nisem čakal.
+- **Niz več dni** — testiran v enotskih testih in v simulaciji, v brskalniku le dan 1.
+- **`prefers-reduced-motion`** — pravila so v CSS (`cosmetics.css`, `ui.css`), emulacije v brskalniku nisem vklopil.
+- **Realne naprave** (iOS/Android) in Safari (maska `-webkit-mask-composite` za mavrični/zlati obroč).
+
 ## Za naslednjo sejo
 
-- V bazi sta testna profila TestAna in TestBor (z rezultatom, XP in dosežki) — po želji ju izbriši.
-- Naslednji korak: `prompts/02-trgovina.md` (kovanci, dnevne naloge, trgovina, kozmetika).
-- Naslednja igra: kopiraj `prompts/TEMPLATE-igra.md`.
+- V Supabaseu ni treba narediti ničesar: shema je pognana. Po vsaki spremembi kataloga
+  `node tools/shop-sql.mjs` → blok `SHOP_ITEMS` v `schema.sql` → poženi shemo (ali le ta blok).
+- Opozorilo advisorja »Leaked Password Protection« (Auth) se ne nanaša na hub (gesel ni); po želji ga vklopi v
+  *Authentication → Settings*.
+- Naslednja igra: kopiraj `prompts/TEMPLATE-igra.md` (fiksni del zdaj zahteva `hub.reportGame`).

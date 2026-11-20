@@ -1,5 +1,5 @@
 /* MINI GAMES — dashboard */
-import { hub, ui } from './shared/hub.js';
+import { hub, ui, util, economy as E, cosmetics as K } from './shared/hub.js';
 
 const $ = s => document.querySelector(s);
 const esc = ui.esc;
@@ -39,17 +39,105 @@ function header() {
 /* --------------------------------------------------------------- jaz */
 function renderMe(p) {
   const el = $('#meCard');
+  const banner = K.item(p?.equipped?.banner);
+  el.style.setProperty('--bni', banner?.kind === 'banner' ? banner.value : '');
+  el.classList.toggle('mgc-anim-bg', !!banner?.anim);
+  el.classList.toggle('dash-me--banner', !!banner);
   if (!p) { el.innerHTML = '<button class="mg-btn mg-btn--primary" id="mkProfile">Ustvari profil</button>'; $('#mkProfile').onclick = () => ui.profileModal(); return; }
   const lv = hub.level(p.xp);
-  el.innerHTML = `${ui.avatar(p.avatar, 'lg')}
+  const title = K.item(p.equipped?.title);
+  const badge = K.item(p.equipped?.badge);
+  const streakOn = p.streak > 0 && p.streak_day && (p.streak_day === hub.dailySeed() || p.streak_day === E.addDays(hub.dailySeed(), -1));
+  el.innerHTML = `${ui.avatar(p, 'lg')}
     <div class="dash-me__info">
-      <div class="dash-me__name">${esc(p.nickname)}</div>
+      <div class="dash-me__name">${ui.name(p)}${badge?.kind === 'badge' ? ` <span class="mg-who__badge">${esc(badge.value)}</span>` : ''}</div>
+      ${title?.kind === 'title' ? `<div class="mg-who__title">${esc(title.value)}</div>` : ''}
       <div class="dash-me__lvl">NIVO ${lv.level} · ${p.xp.toLocaleString('sl-SI')} XP</div>
       <div class="mg-xpbar" title="${lv.current}/${lv.next} XP do naslednjega nivoja"><i style="width:${(lv.progress * 100).toFixed(1)}%"></i></div>
-      <div class="mg-small mg-muted">${lv.next - lv.current} XP do nivoja ${lv.level + 1}</div>
+      <div class="dash-me__stats mg-small">
+        <a class="dash-me__coins" href="${esc(hub.link('shop.html'))}" title="Trgovina">🪙 <b>${ui.coins(p.coins)}</b></a>
+        ${streakOn ? `<span title="Zaporedni dnevi igranja">🔥 ${esc(util.plural(p.streak, 'dan', 'dneva', 'dnevi', 'dni'))}</span>` : '<span class="mg-muted" title="Odigraj igro in začni niz">🔥 niz 0</span>'}
+        <span class="mg-muted">${lv.next - lv.current} XP do niv. ${lv.level + 1}</span>
+      </div>
     </div>
-    <button class="mg-btn mg-btn--ghost mg-btn--small" id="editMe">Uredi</button>`;
+    <div class="dash-me__actions">
+      <a class="mg-btn mg-btn--primary mg-btn--small" href="${esc(hub.link('shop.html'))}">Trgovina</a>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="editMe">Uredi</button>
+    </div>`;
   $('#editMe').onclick = () => ui.profileModal();
+}
+
+/* --------------------------------------------------------------- naloge */
+const TIER = { e: 'Lahka', m: 'Srednja', h: 'Težka', w1: 'Teden', w2: 'Teden' };
+
+function questRow(q) {
+  const pct = Math.round((q.progress / q.target) * 100);
+  const state = q.claimed
+    ? '<span class="mg-badge mg-badge--green">✓ Prevzeto</span>'
+    : q.done
+      ? `<button class="mg-btn mg-btn--primary mg-btn--small mg-pulse" data-claim="${esc(q.id)}">Prevzemi</button>`
+      : `<span class="mg-small mg-muted">${q.progress}/${q.target}</span>`;
+  return `<div class="dash-quest ${q.done ? 'is-done' : ''} ${q.claimed ? 'is-claimed' : ''}">
+    <span class="dash-quest__tier dash-quest__tier--${esc(q.slot)}">${TIER[q.slot]}</span>
+    <div class="dash-quest__main">
+      <div class="dash-quest__text">${esc(q.text)}</div>
+      <div class="mg-xpbar dash-quest__bar"><i style="width:${pct}%"></i></div>
+    </div>
+    <span class="dash-quest__reward">+${q.reward} 🪙</span>
+    <span class="dash-quest__state">${state}</span>
+  </div>`;
+}
+
+let questsBusy = false;
+async function renderQuests() {
+  const el = $('#quests');
+  if (questsBusy) return;
+  questsBusy = true;
+  try {
+    const qs = await hub.getQuests();
+    const daily = qs.filter(q => q.period.startsWith('d:'));
+    const weekly = qs.filter(q => q.period.startsWith('w:'));
+    const all3 = daily.length === 3 && daily.every(q => q.claimed);
+    el.innerHTML = `${daily.map(questRow).join('')}
+      <div class="dash-quest-bonus ${all3 ? 'is-done' : ''}">${all3 ? '✓' : '🎁'} Vse 3 dnevne naloge: <b>+${E.COINS.ALL_DAILY_BONUS} 🪙</b> bonus</div>
+      <h3 class="dash-quests__sub">Tedenske naloge <span class="mg-small mg-muted">· nove v ponedeljek</span></h3>
+      ${weekly.map(questRow).join('')}
+      ${hub.profile ? '' : '<p class="mg-small mg-muted">Ustvari profil, da se ti napredek beleži.</p>'}`;
+  } catch (e) {
+    el.innerHTML = '<div class="mg-empty">Nalog ni bilo mogoče naložiti.</div>';
+    console.warn(e);
+  } finally {
+    questsBusy = false;
+  }
+}
+
+function setupQuests() {
+  $('#quests').addEventListener('click', async e => {
+    const b = e.target.closest('[data-claim]');
+    if (!b) return;
+    b.disabled = true;
+    try {
+      const r = await hub.claimQuest(b.dataset.claim);
+      ui.toast(`+${r.granted} 🪙${r.bonus ? ` (vključno z bonusom +${r.bonus})` : ''}`, { icon: '🪙' });
+      if (r.granted < r.reward + r.bonus) ui.toast('Dosežena dnevna meja kovancev (250).', { icon: 'ℹ️' });
+    } catch (ex) {
+      ui.toast(ex.message || 'Napaka', { icon: '⚠️' });
+    }
+    renderQuests();
+  });
+  hub.onQuests(renderQuests);
+  // odštevanje do ljubljanske polnoči
+  let day = hub.dailySeed();
+  const tick = () => {
+    const start = util.dayStart(new Date());
+    const next = util.dayStart(new Date(start.getTime() + 30 * 3600e3));
+    const ms = Math.max(0, next - Date.now());
+    const hh = Math.floor(ms / 3600e3), mm = Math.floor((ms % 3600e3) / 60e3);
+    $('#questTimer').textContent = `⏳ nove čez ${hh} h ${String(mm).padStart(2, '0')} min`;
+    if (hub.dailySeed() !== day) { day = hub.dailySeed(); renderQuests(); }
+  };
+  tick();
+  setInterval(tick, 20000);
 }
 
 /* --------------------------------------------------------------- koda */
@@ -99,7 +187,7 @@ async function renderLobbies() {
       return `<div class="dash-lobby">
         <span class="dash-lobby__icon">${icon(g)}</span>
         <span class="dash-lobby__info"><b>${esc(g.name)}</b>
-          <span class="mg-small mg-muted">${ui.avatar(l.host_avatar, 'sm')} ${esc(l.host_nickname)} · ${l.players}/${l.max_players}</span>
+          <span class="mg-small mg-muted">${ui.avatar({ avatar: l.host_avatar, equipped: l.host_equipped }, 'sm')} ${esc(l.host_nickname)} · ${l.players}/${l.max_players}</span>
           <span class="dash-lobby__code">${esc(l.code)}</span></span>
         <a class="mg-btn mg-btn--green mg-btn--small" ${full ? 'aria-disabled="true"' : `href="${esc(gameHref(g, l.code))}"`}>${full ? 'Polna' : 'Pridruži se'}</a>
       </div>`;
@@ -197,10 +285,13 @@ async function main() {
   await hub.init({ requireProfile: false });
   header();
   setupJoin();
-  hub.onProfile(p => { renderMe(p); renderAch(); });
+  setupQuests();
+  let lastUid = null;
+  hub.onProfile(p => { renderMe(p); if ((p?.id || null) !== lastUid) { lastUid = p?.id || null; renderAch(); renderQuests(); } });
   if (!hub.profile) {
     renderMe(null);
     renderAch();
+    renderQuests();
     ui.profileModal({ required: true }).then(() => { renderBoard(); renderAch(); });
   }
   renderBoard();

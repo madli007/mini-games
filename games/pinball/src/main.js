@@ -94,12 +94,15 @@ bus.on('gameOver', d => {
     else ui.showGameOver(d);
   }, 1600);
 });
-// MINI GAMES hub: skupni XP ob koncu igre. Ne vpliva na igro; če huba ni (izvirni repo)
+// MINI GAMES hub: skupni XP, kovanci in naloge ob koncu igre. Ne vpliva na igro; če huba ni (izvirni repo)
 // ali profil še ne obstaja, se ne zgodi nič.
 function hubXp(score) {
   import('../../../shared/hub.js').then(async ({ hub }) => {
     await hub.init({ gameId: 'pinball', requireProfile: false });
-    if (hub.profile) await hub.awardXp(Math.min(200, 20 + Math.floor((score || 0) / 1e6) * 5), 'pinball');
+    if (!hub.profile) return;
+    await hub.awardXp(Math.min(200, 20 + Math.floor((score || 0) / 1e6) * 5), 'pinball');
+    // kovanci, niz dni in naloge (hub.reportGame)
+    await hub.reportGame({ players: 1, score: Math.round(score || 0) });
   }).catch(() => {});
 }
 bus.on('quality', d => ui.toast('Kakovost: ' + QUALITY[d.key].ime + ' (samodejno)'));

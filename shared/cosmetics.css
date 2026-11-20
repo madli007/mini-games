@@ -1,0 +1,200 @@
+/* =====================================================================
+   MINI GAMES — kozmetika (okvirji, ozadja, barve vzdevkov, naslovi,
+   značke, učinki ob zmagi, pasice). Razredi: mgc-<id predmeta>.
+   Vključena prek @import v ui.css. Katalog: shared/cosmetics.js.
+   Vse brez slik: CSS, emoji. Animacije: prefers-reduced-motion → izklop.
+   ===================================================================== */
+
+/* --------------------------------------------------------------- avatar: osnova za okvirje */
+.mg-avatar { position: relative; isolation: isolate; }
+.mg-avatar--xl { width: 112px; height: 112px; font-size: 64px; border-radius: 26px; border-width: 3px; }
+.mg-avatar--bg { background: var(--bgi); }
+.mgc-anim-bg { animation: mgc-pan 8s ease-in-out infinite alternate; }
+
+/* obroč iz gradienta (::before) — uporabljajo ga mavrični, zlati, ledeni … */
+.mgc-ring::before,
+.mgc-frame-rainbow::before, .mgc-frame-gold::before, .mgc-frame-pixel-rainbow::before {
+  content: '';
+  position: absolute;
+  inset: -0.16em;
+  border-radius: inherit;
+  padding: 0.16em;
+  background: var(--ring);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  z-index: -1;
+  pointer-events: none;
+}
+/* vogalni okraski (::after) */
+.mgc-frame-crown::after, .mgc-frame-ice::after, .mgc-frame-bolt::after, .mgc-frame-streak::after,
+.mgc-frame-gold::after, .mgc-frame-fire::after {
+  position: absolute;
+  top: -0.42em;
+  right: -0.38em;
+  font-size: 0.55em;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px #000a);
+}
+
+/* tanki */
+.mgc-frame-thin { border-color: #f4f8ff; border-width: 1.5px; }
+.mgc-frame-thin-cyan { border-color: var(--mg-cyan); border-width: 1.5px; }
+.mgc-frame-thin-pink { border-color: var(--mg-pink); border-width: 1.5px; }
+/* dvojni */
+.mgc-frame-double { border-color: var(--mg-yellow); box-shadow: 0 0 0 0.07em #0b0d22, 0 0 0 0.15em var(--mg-yellow); }
+/* neon */
+.mgc-frame-neon-pink, .mgc-frame-neon-cyan, .mgc-frame-neon-green, .mgc-frame-neon-yellow {
+  border-color: var(--nc);
+  box-shadow: 0 0 0.18em var(--nc), 0 0 0.5em var(--nc), inset 0 0 0.25em color-mix(in srgb, var(--nc) 60%, transparent);
+}
+.mgc-frame-neon-pink { --nc: #ff4fd8; }
+.mgc-frame-neon-cyan { --nc: #4de1ff; }
+.mgc-frame-neon-green { --nc: #39ff88; }
+.mgc-frame-neon-yellow { --nc: #ffd23f; }
+/* 8-bit: stopničasti vogali */
+.mgc-frame-pixel, .mgc-frame-pixel-rainbow {
+  border-radius: 0 !important;
+  border-color: transparent;
+  --px: 0.12em;
+  --pc: #f4f8ff;
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--pc), 0 var(--px) 0 0 var(--pc),
+    calc(-1 * var(--px)) 0 0 0 var(--pc), var(--px) 0 0 0 var(--pc);
+}
+.mgc-frame-pixel-rainbow { animation: mgc-pixel-hue 2.4s steps(6) infinite; }
+.mgc-frame-pixel-rainbow::before { display: none; }
+/* strela, niz */
+.mgc-frame-bolt { border-color: var(--mg-yellow); box-shadow: 0 0 0.3em #ffd23f88; }
+.mgc-frame-bolt::after { content: '⚡'; }
+.mgc-frame-streak { border-color: var(--mg-orange); box-shadow: 0 0 0.35em #ff8a1faa; }
+.mgc-frame-streak::after { content: '🔥'; }
+/* ledeni */
+.mgc-frame-ice { border-color: #bff3ff; box-shadow: 0 0 0.3em #6fd3ff, 0 0 0.7em #6fd3ff66, inset 0 0 0.3em #ffffff66; animation: mgc-ice 3s ease-in-out infinite; }
+.mgc-frame-ice::after { content: '❄️'; }
+/* arkadni: utripa */
+.mgc-frame-arcade { border-color: var(--mg-pink); animation: mgc-arcade 0.9s steps(1) infinite; }
+/* plameni */
+.mgc-frame-fire { border-color: #ff8a1f; animation: mgc-fire 0.7s ease-in-out infinite alternate; }
+.mgc-frame-fire::after { content: '🔥'; top: auto; bottom: -0.36em; right: auto; left: 50%; transform: translateX(-50%); }
+/* krona */
+.mgc-frame-crown { border-color: var(--mg-gold); box-shadow: 0 0 0.3em #ffd23f99; }
+.mgc-frame-crown::after { content: '👑'; top: -0.58em; right: -0.34em; font-size: 0.62em; transform: rotate(18deg); }
+/* zlati z bleščico */
+.mgc-frame-gold { border-color: transparent; --ring: linear-gradient(135deg, #8a5a00, #ffe27a 35%, #b8860b 55%, #fff4c2 75%, #8a5a00); box-shadow: 0 0 0.35em #ffd23f66; }
+.mgc-frame-gold::after { content: '✨'; animation: mgc-twinkle 1.6s ease-in-out infinite; }
+/* mavrični */
+.mgc-frame-rainbow { border-color: transparent; --ring: conic-gradient(#ff3b5c, #ff8a1f, #ffd23f, #39ff88, #4de1ff, #a78bfa, #ff4fd8, #ff3b5c); box-shadow: 0 0 0.4em #ff4fd866; }
+.mgc-frame-rainbow::before { animation: mgc-hue 3s linear infinite; }
+
+/* --------------------------------------------------------------- barva vzdevka */
+.mg-name { min-width: 0; }
+.mgc-name-yellow { color: var(--mg-yellow); }
+.mgc-name-cyan { color: var(--mg-cyan); }
+.mgc-name-pink { color: var(--mg-pink); }
+.mgc-name-green { color: var(--mg-green); }
+.mgc-name-sunset, .mgc-name-ice, .mgc-name-gold, .mgc-name-rainbow {
+  background: var(--ng);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mgc-name-sunset { --ng: linear-gradient(90deg, #ffd23f, #ff8a1f, #ff4fd8); }
+.mgc-name-ice { --ng: linear-gradient(90deg, #ffffff, #8fe9ff, #4d8bff); }
+.mgc-name-gold { --ng: linear-gradient(100deg, #b8860b 20%, #fff4c2 40%, #ffd23f 50%, #b8860b 70%); animation: mgc-shine 2.6s linear infinite; }
+.mgc-name-rainbow { --ng: linear-gradient(90deg, #ff3b5c, #ff8a1f, #ffd23f, #39ff88, #4de1ff, #a78bfa, #ff4fd8, #ff3b5c); background-size: 300% 100%; animation: mgc-shine 3s linear infinite; }
+.mgc-name-neon { color: #fff; text-shadow: 0 0 2px #ff4fd8, 0 0 6px #ff4fd8, 0 0 10px #ff4fd899; padding: 0 6px; margin: 0 -6px; }
+
+/* --------------------------------------------------------------- ui.who: vzdevek, značka, naslov */
+.mg-who__txt { display: inline-flex; flex-direction: column; min-width: 0; line-height: 1.1; }
+.mg-who__line { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.mg-who__line b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-who__badge { flex: none; font-size: 0.95em; line-height: 1; font-family: var(--mg-emoji); }
+.mg-who__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mg-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mg-podium .mg-who__title { text-align: center; max-width: 100%; }
+
+/* --------------------------------------------------------------- pasica profila */
+.mg-banner { background: var(--bni, linear-gradient(135deg, var(--mg-panel-2), var(--mg-panel))); }
+.mg-banner.mgc-anim-bg { animation: mgc-pan 10s ease-in-out infinite alternate; }
+
+/* --------------------------------------------------------------- redkost */
+.mg-rar-common { --rar: #8b93b8; }
+.mg-rar-rare { --rar: #4d8bff; }
+.mg-rar-epic { --rar: #b368ff; }
+.mg-rar-legendary { --rar: #ffc531; }
+
+/* --------------------------------------------------------------- učinki ob zmagi */
+.mgfx { position: fixed; inset: 0; z-index: 1100; pointer-events: none; overflow: hidden; }
+.mgfx i { position: absolute; top: -24px; display: block; font-style: normal; animation: mgc-fall var(--t) cubic-bezier(.3, .2, .6, 1) var(--d) both; }
+.mgfx--confetti i { width: 9px; height: 14px; background: var(--fc); border-radius: 2px; }
+.mgfx--pixelrain i { width: 8px; height: 8px; background: var(--fc); box-shadow: 0 0 6px var(--fc); animation-timing-function: steps(14); }
+.mgfx--stars i { top: -40px; }
+.mgfx__burst { position: absolute; width: 0; height: 0; }
+.mgfx__burst i {
+  top: 0; left: 0; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--fc); box-shadow: 0 0 8px var(--fc);
+  animation: mgc-burst 1.3s cubic-bezier(.1, .7, .3, 1) var(--d) both;
+}
+.mgfx__gg {
+  position: absolute; left: 50%; top: 28%; transform: translate(-50%, -50%);
+  font-family: var(--mg-font-title); font-size: min(26vw, 180px); color: var(--mg-yellow);
+  text-shadow: 6px 6px 0 var(--mg-pink), 12px 12px 0 #0008; animation: mgc-gg 3.4s ease-out both;
+}
+.mgfx--still .mgfx__label {
+  position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+  font-family: var(--mg-font-title); font-size: 48px; color: var(--mg-yellow); text-shadow: 4px 4px 0 var(--mg-pink);
+}
+
+/* --------------------------------------------------------------- animacije */
+@keyframes mgc-hue { to { filter: hue-rotate(360deg); } }
+@keyframes mgc-pan { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes mgc-shine { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+@keyframes mgc-twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+@keyframes mgc-ice { 0%, 100% { box-shadow: 0 0 0.3em #6fd3ff, 0 0 0.7em #6fd3ff55, inset 0 0 0.3em #ffffff55; } 50% { box-shadow: 0 0 0.45em #bff3ff, 0 0 1em #6fd3ff88, inset 0 0 0.4em #ffffff88; } }
+@keyframes mgc-arcade {
+  0% { border-color: #ff4fd8; box-shadow: 0 0 0.4em #ff4fd8; }
+  33% { border-color: #4de1ff; box-shadow: 0 0 0.4em #4de1ff; }
+  66% { border-color: #ffd23f; box-shadow: 0 0 0.4em #ffd23f; }
+}
+@keyframes mgc-fire {
+  from { box-shadow: 0 -0.1em 0.3em #ff3b1a, 0 -0.25em 0.6em #ff8a1f99, 0 0 0.2em #ffd23f; }
+  to { box-shadow: 0 -0.18em 0.45em #ff5a1a, 0 -0.4em 0.8em #ffb01f88, 0 0 0.3em #ffd23f; }
+}
+@keyframes mgc-pixel-hue {
+  0% { --pc: #ff3b5c; } 17% { --pc: #ff8a1f; } 33% { --pc: #ffd23f; } 50% { --pc: #39ff88; } 67% { --pc: #4de1ff; } 83% { --pc: #a78bfa; } 100% { --pc: #ff4fd8; }
+}
+@keyframes mgc-fall {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--x), 105vh) rotate(var(--r)); opacity: 0; }
+}
+@keyframes mgc-burst {
+  0% { transform: rotate(var(--a)) translateX(0); opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(90px); opacity: 0; }
+}
+@keyframes mgc-gg {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  25%, 80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+/* --pc se pri pikselni mavrici animira prek @property (sicer ostane bel rob) */
+@property --pc { syntax: '<color>'; inherits: true; initial-value: #f4f8ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mgc-anim-bg, .mg-banner.mgc-anim-bg, .mgc-frame-rainbow::before, .mgc-frame-pixel-rainbow, .mgc-frame-gold::after,
+  .mgc-frame-ice, .mgc-frame-arcade, .mgc-frame-fire, .mgc-name-gold, .mgc-name-rainbow, .mgfx i, .mgfx__gg {
+    animation: none !important;
+  }
+}

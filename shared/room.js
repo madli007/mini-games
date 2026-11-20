@@ -27,6 +27,7 @@ const SYNC_WAIT_MS = 1500;      // koliko časa novinec čaka na odgovor obstoje
  * @property {string} id
  * @property {string} nickname
  * @property {{emoji:string, color:string}} avatar
+ * @property {Object} equipped opremljena kozmetika ({ frame, name, title, … } → id predmeta)
  * @property {boolean} isHost
  * @property {boolean} ready
  * @property {string} joinedAt
@@ -92,9 +93,18 @@ export class Room {
       id: this.backend.userId,
       nickname: this.profile?.nickname || '???',
       avatar: this.profile?.avatar || { emoji: '🙂', color: '#ffd23f' },
+      equipped: this.profile?.equipped || {},
       joinedAt: this.joinedAt,
       ready: this.ready,
     };
+  }
+
+  /** Nov profil (npr. po opremljanju kozmetike) → posodobi presence (kliče hub). */
+  async _updateProfile(profile) {
+    this.profile = profile;
+    if (this.left || !this.t) return;
+    await this.t.track(this._meta());
+    this._onPresence(this.t.presence());
   }
 
   /* ----------------------------- dogodki ------------------------------- */
@@ -229,7 +239,7 @@ export class Room {
   _refreshPlayers() {
     const present = this._present || [this._meta()];
     this.players = present
-      .map(m => ({ id: m.id, nickname: m.nickname, avatar: m.avatar, ready: !!m.ready, joinedAt: m.joinedAt, isHost: m.id === this.hostId }))
+      .map(m => ({ id: m.id, nickname: m.nickname, avatar: m.avatar, equipped: m.equipped || {}, ready: !!m.ready, joinedAt: m.joinedAt, isHost: m.id === this.hostId }))
       .sort((a, b) => (new Date(a.joinedAt) - new Date(b.joinedAt)) || (a.id < b.id ? -1 : 1));
     this._emit('__players', this.players);
   }

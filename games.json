@@ -11,7 +11,12 @@
     "status": "live",
     "scoreOrder": "asc",
     "scoreUnit": "ms",
-    "color": "#39ff88"
+    "color": "#39ff88",
+    "quests": [
+      { "id": "avg-260", "tier": "h", "text": "V Reakciji doseži povprečje pod 260 ms", "event": "reakcija:avg", "target": 1, "cmp": "lte", "goal": 259 },
+      { "id": "duel", "tier": "m", "text": "Odigraj dvoboj v Reakciji", "event": "reakcija:duel", "target": 1 },
+      { "id": "avg-300-3", "tier": "w", "text": "V Reakciji 3-krat doseži povprečje pod 300 ms", "event": "reakcija:avg", "target": 3, "cmp": "lte", "goal": 299 }
+    ]
   },
   {
     "id": "pinball",
@@ -23,7 +28,11 @@
     "mode": "single",
     "tags": ["arkada", "rekordi"],
     "status": "live",
-    "color": "#ff7a1a"
+    "color": "#ff7a1a",
+    "quests": [
+      { "id": "500k", "tier": "m", "text": "V pinballu doseži 500.000 točk", "event": "score:pinball", "target": 1, "cmp": "gte", "goal": 500000 },
+      { "id": "w-5", "tier": "w", "text": "Odigraj 5 iger pinballa", "event": "play:pinball", "target": 5 }
+    ]
   },
   {
     "id": "ladjice",

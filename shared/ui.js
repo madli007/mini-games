@@ -8,6 +8,8 @@ import { hub } from './hub.js';
 import {
   esc, level as levelOf, validateNickname, AVATAR_EMOJIS, AVATAR_COLORS, randomAvatar,
 } from './util.js';
+import { item as catalogItem } from './cosmetics.js';
+import { fmtCoins } from './economy.js';
 
 const QR_LIB = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm';
 
@@ -18,10 +20,38 @@ function h(html) {
   return t.content.firstElementChild;
 }
 
-/** HTML avatarja. */
-function avatarHtml(avatar, size = '') {
-  const a = avatar || { emoji: '❔', color: '#888' };
-  return `<span class="mg-avatar ${size ? 'mg-avatar--' + size : ''}" style="--c:${esc(a.color)}">${esc(a.emoji)}</span>`;
+/** Ali je objekt »igralec« (profil, vrstica lestvice, igralec v sobi) in ne le avatar? */
+function isPerson(p) {
+  return !!p && typeof p === 'object' && ('nickname' in p || 'equipped' in p || ('avatar' in p && typeof p.avatar === 'object'));
+}
+
+/** Opremljen predmet v slotu (samo, če se vrsta ujema). */
+function eqItem(p, slot) {
+  const id = isPerson(p) ? p.equipped?.[slot] : null;
+  const it = id ? catalogItem(id) : null;
+  return it && it.kind === slot ? it : null;
+}
+
+/**
+ * HTML avatarja z opremljeno kozmetiko (okvir, ozadje, emoji).
+ * @param {Object} p igralec ({ avatar, equipped }) ali samo avatar ({ emoji, color })
+ * @param {''|'sm'|'lg'|'xl'} [size]
+ */
+function avatarHtml(p, size = '') {
+  const a = (isPerson(p) ? p.avatar : p) || { emoji: '❔', color: '#888' };
+  const em = eqItem(p, 'emoji')?.value || a.emoji || '❔';
+  const bg = eqItem(p, 'bg');
+  const fr = eqItem(p, 'frame');
+  const cls = ['mg-avatar', size && 'mg-avatar--' + size, fr && 'mgc-' + fr.id, fr && 'mgc-frame', bg && 'mg-avatar--bg', bg?.anim && 'mgc-anim-bg']
+    .filter(Boolean).join(' ');
+  const style = `--c:${esc(a.color || '#888')}${bg ? ';--bgi:' + esc(bg.value) : ''}`;
+  return `<span class="${cls}" style="${style}">${esc(em)}</span>`;
+}
+
+/** HTML vzdevka z opremljeno barvo. */
+function nameHtml(p) {
+  const n = eqItem(p, 'name');
+  return `<b class="mg-name${n ? ' mgc-' + n.id : ''}">${esc(p?.nickname || '???')}</b>`;
 }
 
 let toastWrap = null;
@@ -30,23 +60,46 @@ export const ui = {
   /** Vstavi ui.css, če ga stran še nima. */
   _ensureCss() {
     if (typeof document === 'undefined') return;
-    const href = new URL('./ui.css', import.meta.url).href;
-    const has = [...document.querySelectorAll('link[rel=stylesheet]')].some(l => l.href === href);
-    if (!has) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = href;
-      document.head.appendChild(l);
+    // cosmetics.css mora biti ZA ui.css (povozi osnovni .mg-avatar)
+    const links = [...document.querySelectorAll('link[rel=stylesheet]')];
+    let after = null;
+    for (const file of ['./ui.css', './cosmetics.css']) {
+      const href = new URL(file, import.meta.url).href;
+      let l = links.find(x => x.href === href);
+      if (!l) {
+        l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        if (after) after.after(l); else document.head.appendChild(l);
+      }
+      after = l;
     }
   },
 
-  /** HTML avatarja (emoji v barvnem kvadratku). size: '' | 'sm' | 'lg' */
+  /**
+   * HTML avatarja z opremljeno kozmetiko (okvir, ozadje, emoji).
+   * p: igralec ({ avatar, equipped }) ali samo avatar ({ emoji, color }); size: '' | 'sm' | 'lg' | 'xl'
+   */
   avatar: avatarHtml,
 
-  /** HTML »avatar + vzdevek«. */
-  who(p, size = 'sm') {
-    return `<span class="mg-who">${avatarHtml(p?.avatar, size)}<b>${esc(p?.nickname || '???')}</b></span>`;
+  /** HTML vzdevka z opremljeno barvo vzdevka. */
+  name: nameHtml,
+
+  /**
+   * HTML »avatar + vzdevek« z opremljeno kozmetiko (okvir, ozadje, barva vzdevka, značka, naslov).
+   * Uporablja se povsod (glava, lobby, lestvice, rezultati), zato se kozmetika vidi v vseh igrah.
+   * @param {{nickname:string, avatar:Object, equipped?:Object}} p
+   * @param {''|'sm'|'lg'} [size]
+   * @param {{title?:boolean}} [opt] title: false = brez naslova pod vzdevkom
+   */
+  who(p, size = 'sm', { title = true } = {}) {
+    const badge = eqItem(p, 'badge');
+    const t = title ? eqItem(p, 'title') : null;
+    return `<span class="mg-who">${avatarHtml(p, size)}<span class="mg-who__txt"><span class="mg-who__line">${nameHtml(p)}${badge ? `<span class="mg-who__badge" title="${esc(badge.name)}">${esc(badge.value)}</span>` : ''}</span>${t ? `<small class="mg-who__title">${esc(t.value)}</small>` : ''}</span></span>`;
   },
+
+  /** Oblikovan znesek kovancev (1.240). */
+  coins: fmtCoins,
 
   /** Escape za HTML. */
   esc,
@@ -64,9 +117,11 @@ export const ui = {
       ${href ? `<a class="mg-btn mg-btn--ghost mg-btn--small mg-header__back" href="${esc(href)}">← Hub</a>` : ''}
       <div class="mg-header__title">${esc(title || '')}</div>
       <span class="mg-offline mg-hidden" title="">Offline</span>
+      <a class="mg-coin-chip mg-hidden" href="${esc(hub.link('shop.html'))}" title="Kovanci — odpri trgovino" aria-label="Kovanci, odpri trgovino"></a>
       <button class="mg-profile-chip" type="button" aria-label="Uredi profil"></button>
     </header>`);
     const chip = el.querySelector('.mg-profile-chip');
+    const coin = el.querySelector('.mg-coin-chip');
     const off = el.querySelector('.mg-offline');
     chip.addEventListener('click', () => ui.profileModal());
     const render = p => {
@@ -74,10 +129,15 @@ export const ui = {
         off.classList.remove('mg-hidden');
         off.title = 'Offline način: podatki so shranjeni samo v tem brskalniku. ' + (hub.offlineReason || '');
       }
+      coin.classList.toggle('mg-hidden', !p);
       if (!p) { chip.innerHTML = '<span class="mg-profile-chip__name">Profil</span>'; return; }
+      const prev = coin.dataset.n;
+      coin.innerHTML = `<span aria-hidden="true">🪙</span><b>${fmtCoins(p.coins)}</b>`;
+      coin.dataset.n = String(p.coins || 0);
+      if (prev != null && prev !== coin.dataset.n) { coin.classList.remove('mg-bump'); void coin.offsetWidth; coin.classList.add('mg-bump'); }
       const lv = levelOf(p.xp);
-      chip.innerHTML = `${avatarHtml(p.avatar)}<span class="mg-profile-chip__info">
-        <span class="mg-profile-chip__name">${esc(p.nickname)}</span>
+      chip.innerHTML = `${avatarHtml(p)}<span class="mg-profile-chip__info">
+        <span class="mg-profile-chip__name">${nameHtml(p)}</span>
         <span class="mg-profile-chip__lvl">NIV ${lv.level}</span>
         <span class="mg-xpbar"><i style="width:${(lv.progress * 100).toFixed(1)}%"></i></span></span>`;
       chip.title = `${p.xp} XP · nivo ${lv.level} (${lv.current}/${lv.next})`;
@@ -158,17 +218,21 @@ export const ui = {
   profileModal({ required = false } = {}) {
     const cur = hub.profile;
     let avatar = { ...(cur?.avatar || randomAvatar()) };
+    const eq = { ...(cur?.equipped || {}) };   // opremljen premium emoji/ozadje povozi osnovnega
+    const touched = new Set();
+    const pv = () => ({ avatar, equipped: eq });
     const backend = hub.backend;
     const canEmail = backend?.kind === 'supabase' && typeof backend.linkEmail === 'function';
     const html = `
       <div class="mg-stack">
-        <div class="mg-row" style="justify-content:center"><span class="mg-pv">${avatarHtml(avatar, 'lg')}</span></div>
+        <div class="mg-row" style="justify-content:center"><span class="mg-pv">${avatarHtml(pv(), 'lg')}</span></div>
         <div class="mg-field"><label class="mg-label" for="mgNick">Vzdevek</label>
           <input id="mgNick" class="mg-input" maxlength="16" autocomplete="nickname" placeholder="2–16 znakov" value="${esc(cur?.nickname || '')}"></div>
         <div class="mg-field"><span class="mg-label">Avatar</span>
           <div class="mg-emoji-grid">${AVATAR_EMOJIS.map(e => `<button type="button" data-e="${e}" aria-pressed="${e === avatar.emoji}">${e}</button>`).join('')}</div></div>
         <div class="mg-field"><span class="mg-label">Barva</span>
           <div class="mg-color-grid">${AVATAR_COLORS.map(c => `<button type="button" data-c="${c}" style="background:${c}" aria-label="Barva ${c}" aria-pressed="${c === avatar.color}"></button>`).join('')}</div></div>
+        ${cur ? `<a class="mg-btn mg-btn--ghost mg-btn--small" href="${esc(hub.link('shop.html#moje'))}">🎨 Okvirji, naslovi in ostala kozmetika → Trgovina</a>` : ''}
         <div class="mg-error" id="mgErr"></div>
         ${hub.offline ? `<p class="mg-small mg-muted">Offline način: profil je shranjen samo v tem brskalniku.${backend?.isGuest ? ' Ta zavihek ima <b>gostujoči profil</b> (za testiranje multiplayerja v več zavihkih).' : ''}</p>` : ''}
         ${canEmail && cur ? `<details class="mg-small"><summary class="mg-muted" style="cursor:pointer">Shrani profil za drugo napravo (email)</summary>
@@ -192,22 +256,25 @@ export const ui = {
         const err = box.querySelector('#mgErr');
         const pv = box.querySelector('.mg-pv');
         const sync = () => {
-          pv.innerHTML = avatarHtml(avatar, 'lg');
+          pv.innerHTML = avatarHtml({ avatar, equipped: eq }, 'lg');
           box.querySelectorAll('[data-e]').forEach(b => b.setAttribute('aria-pressed', b.dataset.e === avatar.emoji));
           box.querySelectorAll('[data-c]').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === avatar.color));
         };
         box.addEventListener('click', e => {
           const b = e.target.closest('button');
           if (!b) return;
-          if (b.dataset.e) { avatar.emoji = b.dataset.e; sync(); }
-          if (b.dataset.c) { avatar.color = b.dataset.c; sync(); }
+          if (b.dataset.e) { avatar.emoji = b.dataset.e; delete eq.emoji; touched.add('emoji'); sync(); }
+          if (b.dataset.c) { avatar.color = b.dataset.c; delete eq.bg; touched.add('bg'); sync(); }
         });
         const save = async () => {
           const msg = validateNickname(nick.value);
           if (msg) { err.textContent = msg; nick.focus(); return; }
           err.textContent = '';
           try {
-            const p = await hub.updateProfile({ nickname: nick.value, avatar });
+            let p = await hub.updateProfile({ nickname: nick.value, avatar });
+            // izbira osnovnega emojija/barve sname premium emoji/ozadje
+            for (const slot of touched) if (cur?.equipped?.[slot]) { try { await hub.equip(slot, null); } catch { /* ignore */ } }
+            p = hub.profile;
             close(p);
             ui.toast(cur ? 'Profil shranjen.' : `Živjo, ${p.nickname}!`, { icon: p.avatar.emoji });
           } catch (e) {
@@ -424,15 +491,18 @@ export const ui = {
     const scoreOf = p => p.scoreText ?? (p.score != null ? p.score.toLocaleString('sl-SI') : '');
     const html = `
       <div class="mg-podium">${order.map(({ p, place }) => `<div class="mg-podium__col">
-        ${avatarHtml(p.avatar, 'lg')}<div class="mg-podium__name">${esc(p.nickname)}</div>
+        ${avatarHtml(p, 'lg')}<div class="mg-podium__name">${nameHtml(p)}${eqItem(p, 'badge') ? ` <span class="mg-who__badge">${esc(eqItem(p, 'badge').value)}</span>` : ''}</div>
+        ${eqItem(p, 'title') ? `<div class="mg-who__title">${esc(eqItem(p, 'title').value)}</div>` : ''}
         <div class="mg-podium__score">${esc(scoreOf(p))}</div>
         <div class="mg-podium__block mg-podium__block--${place}">${place}</div></div>`).join('')}</div>
       ${players.length > 3 ? `<table class="mg-table"><tbody>${players.slice(3).map((p, i) => `<tr class="${p.id === hub.userId ? 'mg-me' : ''}">
         <td class="mg-rank">${i + 4}.</td><td>${ui.who(p)}</td><td class="mg-num">${esc(scoreOf(p))}</td></tr>`).join('')}</tbody></table>` : ''}
       ${(() => { const me = players.find(p => p.id === hub.userId); return me?.xp ? `<p class="mg-center mg-xp-gain">+${me.xp} XP</p>` : ''; })()}
       ${extraHtml}`;
+    const fx = eqItem(players[0], 'win');
     return ui.modal({
       title, html, wide: true, dismissible: false,
+      onOpen: () => { if (fx) ui.winFx(fx.value); },
       actions: [
         ...(showHub ? [{ label: '← Hub', value: 'hub' }] : []),
         ...(again ? [{ label: again, value: 'again', kind: 'primary' }] : []),
@@ -442,6 +512,51 @@ export const ui = {
       return v;
     });
   },
+};
+
+/** Ali uporabnik želi manj gibanja? */
+function reducedMotion() {
+  try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+}
+
+const FX_COLORS = ['#ffd23f', '#ff4fd8', '#4de1ff', '#39ff88', '#ff8a1f', '#a78bfa'];
+
+/**
+ * Učinek ob zmagi čez zaslon (konfeti, ognjemet, pikselni dež, zvezdice, GG).
+ * Pri prefers-reduced-motion pokaže le kratek miren napis.
+ * @param {'confetti'|'fireworks'|'pixelrain'|'stars'|'gg'} kind
+ * @param {{duration?:number}} [opt]
+ */
+ui.winFx = function winFx(kind, { duration = 3600 } = {}) {
+  if (typeof document === 'undefined' || !kind) return;
+  const el = h(`<div class="mgfx mgfx--${esc(kind)}" aria-hidden="true"></div>`);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const col = () => FX_COLORS[Math.floor(Math.random() * FX_COLORS.length)];
+  if (reducedMotion()) {
+    el.classList.add('mgfx--still');
+    el.innerHTML = `<div class="mgfx__label">${kind === 'gg' ? 'GG' : '🏆'}</div>`;
+  } else if (kind === 'confetti' || kind === 'pixelrain' || kind === 'stars') {
+    const n = kind === 'pixelrain' ? 90 : kind === 'stars' ? 34 : 70;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const style = `left:${rnd(0, 100).toFixed(1)}%;--d:${rnd(0, 1.2).toFixed(2)}s;--t:${rnd(kind === 'pixelrain' ? 0.9 : 1.6, kind === 'pixelrain' ? 1.8 : 3).toFixed(2)}s;--r:${rnd(-540, 540).toFixed(0)}deg;--x:${rnd(-60, 60).toFixed(0)}px;--fc:${col()}`;
+      html += kind === 'stars' ? `<i style="${style};font-size:${rnd(14, 30).toFixed(0)}px">${Math.random() < 0.5 ? '⭐' : '✨'}</i>` : `<i style="${style}"></i>`;
+    }
+    el.innerHTML = html;
+  } else if (kind === 'fireworks') {
+    let html = '';
+    for (let b = 0; b < 6; b++) {
+      const c = col();
+      html += `<div class="mgfx__burst" style="left:${rnd(15, 85).toFixed(0)}%;top:${rnd(12, 55).toFixed(0)}%;--d:${(b * 0.45).toFixed(2)}s;--fc:${c}">`;
+      for (let k = 0; k < 18; k++) html += `<i style="--a:${(k * 20).toFixed(0)}deg"></i>`;
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } else if (kind === 'gg') {
+    el.innerHTML = '<div class="mgfx__gg">GG</div>';
+  }
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), reducedMotion() ? 1800 : duration);
 };
 
 /** Povezava za pridružitev sobi (ohrani ?igralec ne — vsak ima svojega). */
