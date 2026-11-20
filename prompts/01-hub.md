@@ -46,7 +46,7 @@ GitHub Pages je statičen, zato je **anon key javen**. Varnost je izključno v *
 ### Shema (`supabase/schema.sql`, ena datoteka, ki jo jaz poženem v SQL editorju)
 
 - `profiles`: `id uuid` (= `auth.uid()`), `nickname` (unikaten, 2–16 znakov), `avatar` (emoji + barva), `xp int`, `created_at`, `updated_at`.
-- `scores`: `id`, `game text`, `user_id`, `score int`, `seed text null` (za dnevni izziv), `meta jsonb`, `created_at`. Indeks na `(game, seed, score desc)`.
+- `game_scores` (ne `scores`, ker to ime že uporablja pinball): `id`, `game text`, `user_id`, `score int`, `seed text null` (za dnevni izziv), `meta jsonb`, `created_at`. Indeks na `(game, seed, score desc)`.
 - `achievements`: `user_id`, `game`, `key`, `unlocked_at`; primarni ključ `(user_id, game, key)`.
 - `rooms`: `code text pk` (4 znaki, brez zamenljivih znakov kot O/0, I/1), `game`, `host_id`, `status` (`lobby` / `playing` / `finished`), `max_players`, `settings jsonb`, `is_public bool`, `created_at`, `updated_at`.
 - `room_state`: `room_code` pk, `state jsonb`, `version int`, `updated_at`. Za potezne in asinhrone igre (ena vrstica stanja na sobo, optimistično zaklepanje z `version`).
@@ -152,6 +152,21 @@ Majhna, a zabavna igra, ki preizkusi **vso** infrastrukturo. Naj bo dodelana, ne
 - **Solo z dnevnim seedom**: 10 krogov, zaslon postane zelen po naključnem zamiku (iz `hub.rng(hub.dailySeed())`), klikneš ali tapneš čim hitreje; prezgoden klik je kazen. Rezultat je povprečni čas. Dnevna lestvica in lestvica vseh časov.
 - **Multiplayer (2–10)**: soba z room kodo, lobby iz `ui.lobby`, host sproži kroge (signal prek `room.send`), vsak igralec pošlje svoj čas, host razglasi zmagovalca kroga, na koncu `ui.results` s stopničkami.
 - XP za odigrano igro in za zmago, vsaj 3 dosežki (npr. »Pod 200 ms«, »Brez prezgodnjega klika«, »Zmaga v multiplayerju«).
+
+---
+
+## Pinball: kopija obstoječe igre (`games/pinball/`)
+
+V `D:\Git\Brainstorm\pinball` je dokončan pinball (ALU PINBALL 2.0, svoj git repo). **Original pusti nedotaknjen**, v hub samo prekopiraj igro:
+
+- Kopiraj `index.html`, `src/`, `tests/`, `tests.html`, `README.md`, `supabase/scores.sql` in `assets/logos/impol.png` v `games/pinball/`.
+- **Ne kopiraj**: `.git/`, `.DS_Store`, `PROMPT.md`, `PROGRESS.md`, `PREDLOGI-FIRME.md` in izvornih datotek logotipa (`.eps`, `.pdf`, `.jpg`, `Impol logotip.png`). Preveri, da `src/` ne uporablja nobene izpuščene datoteke.
+- Igre **ne prepisuj** in ne spreminjaj fizike, pravil ali izrisa. Poti so že relativne, zato mora delovati iz podmape. Preveri to v brskalniku na `/games/pinball/`.
+- Svoje lestvice ne seli v hub: ostane na svojem Supabase projektu (`src/config.js`, tabela `scores`). Konfiguracije ne spreminjaj.
+- Dodaj samo diskreten gumb ali povezavo »← Hub« (`../../`) na začetnem zaslonu, ki ne moti igranja. Če gre brez posega v logiko igre, ob koncu igre pokliči še `hub.awardXp(...)` za skupni XP. Če to zahteva večje spremembe, izpusti in zapiši v `PROGRESS.md`.
+- V `games.json` vnos `pinball` s statusom `live` (1 igralec, `single`, oznaki `arkada` in `rekordi`).
+- Testi pinballa (`node games/pinball/tests/run-node.mjs`) morajo po kopiranju še vedno uspeti.
+- V `games/pinball/README.md` dodaj na vrh opombo, da je to kopija in da je izvirnik v ločenem repoju `pinball`.
 
 ---
 
