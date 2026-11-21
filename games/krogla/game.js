@@ -9,7 +9,7 @@ import { createWorld, step, STEP, respawn, hammerPhase, magnetState } from './ph
 import * as R from './rules.js';
 import { Recorder, encode, decode } from './ghost.js';
 import { runAutopilot, pilot } from './autopilot.js';
-import { Renderer, DEFAULT_SKIN, QUALITY, QUALITY_ORDER } from './render.js';
+import { Renderer, DEFAULT_SKIN, QUALITY, QUALITY_ORDER, detectQuality } from './render.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 
@@ -19,12 +19,16 @@ const esc = ui.esc;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const isTouch = matchMedia('(pointer: coarse)').matches;
 /** Razvojni način: ?bot=1 — proge vozi autopilot (za preverjanje v pravi zanki igre). */
-const BOT = new URLSearchParams(location.search).get('bot') === '1';
+const QS = new URLSearchParams(location.search);
+const BOT = QS.get('bot') === '1';
+/** Razvojna parametra: ?lvl=N — takoj odpri progo N (Na čas, brez odklepa); ?q=ultra|high|medium|low — vsili kakovost. */
+const DEV_LVL = parseInt(QS.get('lvl') || '', 10) || 0;
+const DEV_Q = QS.get('q');
 
 /* ------------------------------------------------------------ nastavitve */
 
 const settings = Object.assign({
-  control: 'auto', touch: 'stick', sfx: true, music: true, camRotate: true, quality: 'auto', fps: false,
+  control: 'auto', touch: 'stick', sfx: true, music: true, camRotate: true, quality: 'auto', fps: false, post: true, dof: true, shakeCam: true,
 }, S.load('krogla:settings', {}));
 const saveSettings = () => S.save('krogla:settings', settings);
 const skin = Object.assign({}, DEFAULT_SKIN, S.load('krogla:skin', {}));
@@ -66,6 +70,7 @@ async function boot() {
   reached = new Set(S.load(uk('reached'), []));
   await refreshAch();
   showMenu();
+  if (DEV_LVL && ORDER[DEV_LVL - 1]) startTrial(ORDER[DEV_LVL - 1]);
   // prvi dotik odklene zvok
   addEventListener('pointerdown', () => audio.unlock(), { passive: true });
   addEventListener('keydown', () => audio.unlock(), { passive: true });
@@ -115,6 +120,7 @@ function showMenu(view = 'main', arg) {
   else if (view === 'settings') m.innerHTML = settingsHtml();
   bindMenu(view, arg);
   window.scrollTo({ top: 0 });
+  if (!menuShow) startMenuShow();
 }
 
 function nextMidnight() { return util.dayStart(new Date(Date.now() + 864e5)); }
@@ -239,7 +245,10 @@ function settingsHtml() {
     <label class="mg-check"><input type="checkbox" id="sMusic" ${settings.music ? 'checked' : ''}> Glasba</label>
     <label class="mg-check"><input type="checkbox" id="sCam" ${settings.camRotate ? 'checked' : ''}> Kamera se rahlo zasuka v smeri gibanja</label>
     <label class="mg-field"><span class="mg-label">Kakovost</span>
-      <select class="mg-select" id="sQ">${opt('auto', settings.quality, 'Samodejno')}${QUALITY_ORDER.map(q => opt(q, settings.quality, QUALITY[q].name)).join('')}</select></label>
+      <select class="mg-select" id="sQ">${opt('auto', settings.quality, 'Samodejno (' + QUALITY[autoQuality()].name.toLowerCase() + ')')}${QUALITY_ORDER.map(q => opt(q, settings.quality, QUALITY[q].name)).join('')}</select></label>
+    <label class="mg-check"><input type="checkbox" id="sPost" ${settings.post ? 'checked' : ''}> Post-processing (bloom, barvna korekcija, glajenje robov)</label>
+    <label class="mg-check"><input type="checkbox" id="sDof" ${settings.dof ? 'checked' : ''}> Globinska ostrina ozadja (ultra/visoka)</label>
+    <label class="mg-check"><input type="checkbox" id="sShake" ${settings.shakeCam ? 'checked' : ''}> Tresenje kamere ob udarcih</label>
     <label class="mg-check"><input type="checkbox" id="sFps" ${settings.fps ? 'checked' : ''}> Pokaži FPS</label>
   </div>`;
 }
@@ -317,6 +326,9 @@ function bindMenu(view, arg) {
     $('#sCam').onchange = e => { settings.camRotate = e.target.checked; saveSettings(); };
     $('#sQ').onchange = e => { settings.quality = e.target.value; saveSettings(); if (renderer) renderer.setQuality(initialQuality()); };
     $('#sFps').onchange = e => { settings.fps = e.target.checked; saveSettings(); };
+    $('#sPost').onchange = e => { settings.post = e.target.checked; saveSettings(); renderer?.setOptions({ post: settings.post }); };
+    $('#sDof').onchange = e => { settings.dof = e.target.checked; saveSettings(); renderer?.setOptions({ dof: settings.dof }); };
+    $('#sShake').onchange = e => { settings.shakeCam = e.target.checked; saveSettings(); renderer?.setOptions({ shake: settings.shakeCam }); };
     info();
   }
 }
@@ -400,14 +412,26 @@ function help() {
 /*  Motor (canvas, vhod, zanka)                                          */
 /* ===================================================================== */
 
+let autoQ = null;
+function autoQuality() { return autoQ || (autoQ = detectQuality()); }
+
 function initialQuality() {
-  if (settings.quality !== 'auto') return settings.quality;
-  return isTouch ? 'medium' : 'high';
+  if (DEV_Q && QUALITY[DEV_Q]) return DEV_Q;
+  if (settings.quality !== 'auto' && QUALITY[settings.quality]) return settings.quality;
+  return autoQuality();
 }
 
+let engineFailed = false;
 function ensureEngine() {
-  if (renderer) return;
-  renderer = new Renderer($('#cv'), { quality: initialQuality() });
+  if (renderer || engineFailed) return !!renderer;
+  const opts = { post: settings.post, dof: settings.dof, shake: settings.shakeCam, onLost: () => ui.toast('Grafika je bila ponastavljena — kakovost: Nizka.', { icon: '⚙️', duration: 2600 }) };
+  try { renderer = new Renderer($('#cv'), { quality: initialQuality(), ...opts }); }
+  catch (e) {
+    // brez WebGL: poskusi še nizko kakovost, sicer jasno sporočilo namesto črnega zaslona
+    try { renderer = new Renderer($('#cv'), { quality: 'low', ...opts }); }
+    catch (e2) { console.warn('WebGL ni na voljo', e2); engineFailed = true; ui.toast('Ta naprava ne podpira 3D grafike (WebGL).', { icon: '⚠️', duration: 5000 }); return false; }
+  }
+  if (BOT || DEV_LVL || QS.has('dev')) window.__kr = { renderer, get play() { return play || menuShow && { world: menuShow.world, L: menuShow.L }; } };   // samo za razvojne meritve
   input = new Input($('#play'), { stickEl: $('#stick'), knobEl: $('#knob') });
   addEventListener('resize', () => renderer.resize());
   $('#btnPause').onclick = () => togglePause();
@@ -426,7 +450,67 @@ function ensureEngine() {
     else if ((e.code === 'Enter' || e.code === 'Space') && play.next) { e.preventDefault(); const f = play.next; play.next = null; f(); }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden && play?.state === 'run') pause(); });
+  // med odštevanjem tipka ali dotik preskoči uvodni prelet kamere
+  const skip = () => { if (play?.state === 'count') renderer.skipIntro(); };
+  addEventListener('keydown', skip); $('#play').addEventListener('pointerdown', skip);
   requestAnimationFrame(frame);
+  prewarmIdle();
+  return true;
+}
+
+/** V času mirovanja pripravi teksture in okolje vseh lokacij (hitrejše nalaganje prog). */
+function prewarmIdle() {
+  const list = [...LEVELS];
+  const idle = window.requestIdleCallback || (f => setTimeout(() => f({ timeRemaining: () => 8 }), 200));
+  const next = () => idle(() => { const L = list.shift(); if (!L || !renderer) return; if (!renderer.isWarm(L)) renderer.prewarm(L); next(); }, { timeout: 3000 });
+  setTimeout(next, 1500);
+}
+
+/* ------------------------------------------------------------ 3D prelet za menijem */
+
+let menuShow = null;   // { L, world, pilot, acc, prevBall, rendered, deadT }
+
+function menuLevel() {
+  const pool = LEVELS.filter(L => (L.route || []).length);
+  const day = Math.floor(Date.now() / 864e5);
+  return pool[(day + (menuShow?.n || 0)) % pool.length];
+}
+
+function startMenuShow() {
+  if (!LEVELS.length || BOT || DEV_LVL) return;
+  if (!ensureEngine()) return;
+  const host = $('#menuBg');
+  if ($('#cv').parentElement !== host) host.appendChild($('#cv'));
+  document.body.classList.add('kr-has-bg');
+  const n = (menuShow?.n || 0) + 1;
+  const L = menuLevel();
+  const world = createWorld(L);
+  renderer.load(L, world, skin, { menu: true });
+  renderer.resize();
+  menuShow = { L, world, pilot: pilot(world, L.route || []), acc: 0, prevBall: { x: world.ball.x, y: world.ball.y, z: world.ball.z }, rendered: 0, deadT: 0, n };
+}
+
+function stopMenuShow() {
+  menuShow = null;
+  document.body.classList.remove('kr-has-bg');
+}
+
+function menuFrame(dt) {
+  const m = menuShow, w = m.world;
+  // nizka kakovost ali zmanjšano gibanje: statično ozadje (ena sličica)
+  const still = renderer.qualityKey === 'low' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still && m.rendered > 2) return;
+  if (!still) {
+    m.acc += dt;
+    let n = 0;
+    while (m.acc >= STEP && n < 20) { m.prevBall = { x: w.ball.x, y: w.ball.y, z: w.ball.z }; w.events.length = 0; const [ix, iz] = m.pilot(); step(w, ix, iz); m.acc -= STEP; n++; }
+    if (n >= 20) m.acc = 0;
+    m.deadT = w.dead ? m.deadT + dt : 0;
+    if (w.finished || m.deadT > 3 || w.t > 150) { startMenuShow(); return; }
+  }
+  const a = Math.min(1, m.acc / STEP), b = w.ball, pb = m.prevBall;
+  renderer.render(w, { x: pb.x + (b.x - pb.x) * a, y: pb.y + (b.y - pb.y) * a, z: pb.z + (b.z - pb.z) * a }, still ? 0.016 : dt, { menu: true, rotate: false });
+  m.rendered++;
 }
 
 let last = performance.now();
@@ -437,6 +521,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
+  if (menuShow && !play && !document.hidden) { menuFrame(dt); return; }
   if (!play || $('#play').classList.contains('mg-hidden')) return;
   const w = play.world;
   if (play.state === 'run') {
@@ -459,7 +544,7 @@ function frame(now) {
     const fps = fpsN / fpsAcc;
     $('#fps').classList.toggle('mg-hidden', !settings.fps);
     if (settings.fps) $('#fps').textContent = `${Math.round(fps)} fps · ${QUALITY[renderer.qualityKey].name}`;
-    if (settings.quality === 'auto' && play.state === 'run') {
+    if (settings.quality === 'auto' && !DEV_Q && play.state === 'run' && !document.hidden) {
       lowFor = fps < 45 ? lowFor + 1 : 0;
       const i = QUALITY_ORDER.indexOf(renderer.qualityKey);
       if (lowFor >= 3 && i < QUALITY_ORDER.length - 1) {
@@ -527,8 +612,8 @@ function onEvent(e) {
     case 'wasp': audio.play('wasp'); break;
     case 'bully': audio.play('bully'); renderer.shake(Math.min(0.3, e.v * 0.04)); break;
     case 'bumper': audio.play('bumper'); break;
-    case 'bump': audio.play('bump', e.v); break;
-    case 'land': audio.play('land'); break;
+    case 'bump': audio.play('bump', e.v); renderer.impact(b, e.v, 'bump'); break;
+    case 'land': audio.play('land'); renderer.impact(b, 2.5, 'land'); break;
     case 'shake': audio.play('shake'); break;
     case 'switch': audio.play('switch'); msg('Vrata odprta!'); break;
   }
@@ -566,6 +651,8 @@ function hud() {
 
 function enterPlay() {
   ensureEngine();
+  stopMenuShow();
+  if ($('#cv').parentElement !== $('#play')) $('#play').prepend($('#cv'));
   document.body.classList.add('kr-playing');
   $('#menu').classList.add('mg-hidden');
   $('#play').classList.remove('mg-hidden');
@@ -634,7 +721,14 @@ async function startLevel() {
   if (mode.kind === 'daily' && mode.mod.clocks) L = R.withExtraClocks(L);
   if (mode.kind === 'trial') L = { ...L, pickups: (L.pickups || []).filter(p => p.t !== 'clock') };
   const world = createWorld(L, mode.phys);
+  // nalagalnik, če teksture lokacije še niso pripravljene (prvo nalaganje lahko traja > 300 ms)
+  if (!renderer.isWarm(L)) {
+    $('#loader').classList.remove('mg-hidden');
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (my !== token) return;
+  }
   renderer.load(L, world, skin);
+  $('#loader').classList.add('mg-hidden');
   renderer.setGhosts(mode.kind === 'trial' ? mode.ghosts : []);
   lastHammer = new Map();
   play = { L, base, world, rec: new Recorder(), acc: 0, state: 'count', prevBall: { x: world.ball.x, y: world.ball.y, z: world.ball.z }, falls: 0, token: my, pilot: BOT ? pilot(world, L.route || []) : null };
@@ -735,7 +829,7 @@ async function levelDone() {
   play.state = 'done';
   const w = play.world, base = play.base;
   audio.play('goal');
-  renderer.burst(w.ball.x, w.ball.y + 0.3, w.ball.z, '#ffd23f', 40, 4);
+  renderer.celebrate(w.ball.x, w.ball.y, w.ball.z);
   const time = w.finishT;
   const stars = w.stars, falls = w.falls;
   hub.reportEvent('krogla:proga', 1);

@@ -36,12 +36,15 @@ Razvojni parameter `?bot=1`: proge vozi autopilot skozi pravo zanko igre (za pre
 | `rules.js` | ura, točke, težavnosti, medalje, odklepi, dnevni izbor in dodatki, dosežki, oblikovanje časov |
 | `ghost.js` | zapis (20 vzorcev/s), stiskanje (delta-delta + varint + base64; ~12 KB za 2 min), predvajanje |
 | `autopilot.js` | »voznik« po točkah poti (`route`) — test rešljivosti in razvijalčev ghost |
-| `render.js` | Three.js `0.160.0` (CDN): teren, objekti, sovražniki, krogla s hrčkom (`skin`), ghosti, kamera, kakovost |
+| `render.js` + `render/` | Three.js `0.160.0` (CDN, importmap): `looks.js` (lokacije po progah), `textures.js` (proceduralne PBR teksture), `sky.js` (nebo + IBL/PMREM), `materials.js` (dither prosojnost, plapolanje), `terrain.js` (teren, vertex AO, robovi), `objects.js` (ovire in sovražniki), `ball.js` (steklo, hrček s shell krznom), `fx.js` (delci, sled), `decor.js` (okras), `post.js` (bloom, AO, SMAA/FXAA, barvna korekcija, tilt-shift) |
 | `input.js`, `audio.js` | vhod (tipke, miška, palica, nagib) · WebAudio učinki in glasba |
 | `game.js` | meni, načini, stanja (odštevanje, igra, pavza, povzetek, konec), hub |
 
-**Videz krogle** je parameter (`DEFAULT_SKIN` v `render.js`: `glass`, `opacity`, `rim`, `rider` = `'hamster'` ali emoji, `fur`, `trail`).
-Igra ga prebere iz `localStorage` (`krogla:skin`), da ga bo lahko kasneje nastavljala trgovina. Fizika je za vse skine enaka.
+**Videz krogle** je parameter (`DEFAULT_SKIN` v `render.js`: `glass`, `opacity`, `rim`, `rider` = `'hamster'` ali emoji, `fur`, `trail`; nova polja `tint` (barva globine stekla), `roughness` (0–0,3), `pattern` (`none|stripes|dots|stars|hex`)).
+Igra ga prebere iz `localStorage` (`krogla:skin`). Fizika je za vse skine enaka.
+
+**Kakovost** (`QUALITY`): Ultra (GTAO, SMAA, globinska ostrina, prava transmisija stekla, 16 lupin krzna, senčna mapa 4096), Visoka (2048, brez AO), Srednja (FXAA, bloom, lažno Fresnel steklo, 6 lupin), Nizka (brez post-processinga, strojni MSAA, kontaktna senca, 3 lupine). Samodejna izbira (`detectQuality`) po zaslonu na dotik, jedrih in GPU; ob FPS < 45 se kakovost samodejno zniža. Ob izgubi WebGL konteksta igra preklopi na Nizko. Nastavitve: kakovost, post-processing, globinska ostrina, tresenje kamere.
+Razvojni parametri: `?lvl=N` (takoj odpri progo), `?q=ultra|high|medium|low`, `?dev=1` (`window.__kr` za meritve).
 
 ## Format proge (`levels/NN-ime.json`)
 

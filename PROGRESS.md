@@ -303,3 +303,39 @@ Ura proge = 1,25 × autopilot + 6 s; autopilot je pred zaostritvijo končal turn
 - **Samodejno zniževanje kakovosti** — v emulaciji je bilo 240 FPS, zato se ni sprožilo.
 - **Miška kot palica** — logika je, v avtomatiziranem brskalniku ni bila preizkušena.
 - Pinball test »multiball se začne s 3 žogicami« občasno pade (ok 3/4 zagonov) — obstaja že pred to igro, ni povezan s kroglo.
+
+## Hrčkova krogla — grafika
+
+Prompt: `prompts/05-krogla-grafika.md`. Stanje: **končano** (21. 11. 2026). Igranje, fizika, proge, časi in ghosti nespremenjeni.
+
+### Načrt
+- [x] Three.js 0.160.0 prek importmap, ACES, sRGB, IBL iz proceduralnega neba (PMREM, predpomnjeno po lokaciji)
+- [x] 10 lokacij (`render/looks.js`): vrt v zlati uri, kuhinja (bokeh), jutro nad oblaki, tovarna ob mraku, stolp, ledena dvorana, arena, neon, nebo ob zahodu, ognjeni prepad
+- [x] Nebo (gradient, sonce, FBM oblaki, morje oblakov, zvezde, sintetski horizont, lava), FogExp2
+- [x] Mehke sence, ki sledijo krogli s pripenjanjem na teksel mrežo; kontaktna senca vedno; kavstika (ultra/visoka)
+- [x] Vertex AO na terenu, GTAO na ultra; bloom, barvna korekcija, vinjeta, kromatska aberacija, tilt-shift (samo ozadje), SMAA/FXAA
+- [x] Proceduralne PBR teksture (barva + normal + roughness/metalness) za ~20 vrst podlag, predpomnjene
+- [x] Zaobljen svetel rob proge (instanciran), detajli pod robom po lokaciji, led s transmisijo (ior 1,31), lepilo s clearcoat
+- [x] Krogla: prava transmisija ali lažno Fresnel steklo, praske, šiv, loputa, luknjice, vzorci; hrček s shell texturing krznom, oči, ušesa, brki; tek/panika/veselje
+- [x] Objekti: zlat cilj z žarkom, plapolajoče zastavice, kovinske zvezdice/ure (razpad v delce), kladiva z rdečo talno oznako, žage z zameglitvijo in iskrami na vodilih, ventilatorji/sesalci z vidnim tokom, magneti z valovanjem, nasilnež iz karbona, ose s prosojnimi krili
+- [x] Kamera: vzmetno sledenje, FOV pri hitrosti, punch ob trku, uvodni prelet (preskočljiv), dither prosojnost ovir
+- [x] Kakovosti Ultra/Visoka/Srednja/Nizka + samodejno; nastavitve post/DoF/tresenje; izguba konteksta → Nizka
+- [x] Meni s 3D preletom (autopilot vozi progo; na Nizki statično), steklasti HUD, nalagalnik
+- [x] Draw calli < 150 (ultra 114–136), pomnilnik stabilen
+
+### Meritve (RTX 5080, Chromium; čas sličice = render + readPixels, sinhrono)
+| | prej (proga 1) | po (proga 1) | po (proga 6) |
+|---|---|---|---|
+| Ultra 1440×900 | — | 114 klicev, 0,50 M tri, 3,6 ms | 136 klicev, 1,7 ms |
+| Visoka 1440×900 | 30 klicev, 6,6 k tri, 0,63 ms | 77 klicev, 0,26 M tri, 1,2 ms | 87 klicev, 1,2 ms |
+| Srednja | 31 klicev, 0,54 ms | 53 klicev, 0,9 ms | 60 klicev, 1,0 ms |
+| Nizka | 31 klicev, 0,48 ms | 36 klicev, 0,6 ms | 42 klicev, 0,9 ms |
+| Telefon 375×812 (samodejno = Nizka) | 31 klicev, 0,50 ms | 35 klicev, 0,54 ms | — |
+
+Pomnilnik po 3× vseh 12 progah: 50 geometrij, 89 tekstur, 36 programov (ne raste). Toplo nalaganje proge ~80 ms; hladna tekstura 15–70 ms (predpripravljeno v času mirovanja, sicer nalagalnik).
+Zasloni prej/po: scratchpad seje (`shots/prej-*.jpg`, `shots/po-*.jpg`).
+
+### Ni bilo preverjeno
+- Realen FPS: brskalniško okno je bilo skrito (rAF omejen na 30 sličic/s), zato so meritve časovne (ms na sličico), ne FPS; pravi telefon ni bil preizkušen (≥ 45 FPS ni izmerjen na napravi).
+- `prefers-reduced-motion` preverjen le s simulacijo (`renderer.reduced = true`), ne s sistemsko nastavitvijo.
+- Firefox/Safari (iOS) in WebGL1 rezerva.

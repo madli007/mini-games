@@ -12,8 +12,17 @@
 <link rel="stylesheet" href="../../shared/ui.css">
 <link rel="stylesheet" href="../../shared/cosmetics.css">
 <link rel="stylesheet" href="game.css">
+<!-- Three.js: jedro in dodatki (examples/jsm) na isti pripeti verziji; dodatki uvažajo »three« prek importmap -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 </head>
 <body class="mg kr">
+  <div class="kr-menubg" id="menuBg" aria-hidden="true"></div>
+  <div class="kr-loader mg-hidden" id="loader" role="status"><span class="mg-spin"></span> Pripravljam progo …</div>
   <main class="mg-container kr-menu" id="menu" aria-live="polite">
     <div class="mg-empty"><span class="mg-spin"></span> Nalagam proge …</div>
   </main>
