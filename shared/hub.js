@@ -309,10 +309,13 @@ export const hub = {
    * Sporoči poseben dogodek za naloge (npr. hub.reportEvent('reakcija:avg', 231)).
    * @param {string} name 'igra:ime' (male črke, številke, : - _)
    * @param {number} [value]
+   * @param {{times?:number}} [opt] times: dogodek se zgodi večkrat (npr. 55 ponovljenih korakov), v enem klicu (≤ 100)
    */
-  async reportEvent(name, value = 1) {
+  async reportEvent(name, value = 1, { times = 1 } = {}) {
     if (!hub.profile || !/^[a-z0-9:_-]{2,40}$/.test(name || '')) return;
-    await hub._questEvents([{ name, value }]);
+    const n = Math.max(0, Math.min(100, times | 0));
+    if (!n) return;
+    await hub._questEvents(Array.from({ length: n }, () => ({ name, value })));
   },
 
   /**

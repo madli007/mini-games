@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Zaporedje — polja zasvetijo, ti ponoviš. Dnevno zaporedje za vse ali spominski dvoboj do 10 igralcev.">
+<title>Zaporedje · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23090a1a'/%3E%3Crect x='1.5' y='1.5' width='6' height='6' rx='1.5' fill='%23b86bff'/%3E%3Crect x='8.5' y='1.5' width='6' height='6' rx='1.5' fill='%234de1ff'/%3E%3Crect x='1.5' y='8.5' width='6' height='6' rx='1.5' fill='%23ffd23f'/%3E%3Crect x='8.5' y='8.5' width='6' height='6' rx='1.5' fill='%2339ff88'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg zp-body">
+  <div class="zp-bg" aria-hidden="true"></div>
+  <main class="mg-container zp">
+
+    <!-- MENI -->
+    <section id="menu" class="zp-screen">
+      <div class="zp-hero mg-card mg-card--glow">
+        <div class="zp-hero__icon" aria-hidden="true"><i style="--c:#b86bff">●</i><i style="--c:#4de1ff">▲</i><i style="--c:#ffd23f">■</i><i style="--c:#39ff88">◆</i></div>
+        <div>
+          <h1 class="mg-title" style="margin:0 0 8px">Zaporedje</h1>
+          <p class="mg-muted" style="margin:0">Ploščice zasvetijo in zapojejo — ti jih ponoviš. Vsak krog en korak več.
+            Ena napaka in konec. Kako dolgo melodijo si zapomniš?</p>
+        </div>
+      </div>
+
+      <div class="zp-modes">
+        <div class="mg-card mg-stack zp-mode">
+          <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Klasika</h2><span class="mg-badge" id="classicBest"></span></div>
+          <p class="mg-muted" style="margin:0">Neskončno zaporedje, vsak krog doda naključen korak.</p>
+          <div class="zp-opts">
+            <label class="mg-field"><span class="mg-label">Čas na korak</span>
+              <select class="mg-select" id="soloLimit"><option value="2000">2 s</option><option value="3000">3 s</option><option value="5000">5 s</option><option value="0">brez</option></select></label>
+            <label class="mg-check zp-check"><input type="checkbox" id="secondChance"> <span>Druga priložnost <span class="mg-small mg-muted">(brez rekorda)</span></span></label>
+          </div>
+          <button class="mg-btn mg-btn--primary mg-btn--big mg-btn--block zp-btn-classic" id="btnClassic">Igraj klasiko</button>
+        </div>
+
+        <div class="mg-card mg-stack zp-mode zp-mode--daily">
+          <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Dnevni izziv</h2><span class="mg-badge mg-badge--yellow" id="dailyState"></span></div>
+          <div class="zp-mod" id="dailyMod"></div>
+          <p class="mg-muted mg-small" style="margin:0">Vsi imajo danes <b>isto zaporedje</b> in isti modifikator. Na lestvico šteje <b>prvi poskus</b>, ostali so vaja.</p>
+          <div class="zp-best" id="dailyBest"></div>
+          <button class="mg-btn mg-btn--green mg-btn--big mg-btn--block" id="btnDaily">Igraj dnevni izziv</button>
+        </div>
+
+        <div class="mg-card mg-stack zp-mode">
+          <h2 class="mg-title" style="margin:0">Z družbo</h2>
+          <p class="mg-muted" style="margin:0"><b>Spominski dvoboj</b>: vsi hkrati, isto zaporedje, zadnji preživeli zmaga.
+            <b>Štafeta</b>: po vrsti ponoviš in dodaš svoj korak. 2–10 igralcev.</p>
+          <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnCreate">Ustvari sobo</button>
+          <form class="mg-row" id="joinForm" autocomplete="off">
+            <input class="mg-input mg-input--code" id="joinCode" maxlength="4" placeholder="KODA" aria-label="Koda sobe" style="flex:1;min-width:0;font-size:20px">
+            <button class="mg-btn mg-btn--cyan" type="submit">Pridruži se</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mg-grid mg-grid--2">
+        <div class="mg-card" id="board"></div>
+        <div class="mg-card">
+          <h2 class="mg-title">Dosežki</h2>
+          <div id="achList" class="zp-ach"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="zp-screen mg-hidden"></section>
+
+    <!-- IGRA -->
+    <section id="play" class="zp-screen mg-hidden">
+      <div class="zp-top">
+        <span class="mg-badge mg-badge--pink" id="modeLbl">Klasika</span>
+        <span class="mg-badge" id="modLbl"></span>
+        <span class="mg-spacer"></span>
+        <button class="mg-btn mg-btn--ghost mg-btn--small zp-mute" id="btnMute" aria-label="Utišaj zvok">🔊</button>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnQuit">Prekini</button>
+      </div>
+      <div class="zp-players mg-hidden" id="players"></div>
+      <div class="zp-layout">
+        <div class="zp-main">
+          <div class="zp-hud">
+            <div class="zp-count"><span class="zp-count__n" id="count">0</span><span class="zp-count__lbl" id="countLbl">korakov</span></div>
+            <div class="zp-rec" id="recLbl"></div>
+          </div>
+          <div class="zp-bars">
+            <div class="zp-bar zp-bar--steps" title="Preostali koraki"><i id="barSteps"></i></div>
+            <div class="zp-bar zp-bar--time" title="Čas za korak"><i id="barTime"></i></div>
+          </div>
+          <div class="zp-status" id="status" aria-live="polite">Pripravi se</div>
+          <div class="zp-stage" id="stage">
+            <div class="zp-wave" aria-hidden="true"></div>
+            <div class="zp-board" role="group" aria-label="Ploščice"></div>
+            <div class="zp-say" id="say" aria-live="polite"></div>
+          </div>
+          <div class="zp-endbar mg-hidden" id="endbar"></div>
+        </div>
+        <aside class="zp-side mg-card mg-hidden" id="side"></aside>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

@@ -79,6 +79,30 @@
     ]
   },
   {
+    "id": "zaporedje",
+    "name": "Zaporedje",
+    "description": "Polja zasvetijo, ti ponoviš. Vsak krog en korak več. Dnevno zaporedje za vse ali spominski dvoboj do 10 igralcev.",
+    "icon": "🎹",
+    "path": "games/zaporedje/",
+    "players": { "min": 1, "max": 10 },
+    "mode": "realtime",
+    "tags": ["spomin", "daily", "party", "rekordi"],
+    "status": "live",
+    "scoreOrder": "desc",
+    "scoreUnit": "korakov",
+    "color": "#b86bff",
+    "quests": [
+      { "id": "play", "tier": "e", "text": "Odigraj igro Zaporedja", "event": "play:zaporedje", "target": 1 },
+      { "id": "len-8", "tier": "e", "text": "V Zaporedju doseži dolžino 8", "event": "zaporedje:len", "target": 1, "cmp": "gte", "goal": 8 },
+      { "id": "len-12", "tier": "m", "text": "V Zaporedju doseži dolžino 12", "event": "zaporedje:len", "target": 1, "cmp": "gte", "goal": 12 },
+      { "id": "daily", "tier": "m", "text": "Odigraj dnevno zaporedje", "event": "daily:zaporedje", "target": 1 },
+      { "id": "len-20", "tier": "h", "text": "V Zaporedju doseži dolžino 20", "event": "zaporedje:len", "target": 1, "cmp": "gte", "goal": 20 },
+      { "id": "mp-win", "tier": "h", "text": "Zmagaj spominski dvoboj", "event": "zaporedje:mp-win", "target": 1 },
+      { "id": "w-steps", "tier": "w", "text": "Ponovi skupaj 100 korakov ta teden", "event": "zaporedje:steps", "target": 100 },
+      { "id": "w-len-15", "tier": "w", "text": "V Zaporedju 3-krat doseži dolžino 15", "event": "zaporedje:len", "target": 3, "cmp": "gte", "goal": 15 }
+    ]
+  },
+  {
     "id": "bomba-arena",
     "name": "Bomba arena",
     "description": "Postavljaj bombe, ruši zidove, poberi powerupe in ostani zadnji na areni.",

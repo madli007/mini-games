@@ -114,6 +114,7 @@ await hub.reportGame({ won: true, players: 4, score: 231, daily: true });
 //   won: zmaga (šteje le pri players ≥ 2) · players: število igralcev · score: rezultat (za naloge)
 //   daily: odigran dnevni izziv · vrne { coins, granted, streak, streak_bonus } ali null
 await hub.reportEvent('reakcija:avg', 231);   // poseben dogodek za naloge (ime 'igra:ime')
+await hub.reportEvent('zaporedje:steps', 1, { times: 55 });   // isti dogodek večkrat v enem klicu (≤ 100)
 await hub.awardCoins(20, 'bonus');            // bonus iz igre: ≤100 na klic, skozi dnevno mejo
 hub.coins                                     // trenutno stanje (tudi hub.profile.coins)
 ```

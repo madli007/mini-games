@@ -339,3 +339,68 @@ Zasloni prej/po: scratchpad seje (`shots/prej-*.jpg`, `shots/po-*.jpg`).
 - Realen FPS: brskalniško okno je bilo skrito (rAF omejen na 30 sličic/s), zato so meritve časovne (ms na sličico), ne FPS; pravi telefon ni bil preizkušen (≥ 45 FPS ni izmerjen na napravi).
 - `prefers-reduced-motion` preverjen le s simulacijo (`renderer.reduced = true`), ne s sistemsko nastavitvijo.
 - Firefox/Safari (iOS) in WebGL1 rezerva.
+
+---
+
+# Zaporedje (`games/zaporedje/`)
+
+Prompt: `prompts/08-zaporedje.md`. Stanje: **končano** (21. 11. 2026).
+
+## Načrt
+
+- [x] `logic.js` — ploščice (barva + simbol + pentatonični ton), generator iz seeda (»največ 3 enaki zapored«), vnos
+      (`startInput`/`press`/`timeout`), modifikatorji (7: brez, Zrcalo, Šest, Tišina, Samo posluh, Kameleon, Turbo),
+      tempo 600 → 250 ms, točkovanje, XP, povzetek, dvoboj (izpadi, opravičeni odsotni, razvrstitev ob hkratnem izpadu),
+      štafeta (poteze, izpadi, skladatelj), nagrade, komentator (≥ 30 napisov), niz dni
+- [x] Testi v `tests/tests.js` (10 novih): isti/različen seed, pravilo 3 enakih (tudi s konstantnim PRNG), modifikatorji se
+      vrtijo, vnos, Zrcalo, Kameleon (par barva–simbol–ton), časovna omejitev = napaka, tempo/XP/povzetek/tipke,
+      dvoboj (hkraten izpad, odsotni, odhod), štafeta; games.json (vnos + 8 nalog)
+- [x] `audio.js` — WebAudio (sinus + trikotnik + »zvonček«, rahel odmev), »bzzz«, fanfara, utišanje v `shared/storage.js`
+- [x] `board.js` — neon ploščice 2×2 / 3×2, žarenje, val svetlobe, pulse, utripanje pravilne ploščice, shake, FLIP pri Kameleonu
+- [x] Klasika (čas na korak 2/3/5 s/brez, druga priložnost brez rekorda), osebni rekord, zlato ozadje ob izenačenju, fanfara
+- [x] Dnevni izziv: zaporedje 120 korakov + modifikator dneva iz `hub.dailySeed`; prvi poskus na lestvico, ostali vaja
+- [x] Spominski dvoboj (host vodi kroge, `room.send`, kljukice, izpadi, prenos hosta, vrnitev v 15 s, revanša)
+- [x] Štafeta (`room.setState` z `expectedVersion`, `room.pushMove`, tapi v živo prek `room.send`, nadzornik hosta)
+- [x] TV pogled (`?tv=1` ali gumb v lobbyju; TV ne igra), »Predvajanje samo na TV-ju«
+- [x] 10 dosežkov, XP po prompt-u, `reportGame` + `reportEvent('zaporedje:len' | 'zaporedje:steps' | 'zaporedje:mp-win')`
+- [x] `games.json` (`live`, 8 nalog) · `hub.reportEvent(name, value, { times })` (nova opcija, README)
+
+## Dnevnik
+
+- **Naloga »100 korakov ta teden«.** `applyEvent` šteje dogodke (ne vsote vrednosti), zato bi igra morala klicati
+  `reportEvent` za vsak korak. `hub.reportEvent` ima zdaj tretji argument `{ times }` (≤ 100), ki v enem prehodu
+  doda N dogodkov (en `getQuests` namesto N). Obstoječi klici so nespremenjeni.
+- **Generator.** Pravilo »največ 3 enaki« je uveljavljeno pri vsakem koraku (`nextStep` preskoči na drugo ploščico);
+  test z vedno enakim PRNG to potrdi. Isto pravilo velja v štafeti pri dodajanju koraka (UI ga zavrne s toastom).
+- **Kameleon** je determinističen (`hub.rng(seed + ':zaporedje:kameleon')`), zato imajo vsi enake premike.
+- **Dvoboj — hrošč, najden pri testu:** host je ob prejemu lastnega `roundEnd` zamenjal `mp.d` s kopijo in nato
+  pošiljal zastarelo stanje (krog 1). Zdaj ima host, ki vodi igro, svojo verodostojno kopijo (`acceptD`).
+- **Odsotni v dvoboju:** igralec brez rezultata, ki ni prisoten, je opravičen 15 s (`RETURN_GRACE_MS`); po tem izpade,
+  uvrščen po krogu, ko je izginil (ne po krogu izločitve). Igralec, ki se vrne (`needSync`), krog, ki ga je zamudil,
+  ne izgubi. Ob prenosu hosta nov host ponovi krog, ki je bil v teku.
+- **Štafeta:** stanje piše igralec na potezi (`applyRelayMove` + `setState` z `expectedVersion`, ob konfliktu ponovno
+  prebere). Host vsako sekundo preveri, ali je igralec na potezi odsoten > 15 s ali obtičal → izpade.
+- **Telefon:** val svetlobe (`inset: -18%`) je širil stran (layout viewport 422 px) in modal je segal čez rob →
+  `overflow-x: clip`. `navigator.vibrate` se kliče le po prvi interakciji (sicer Chrome izpiše napako).
+- **Preizkus modifikatorjev:** skrit parameter `?mod=<id>` (npr. `?mod=chameleon`) pri dnevnem izzivu vsili
+  modifikator; tak poskus je vedno vaja (nikoli na lestvico).
+- **Supabase:** lastnih tabel ni (lestvica = `game_scores`, stanje štafete = `room_state`/`moves`). Ni kaj pognati.
+
+## Preverjeno
+
+- `node tests/run-node.mjs` in `tests.html`: 80/80.
+- Brskalnik (offline, avtomat, ki bere prižige in tapka): klasika (rekord, zlato ozadje, fanfara, dosežek, naloge,
+  povzetek), druga priložnost (krog se ponovi, brez rekorda), tipkovnica (Q W A S), dnevni izziv (prvi poskus →
+  lestvica in mesto, nato »vaja«), Kameleon, Zrcalo, Šest, Tišina (dnevni).
+- Multiplayer v 3 zavihkih (`?offline=1`): soba prek kode in `?room=`, dvoboj do konca, revanša v isti sobi, host zapre
+  zavihek sredi dvoboja (nov host ponovi krog in pripelje igro do konca), štafeta s 3 do konca (nagrade, skladatelj),
+  osvežitev igralca na potezi v štafeti (vrne se na svojo potezo), osvežitev igralca med dvobojem (vrne se v
+  naslednji krog, brez izpada), TV pogled kot opazovalec v dvoboju.
+- Telefon 375×812 (meni, igra, povzetek, lobby) in namizje 1024×768; konzola brez napak (igra, dashboard).
+
+## Ni bilo preverjeno
+
+- Zvok na pravi napravi (WebAudio teče, a ušesa testa ni bilo; iOS zahteva tap pred prvim tonom — `unlockAudio` ob
+  prvem `pointerdown`/tipki).
+- Modifikatorja *Samo posluh* in *Turbo* v brskalniku (le testi logike); `prefers-reduced-motion` s sistemsko nastavitvijo.
+- Supabase način (vse v offline adapterju), Safari/Firefox, pravi telefon z vibracijo.

@@ -7,6 +7,7 @@ import * as U from '../shared/util.js';
 import { LocalBackend } from '../shared/adapters/local.js';
 import { Room } from '../shared/room.js';
 import * as RK from '../games/reakcija/logic.js';
+import * as ZP from '../games/zaporedje/logic.js';
 import * as S from '../shared/storage.js';
 import * as E from '../shared/economy.js';
 import * as Q from '../shared/quests.js';
@@ -145,6 +146,9 @@ test('games.json ustreza shemi', (ctx) => {
   ok(ctx.games.some(g => g.id === 'pinball' && g.status === 'live'));
   ok(ctx.games.filter(g => g.status === 'soon').length >= 13);
   ok(ctx.games.some(g => g.id === 'ladjice' && g.status === 'live' && g.scoreOrder === 'asc'));
+  ok(ctx.games.some(g => g.id === 'zaporedje' && g.status === 'live' && g.scoreOrder === 'desc'));
+  const zq = Q.expandTemplates(ctx.games).filter(t => t.game === 'zaporedje' && t.id.startsWith('zaporedje-'));
+  ok(zq.length === 8 && zq.some(t => t.id === 'zaporedje-w-steps' && t.target === 100), 'naloge zaporedja');
 });
 test('validator sheme zazna napake', (ctx) => {
   const bad = [{ ...ctx.games[0], id: 'Slabo ID', mode: 'x' }, { ...ctx.games[0] }];
@@ -313,6 +317,156 @@ test('reakcija: zmagovalec kroga, lestvica, XP', () => {
   ok(RK.soloXp(190) > RK.soloXp(400));
   ok(RK.mpXp(true, 4) > RK.mpXp(false, 4));
   ok(RK.mpXp(true, 10) <= 500);
+});
+
+/* ------------------------------------------------------- zaporedje */
+test('zaporedje: isti seed → isto zaporedje, različen seed → različno', () => {
+  const a = ZP.seqFromSeed(U.rng, '2026-11-21', 120), b = ZP.seqFromSeed(U.rng, '2026-11-21', 120);
+  eq(a, b);
+  eq(a.length, 120);
+  ok(a.every(t => Number.isInteger(t) && t >= 0 && t < 4));
+  ok(JSON.stringify(ZP.seqFromSeed(U.rng, '2026-11-22', 120)) !== JSON.stringify(a));
+  const d1 = ZP.dailyPlan(U.rng, '2026-11-21'), d2 = ZP.dailyPlan(U.rng, '2026-11-21');
+  eq(d1, d2);
+  ok(d1.seq.length >= 100);
+  ok(ZP.MODS.some(m => m.id === d1.mod));
+  eq(d1.n, d1.mod === 'six' ? 6 : 4);
+  ok(d1.seq.every(t => t < d1.n));
+});
+test('zaporedje: nikoli več kot 3 enaki koraki zapored', () => {
+  ok(ZP.validRun([0, 0, 0, 1, 1, 1, 0]));
+  ok(!ZP.validRun([2, 0, 0, 0, 0]));
+  ok(ZP.canAppend([1, 0, 0], 0) && !ZP.canAppend([1, 0, 0, 0], 0) && ZP.canAppend([1, 0, 0, 0], 1));
+  // tudi z »zlobnim« PRNG, ki vedno vrne isto
+  ok(ZP.validRun(ZP.generate(() => 0, 50, 4)), 'konstanten PRNG krši pravilo');
+  for (let s = 0; s < 40; s++) {
+    ok(ZP.validRun(ZP.seqFromSeed(U.rng, 'seed' + s, 300, s % 2 ? 4 : 6)), 'seed ' + s);
+  }
+  for (let i = 0; i < 60; i++) {
+    const day = new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+    ok(ZP.validRun(ZP.dailyPlan(U.rng, day).seq), day);
+  }
+});
+test('zaporedje: dnevni modifikatorji (vsaj 6) se vrtijo', () => {
+  ok(ZP.MODS.length >= 7);
+  const seen = new Set();
+  for (let i = 0; i < 120; i++) seen.add(ZP.dailyMod(U.rng, new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10)));
+  ok(seen.size >= 6, 'premalo različnih modifikatorjev: ' + seen.size);
+});
+test('zaporedje: preverjanje vnosa', () => {
+  let st = ZP.startInput([2, 0, 3]);
+  st = ZP.press(st, 2, 400);
+  ok(!st.done && !st.failed);
+  eq(st.pos, 1);
+  st = ZP.press(st, 0, 300);
+  st = ZP.press(st, 3, 200);
+  ok(st.done && !st.failed);
+  eq(st.times, [400, 300, 200]);
+  const bad = ZP.press(ZP.press(ZP.startInput([1, 1, 2]), 1), 2);
+  ok(bad.failed);
+  eq([bad.reason, bad.pos, bad.got, ZP.missedTile(bad)], ['wrong', 1, 2, 1]);
+  eq(ZP.press(bad, 1), bad, 'po napaki se vnos ne nadaljuje');
+});
+test('zaporedje: Zrcalo pravilno obrne vnos', () => {
+  const seq = [0, 1, 2, 3, 1];
+  eq(ZP.expectedFor(seq, 4), [0, 1, 2, 3]);
+  eq(ZP.expectedFor(seq, 4, 'mirror'), [3, 2, 1, 0]);
+  eq(seq, [0, 1, 2, 3, 1], 'izvirnik ostane');
+  let st = ZP.startInput(ZP.expectedFor(seq, 3, 'mirror'));
+  for (const t of [2, 1, 0]) st = ZP.press(st, t);
+  ok(st.done);
+  ok(ZP.press(ZP.startInput(ZP.expectedFor(seq, 3, 'mirror')), 0).failed, 'naprej po vrsti v Zrcalu ni pravilno');
+});
+test('zaporedje: Kameleon ohrani par barva–simbol–ton', () => {
+  const r = U.rng('kameleon');
+  let lay = ZP.identityLayout(6);
+  const pairs = L0 => ZP.tilesAt(L0).map(t => `${t.color}|${t.sym}|${t.freq}`).sort();
+  const want = pairs(lay);
+  for (let i = 0; i < 30; i++) {
+    const next = ZP.chameleonLayout(lay, r);
+    ok(next.some((v, k) => v !== lay[k]), 'razporeditev se ni spremenila');
+    eq(next.slice().sort(), ZP.identityLayout(6), 'ni permutacija');
+    eq(pairs(next), want);
+    const tiles = ZP.tilesAt(next);
+    next.forEach((id, pos) => eq([tiles[pos].id, tiles[pos].color, tiles[pos].freq], [id, ZP.TILES[id].color, ZP.TILES[id].freq]));
+    lay = next;
+  }
+  ok(ZP.chameleonLayout([0, 1], () => 0).join() !== '0,1');
+});
+test('zaporedje: časovna omejitev se šteje kot napaka', () => {
+  ok(ZP.isTimedOut(3000, 3000) && !ZP.isTimedOut(2999, 3000));
+  ok(!ZP.isTimedOut(99999, 0), 'brez omejitve');
+  const st = ZP.timeout(ZP.press(ZP.startInput([0, 1]), 0));
+  ok(st.failed);
+  eq([st.reason, ZP.missedTile(st)], ['timeout', 1]);
+  eq(ZP.timeout(ZP.press(ZP.startInput([0]), 0)).failed, false, 'končan vnos ne more poteči');
+  ok(ZP.lineForFail('timeout', null, 1).length > 3);
+});
+test('zaporedje: tempo, točke, XP, povzetek, tipke', () => {
+  eq(ZP.tempoMs(1), 600);
+  ok(ZP.tempoMs(10) < ZP.tempoMs(5));
+  eq(ZP.tempoMs(40), 250);
+  ok(ZP.tempoMs(1, 'turbo') <= 300 && ZP.tempoMs(99, 'turbo') >= 200);
+  eq(ZP.scoreFor(8), 7);
+  eq(ZP.scoreFor(1), 0);
+  eq(ZP.xpFor({ len: 3 }), 15);
+  eq(ZP.xpFor({ len: 12 }), 22);
+  eq(ZP.xpFor({ len: 100, daily: true, mpWin: true }), 15 + 40 + 15 + 40);
+  eq(ZP.stepsFor(3, 2), 8);
+  const s = ZP.summary([{ len: 1, times: [500], ok: true }, { len: 2, times: [400, 300], ok: true },
+    { len: 3, times: [300, 300, 300], ok: true }, { len: 4, times: [200, 400, 300, 500], ok: true }, { len: 5, times: [100], ok: false }]);
+  eq([s.len, s.fastest], [4, { round: 3, avgMs: 300 }]);
+  eq(ZP.lengthAchievements(16), ['prvi-koraki', 'slon']);
+  ok(ZP.isLightning({ ok: true, times: Array(10).fill(250) }) && !ZP.isLightning({ ok: true, times: Array(9).fill(100) }));
+  eq(ZP.dayStreak(['2026-11-21', '2026-11-20', '2026-11-19', '2026-11-17'], '2026-11-21'), 3);
+  eq(ZP.dayStreak(['2026-11-20'], '2026-11-21'), 0);
+  eq(ZP.dayStreak(['2026-03-01', '2026-02-28'], '2026-03-01'), 2);
+  ok(ZP.ALL_LINES.length >= 15, 'premalo napisov');
+  eq(ZP.lineForFail('wrong', 1, 2, () => 0), 'Ups, ▲ ni ■.');
+  eq(ZP.keyToPos('KeyW'), 1);
+  eq(ZP.keyToPos('Digit6', 6), 5);
+  eq(ZP.keyToPos('KeyZ'), -1);
+});
+test('zaporedje: dvoboj — izpadi in razvrstitev ob hkratnem izpadu', () => {
+  const st = { a: { outRound: null }, b: { outRound: null }, c: { outRound: null }, d: { outRound: null } };
+  let r = ZP.applyDuelRound(st, 1, { a: { ok: true, ms: 500 }, b: { ok: true, ms: 400 }, c: { ok: false, progress: 0, ms: 300 }, d: { ok: true, ms: 600 } });
+  eq([r.out, r.over], [['c'], false]);
+  // d manjka, a je opravičen (vrnitev v 15 s) — d izpade, a ne
+  r = ZP.applyDuelRound(r.st, 2, { b: { ok: true, ms: 900 } }, ['a']);
+  eq([r.out, r.alive.sort(), r.over], [['d'], ['a', 'b'], false]);
+  // vsi preostali se zmotijo v istem krogu: najprej tisti, ki je prišel dlje, nato hitrejši
+  r = ZP.applyDuelRound(r.st, 3, { a: { ok: false, progress: 2, ms: 1500 }, b: { ok: false, progress: 2, ms: 1200 } });
+  ok(r.over);
+  eq(r.winner, 'b');
+  eq(ZP.rankDuel(r.st), ['b', 'a', 'd', 'c']);
+  r = ZP.applyDuelRound({ x: { outRound: null }, y: { outRound: null } }, 4, { x: { ok: false, progress: 3, ms: 9000 }, y: { ok: false, progress: 1, ms: 100 } });
+  eq(r.winner, 'x', 'dlje je pomembnejše od hitrosti');
+  r = ZP.applyDuelRound({ x: { outRound: null }, y: { outRound: null } }, 5, { x: { ok: true, ms: 1 }, y: { ok: false, progress: 4, ms: 1 } });
+  eq([r.over, r.winner], [true, 'x']);
+  // odsoten od 3. kroga, izločen v 5. → uvrščen kot izpad v 3. krogu
+  r = ZP.applyDuelRound({ x: { outRound: null }, y: { outRound: 4 }, z: { outRound: null } }, 5, { x: { ok: true, ms: 1 } }, [], { z: 3 });
+  eq([r.st.z.outRound, ZP.rankDuel(r.st)], [3, ['x', 'y', 'z']]);
+  const aw = ZP.awards({ x: { best: 5, totalMs: 3000, steps: 15, outRound: null }, y: { best: 4, totalMs: 1000, steps: 14, outRound: 5 } }, ['x', 'y']);
+  eq(aw.map(a => [a.key, a.id]), [['slon', 'x'], ['strela', 'y'], ['nesrecnik', 'y']]);
+});
+test('zaporedje: štafeta — poteze, izpadi, skladatelj', () => {
+  let s = { seq: [], authors: [], order: ['a', 'b', 'c'], turn: 0, out: {}, falls: {}, n: 4, turnNo: 0 };
+  s = ZP.applyRelayMove(s, { by: 'a', ok: true, added: 2 });
+  eq([s.seq, s.turn], [[2], 1]);
+  eq(ZP.applyRelayMove(s, { by: 'c', ok: true, added: 1 }), s, 'ni na potezi');
+  s = ZP.applyRelayMove(s, { by: 'b', ok: true, added: 2 });
+  s = ZP.applyRelayMove(s, { by: 'c', ok: true, added: 2 });
+  eq(s.seq, [2, 2, 2]);
+  ok(ZP.applyRelayMove(s, { by: 'a', ok: true, added: 2 }).out.a, 'četrti enak korak ni dovoljen');
+  s = ZP.applyRelayMove(s, { by: 'a', ok: true, added: 0 });
+  s = ZP.applyRelayMove(s, { by: 'b', ok: false, failAt: 3 });
+  eq([s.turn, s.out.b.at], [2, 3]);
+  s = ZP.applyRelayMove(s, { by: 'c', ok: false, failAt: 3, reason: 'timeout' });
+  ok(s.over);
+  eq(s.winner, 'a');
+  eq(ZP.rankRelay(s), ['a', 'c', 'b']);
+  eq(ZP.composer(s), { id: 'a', step: 3, falls: 2 });
+  eq(ZP.nextTurn(['a', 'b', 'c'], { b: {} }, 0), 2);
 });
 
 /* ------------------------------------------------------- naloge */
