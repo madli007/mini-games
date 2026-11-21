@@ -10,7 +10,8 @@ import { normalizeRoomCode, level as levelOf } from '../util.js';
 
 const KNOWN = ['room_not_found', 'room_started', 'room_full', 'version_conflict', 'not_next_host',
   'no_profile', 'not_authenticated', 'too_many_rooms', 'move_conflict',
-  'not_enough_coins', 'not_owned', 'not_free', 'locked', 'owned', 'unavailable', 'claimed', 'expired'];
+  'not_enough_coins', 'not_owned', 'not_free', 'locked', 'owned', 'unavailable', 'claimed', 'expired',
+  'impossible_time', 'ghost_too_big', 'unknown_level'];
 const MESSAGES = {
   room_not_found: 'Soba s to kodo ne obstaja.',
   room_started: 'Igra v tej sobi se je že začela.',
@@ -218,6 +219,29 @@ export class SupabaseBackend {
     let q = this.client.from('achievements').select('*').eq('user_id', userId);
     if (game) q = q.eq('game', game);
     return check(await q.order('unlocked_at', { ascending: false }));
+  }
+
+  /* ------------------------------- ghosti -------------------------------- */
+  // Tabela <igra>_ghosts in RPC <igra>_save_ghost (npr. supabase/games/krogla.sql).
+
+  async saveGhost({ game, level, mirror = false, timeMs, data }) {
+    const fn = game.replace(/-/g, '_') + '_save_ghost';
+    return check(await this.client.rpc(fn, { p_level: level, p_mirror: !!mirror, p_time_ms: Math.round(timeMs), p_data: data }));
+  }
+
+  async getGhosts({ game, level, mirror = false, limit = 10 }) {
+    const t = game.replace(/-/g, '_') + '_ghosts';
+    const rows = check(await this.client.from(t).select('user_id,time_ms,created_at,profiles(nickname,avatar,equipped)')
+      .eq('level', level).eq('mirror', !!mirror).order('time_ms', { ascending: true }).limit(limit));
+    return rows.map(r => ({
+      user_id: r.user_id, time_ms: r.time_ms, created_at: r.created_at,
+      nickname: r.profiles?.nickname || '???', avatar: r.profiles?.avatar || { emoji: '❔', color: '#888' }, equipped: r.profiles?.equipped || {},
+    }));
+  }
+
+  async getGhost({ game, level, mirror = false, userId = this.userId }) {
+    const t = game.replace(/-/g, '_') + '_ghosts';
+    return check(await this.client.from(t).select('user_id,time_ms,data').eq('user_id', userId).eq('level', level).eq('mirror', !!mirror).maybeSingle());
   }
 
   /* -------------------------------- sobe --------------------------------- */

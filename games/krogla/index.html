@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Hrčkova krogla — kotališ hrčka v krogli po zračnih progah. Turnir s prenosom časa, Na čas z ghosti, zrcalni turnir in dnevni izziv.">
+<title>Hrčkova krogla · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23ffd23f'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%23bfeaff' opacity='.7'/%3E%3Ccircle cx='8' cy='9' r='2.5' fill='%23e8a25a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg kr">
+  <main class="mg-container kr-menu" id="menu" aria-live="polite">
+    <div class="mg-empty"><span class="mg-spin"></span> Nalagam proge …</div>
+  </main>
+
+  <section class="kr-play mg-hidden" id="play" aria-label="Igra">
+    <canvas id="cv" aria-label="Igralno polje"></canvas>
+    <div class="kr-hud">
+      <div class="kr-hud__left">
+        <span class="kr-chip" id="hudLevel">1/12</span>
+        <span class="kr-chip kr-chip--dim mg-hidden" id="hudMode"></span>
+      </div>
+      <div class="kr-hud__mid">
+        <div class="kr-clock" id="hudClock">0:00</div>
+        <div class="kr-sub" id="hudSub"></div>
+      </div>
+      <div class="kr-hud__right">
+        <span class="kr-chip" id="hudStars" title="Zvezdice">★ 0/5</span>
+        <span class="kr-chip kr-chip--pts" id="hudPts"></span>
+        <button class="kr-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+        <button class="kr-btn" id="btnPause" type="button" aria-label="Pavza">⏸</button>
+      </div>
+    </div>
+    <div class="kr-msg" id="msg" aria-live="assertive"></div>
+    <div class="kr-banner mg-hidden" id="banner"></div>
+    <div class="kr-fps mg-hidden" id="fps"></div>
+    <div class="kr-stick mg-hidden" id="stick" aria-label="Palica za upravljanje"><div class="kr-knob" id="knob"></div></div>
+    <button class="kr-btn kr-btn--r mg-hidden" id="btnR" type="button" aria-label="Na kontrolno točko">↺</button>
+    <div class="kr-overlay mg-hidden" id="overlay" role="dialog" aria-modal="true"></div>
+  </section>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

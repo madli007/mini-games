@@ -93,6 +93,20 @@ const all = await hub.getAchievements({ game: null });                // vseh ig
 
 Prvi odklep dosežka prinese tudi **15 kovancev** in šteje za naloge (»Odkleni nov dosežek«).
 
+### Ghosti (posnetki voženj)
+Za igre z dirkanjem na čas (Hrčkova krogla, kasneje npr. Motorist): en ghost na (igralec, proga, zrcalo);
+shrani se **le boljši čas**. `data` je niz base64 (≤ 60.000 znakov) — kodiranje izbere igra (npr. `games/krogla/ghost.js`).
+```js
+await hub.saveGhost({ level: '03-skodelice', mirror: false, timeMs: 18820, data });   // { saved: true|false } ali null
+const list = await hub.getGhosts({ level: '03-skodelice', limit: 10 });
+// [{ user_id, nickname, avatar, equipped, time_ms, created_at }] — brez podatkov, urejeno po času
+const g = await hub.getGhost({ level: '03-skodelice', userId: list[0].user_id });       // { user_id, time_ms, data } ali null
+```
+- Offline: `localStorage` (`db:ghosts`). Supabase: tabela **`<igra>_ghosts`** (`user_id`, `level`, `mirror`, `time_ms`, `data`,
+  `created_at`; pk `(user_id, level, mirror)`, branje za vse prijavljene) in RPC **`<igra>_save_ghost(p_level, p_mirror, p_time_ms, p_data)`**
+  (preveri velikost in nemogoče čase). Nova igra skopira `supabase/games/krogla.sql` in zamenja predpono.
+- Lestvica z izbiro vrstice: `ui.leaderboard(el, { …, onRow: (row, tr) => …, rowHint: row => ' 👻' })` (npr. klik → ghost tega igralca).
+
 ### Kovanci, naloge, trgovina, kozmetika
 **Vsaka igra po vsaki odigrani igri pokliče `hub.reportGame`** (solo in multiplayer, enkrat na igralca):
 ```js

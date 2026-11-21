@@ -234,6 +234,42 @@ export const hub = {
     return hub.backend.getAchievements({ game });
   },
 
+  /* ------------------------------ ghosti ------------------------------ */
+
+  /**
+   * Shrani posnetek vožnje (ghost). Shrani se le, če je čas boljši od mojega prejšnjega.
+   * Supabase: tabela <igra>_ghosts in RPC <igra>_save_ghost (glej supabase/games/krogla.sql).
+   * @param {{level:string, mirror?:boolean, timeMs:number, data:string, game?:string}} g data: base64 niz (≤ 60.000 znakov)
+   * @returns {Promise<{saved:boolean}|null>} null ob napaki
+   */
+  async saveGhost({ level, mirror = false, timeMs, data, game = hub.gameId }) {
+    if (!hub.profile) return null;
+    try {
+      return await hub.backend.saveGhost({ game, level, mirror, timeMs, data });
+    } catch (e) {
+      console.warn('saveGhost:', e.message);
+      return null;
+    }
+  },
+
+  /**
+   * Najboljši ghosti proge (brez podatkov): [{ user_id, nickname, avatar, equipped, time_ms, created_at }].
+   * @param {{level:string, mirror?:boolean, limit?:number, game?:string}} q
+   */
+  async getGhosts({ level, mirror = false, limit = 10, game = hub.gameId }) {
+    try { return await hub.backend.getGhosts({ game, level, mirror, limit }); }
+    catch (e) { console.warn('getGhosts:', e.message); return []; }
+  },
+
+  /**
+   * Podatki ghosta enega igralca (privzeto moj): { user_id, time_ms, data } ali null.
+   * @param {{level:string, mirror?:boolean, userId?:string, game?:string}} q
+   */
+  async getGhost({ level, mirror = false, userId = hub.userId, game = hub.gameId }) {
+    try { return await hub.backend.getGhost({ game, level, mirror, userId }); }
+    catch (e) { console.warn('getGhost:', e.message); return null; }
+  },
+
   /* ------------------------------ kovanci ----------------------------- */
 
   /** Trenutno stanje kovancev. */

@@ -24,13 +24,15 @@
     const games = await (await fetch('games.json', { cache: 'no-cache' })).json();
     const schema = await (await fetch('games.schema.json', { cache: 'no-cache' })).json();
     const schemaSql = await (await fetch('supabase/schema.sql', { cache: 'no-cache' })).text();
+    const kIdx = await (await fetch('games/krogla/levels/index.json', { cache: 'no-cache' })).json();
+    const kroglaLevels = await Promise.all(kIdx.levels.map(async f => (await fetch('games/krogla/levels/' + f, { cache: 'no-cache' })).json()));
     const log = s => {
       const line = document.createElement('div');
       line.textContent = s;
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

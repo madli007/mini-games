@@ -221,6 +221,9 @@ h3.mg-title { font-size: 11px; color: var(--mg-dim); }
 .mg-table { width: 100%; border-collapse: collapse; font-size: 16px; }
 .mg-table th { text-align: left; color: var(--mg-faint); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; }
 .mg-table td { padding: 7px 8px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.mg-table tr.mg-click { cursor: pointer; }
+.mg-table tr.mg-click:hover td, .mg-table tr.mg-click:focus-visible td { background: rgba(77, 225, 255, .08); }
+.mg-table tr.mg-sel td { background: rgba(255, 210, 63, .12); }
 .mg-table tr.mg-me td { background: rgba(255, 210, 63, .08); }
 .mg-table .mg-rank { width: 2.4em; font-family: var(--mg-font-title); font-size: 11px; color: var(--mg-dim); }
 .mg-table tr:nth-child(1) .mg-rank { color: var(--mg-gold); }

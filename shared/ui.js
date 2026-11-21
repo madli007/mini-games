@@ -328,10 +328,11 @@ export const ui = {
    * @param {{game?:string, seed?:string|null, period?:'all'|'today'|'week', periods?:('all'|'today'|'week')[]|false,
    *          order?:'asc'|'desc', limit?:number, format?:(score:number)=>string, title?:string, tabs?:{label:string, seed?:string|null, period?:string}[]}} [opt]
    *   tabs: lastni zavihki (npr. [{label:'Danes', seed: hub.dailySeed()}, {label:'Vseh časov'}]) — povozi periods
+   *   onRow: (vrstica, tr) => …  klik na vrstico (npr. izbira ghosta); rowHint: (vrstica) => HTML za konec vrstice
    * @returns {{refresh:()=>Promise<void>, el:HTMLElement}}
    */
   leaderboard(container, { game = hub.gameId, seed = null, period = 'all', periods = ['today', 'week', 'all'], order = hub.scoreOrder,
-    limit = 10, format = s => s.toLocaleString('sl-SI'), title = 'Lestvica', tabs = null } = {}) {
+    limit = 10, format = s => s.toLocaleString('sl-SI'), title = 'Lestvica', tabs = null, onRow = null, rowHint = null } = {}) {
     const LABEL = { today: 'Danes', week: 'Teden', all: 'Vseh časov' };
     const tabList = tabs || (periods ? periods.map(p => ({ label: LABEL[p], period: p, seed })) : [{ label: '', period, seed }]);
     let active = tabs ? 0 : Math.max(0, tabList.findIndex(t => (t.period || 'all') === period && (t.seed ?? null) === (seed ?? null)));
@@ -346,18 +347,26 @@ export const ui = {
       const t = tabList[active];
       try {
         const rows = await hub.getLeaderboard({ game, seed: t.seed ?? null, period: t.period || 'all', order, limit });
+        lastRows = rows;
         body.innerHTML = rows.length
-          ? `<table class="mg-table"><tbody>${rows.map((r, i) => `<tr class="${r.user_id === hub.userId ? 'mg-me' : ''}">
-              <td class="mg-rank">${i + 1}.</td><td>${ui.who(r)}</td><td class="mg-num">${esc(format(r.score))}</td></tr>`).join('')}</tbody></table>`
+          ? `<table class="mg-table"><tbody>${rows.map((r, i) => `<tr class="${r.user_id === hub.userId ? 'mg-me' : ''}${onRow ? ' mg-click' : ''}" data-i="${i}"${onRow ? ' tabindex="0" role="button"' : ''}>
+              <td class="mg-rank">${i + 1}.</td><td>${ui.who(r)}</td><td class="mg-num">${esc(format(r.score))}${rowHint ? rowHint(r) : ''}</td></tr>`).join('')}</tbody></table>`
           : '<div class="mg-empty">Še ni rezultatov. Bodi prvi!</div>';
       } catch (e) {
         body.innerHTML = `<div class="mg-empty">Lestvice ni bilo mogoče naložiti.</div>`;
         console.warn(e);
       }
     };
+    let lastRows = [];
     el.addEventListener('click', e => {
       const b = e.target.closest('.mg-tab');
-      if (b) { active = +b.dataset.i; refresh(); }
+      if (b) { active = +b.dataset.i; refresh(); return; }
+      const tr = onRow && e.target.closest('tr[data-i]');
+      if (tr && lastRows[+tr.dataset.i]) onRow(lastRows[+tr.dataset.i], tr);
+    });
+    el.addEventListener('keydown', e => {
+      const tr = onRow && (e.key === 'Enter' || e.key === ' ') && e.target.closest('tr[data-i]');
+      if (tr && lastRows[+tr.dataset.i]) { e.preventDefault(); onRow(lastRows[+tr.dataset.i], tr); }
     });
     refresh();
     return { refresh, el };

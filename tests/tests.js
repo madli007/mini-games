@@ -15,6 +15,11 @@ import * as SIM from './economy-sim.js';
 import * as L from '../games/ladjice/logic.js';
 import * as LA from '../games/ladjice/ai.js';
 import * as LC from '../games/ladjice/content.js';
+import * as KP from '../games/krogla/physics.js';
+import * as KR from '../games/krogla/rules.js';
+import * as KG from '../games/krogla/ghost.js';
+import * as KA from '../games/krogla/autopilot.js';
+import * as KL2 from '../games/krogla/level.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -946,6 +951,165 @@ test('ladjice: pogodbe, komentator, XP', () => {
   eq(L.xpFor({ mode: 'ai', won: true, level: 'admiral' }), 55);
   eq(L.xpFor({ mode: 'ai', won: false }), 15);
   eq(L.xpFor({ mode: 'daily', won: true }), 40);
+});
+
+/* ------------------------------------------------------- Hrčkova krogla */
+
+const KL = (rows, extra = {}) => {
+  const W = Math.max(...rows.map(r => r.length));
+  return { id: '99-test', name: 'Test', set: 1, timeBonus: 30, medals: { gold: 5, silver: 8, bronze: 12 }, size: [W, rows.length],
+    map: rows, start: [1.5, rows.length - 1.5], goal: [1.5, 0.5], checkpoints: [], pickups: [], ...extra };
+};
+const krRun = (w, secs, ix = 0, iz = 0) => { for (let i = 0; i < Math.round(secs / KP.STEP); i++) { w.events.length = 0; KP.step(w, ix, iz); } };
+
+test('krogla: krogla na ravnem se ustavi', () => {
+  const w = KP.createWorld(KL(['.....', '.....', '.....', '.....', '.....']));
+  w.ball.vx = 4; w.ball.vz = -3;
+  krRun(w, 4);
+  ok(Math.hypot(w.ball.vx, w.ball.vz) < 0.01, 'hitrost ' + Math.hypot(w.ball.vx, w.ball.vz));
+  ok(w.ball.grounded && Math.abs(w.ball.y - w.R) < 1e-6);
+});
+test('krogla: na klančini pospeši navzdol; led drsi dlje kot lepilo', () => {
+  // klančini '^' (dvig proti severu) od višine 0 do 1; krogla začne na vrhu in se kotali proti jugu
+  const L = KL(['...', '...', '^^^', '^^^', '...', '...'], { hmap: ['222', '222', '111', '000', '000', '000'], start: [1.5, 2.1] });
+  const w = KP.createWorld(L);
+  krRun(w, 0.5);
+  ok(w.ball.vz > 1.5, 'krogla se ne kotali navzdol: vz=' + w.ball.vz);
+  const slide = ch => {
+    const w2 = KP.createWorld(KL(Array(8).fill(ch.repeat(3)), { start: [1.5, 7.5] }));
+    w2.ball.vz = -5; krRun(w2, 0.6); return 7.5 - w2.ball.z;
+  };
+  const [i, f, g] = [slide('i'), slide('.'), slide('g')];
+  ok(i > f && f > g, `led ${i}, tla ${f}, lepilo ${g}`);
+});
+test('krogla: ne gre skozi steno pri največji hitrosti', () => {
+  const w = KP.createWorld(KL(['.....', '.....', '#####', '.....', '.....', '.....', '.....']));
+  w.ball.vz = -KP.P.MAXV;
+  for (let i = 0; i < 240; i++) { w.events.length = 0; KP.step(w, 0, -1); ok(w.ball.z > 3 - 1e-6, 'krogla je v/za steno: z=' + w.ball.z); }
+  const w2 = KP.createWorld(KL(Array(7).fill('.....'), { blocks: [{ x: 0, z: 3, w: 5, d: 0.1, y0: 0, y1: 1 }] }));
+  w2.ball.vz = -KP.P.MAXV;
+  for (let i = 0; i < 240; i++) { w2.events.length = 0; KP.step(w2, 0, -1); ok(w2.ball.z > 3.1, 'skozi tanko steno: z=' + w2.ball.z); }
+});
+test('krogla: fizika neodvisna od FPS (30 vs 144 sličic)', () => {
+  const L = KL(Array(30).fill('....................'), { start: [5.5, 25.5] });
+  const sim = fps => {
+    const w = KP.createWorld(L);
+    let acc = 0, t = 0;
+    while (w.steps < 360) {
+      const dt = 1 / fps; t += dt; acc += dt;
+      while (acc >= KP.STEP && w.steps < 360) { const inp = w.t < 1.5 ? [0.6, -0.8] : [-1, 0]; w.events.length = 0; KP.step(w, inp[0], inp[1]); acc -= KP.STEP; }
+    }
+    return { x: w.ball.x, z: w.ball.z, t: w.t };
+  };
+  const a = sim(30), b = sim(144);
+  const err = Math.hypot(a.x - b.x, a.z - b.z);
+  ok(err < 1e-9, 'razlika ' + err);
+});
+test('krogla: padec in kontrolna točka', () => {
+  const w = KP.createWorld(KL(['...', '...', '...', '...'], { checkpoints: [[1.5, 1.5]], goal: [0.5, 3.5] }));
+  krRun(w, 1.5, 0, -0.5);
+  ok(w.checkpoint === 0, 'kontrolna točka ni aktivirana');
+  let fell = false;
+  for (let i = 0; i < 600 && !fell; i++) { w.events.length = 0; KP.step(w, 1, 0); fell = w.events.some(e => e.type === 'fall'); }
+  ok(fell, 'ni padca');
+  krRun(w, KP.P.FALL_DELAY + 0.6);
+  ok(!w.dead && Math.abs(w.ball.x - 1.5) < 0.2 && Math.abs(w.ball.z - 1.5) < 0.2, 'vrnitev na kontrolno točko');
+  eq(w.falls, 1);
+});
+test('krogla: ura, prenos časa, točke in težavnosti', () => {
+  const L = { timeBonus: 40 };
+  const run = KR.newRun('normalna');
+  eq(KR.startLevel(run, L), 40);
+  ok(!KR.tick(run, 10)); eq(run.clock, 30);
+  const pts = KR.finishLevel(run, { id: 'a' }, { time: 10, stars: 2 });
+  eq(pts, 1000 + 20 * 30 + 200);
+  KR.startLevel(run, L);
+  eq(run.clock, 70, 'preostanek se prenese');
+  ok(KR.tick(run, 71)); ok(run.over);
+  eq(KR.levelTime(L, 'lahka'), 56); eq(KR.levelTime(L, 'noro'), 30);
+  eq(KR.levelPoints(10.9, 1, 'lahka'), Math.round((1000 + 200 + 100) * 0.5));
+  eq(KR.levelPoints(10, 0, 'noro'), Math.round(1200 * 1.5));
+  ok(!KR.countsForUnlock('lahka') && KR.countsForUnlock('noro'));
+  eq(KR.fmtTime(83450), '1:23,45'); eq(KR.fmtTime(5070), '5,07');
+});
+test('krogla: medalje in odklepi', () => {
+  const L = { medals: { gold: 20, silver: 25, bronze: 30 } };
+  eq([19, 20, 22, 30, 31].map(s => KR.medalFor(L, s)), ['gold', 'gold', 'silver', 'bronze', null]);
+  const order = ['a', 'b', 'c', 'd'];
+  eq(KR.unlockedLevels(order, []), ['a']);
+  eq(KR.unlockedLevels(order, ['b', 'c']), ['a', 'b', 'c']);
+  eq(KR.unlockedLevels(order, [], { tourney: true }), order);
+  eq(KR.tourneyLevelXp(0), 20); eq(KR.tourneyLevelXp(12), 0);
+});
+test('krogla: dnevni izbor je determinističen in isti za vse', ctx => {
+  const order = ctx.kroglaLevels.map(L => L.id);
+  const a = KR.dailyPick(U.rng, '2026-11-21', order), b = KR.dailyPick(U.rng, '2026-11-21', order);
+  eq(a, b);
+  eq(a.levels.length, 3);
+  eq(new Set(a.levels).size, 3);
+  ok(a.levels.every(id => order.indexOf(id) < 8), 'iz prvih 8');
+  ok(KR.DAILY_MODS.some(m => m.id === a.mod));
+  const days = new Set(Array.from({ length: 10 }, (_, i) => JSON.stringify(KR.dailyPick(U.rng, '2026-12-' + String(i + 1).padStart(2, '0'), order))));
+  ok(days.size > 5, 'premalo različnih dni');
+});
+test('krogla: zrcaljenje', ctx => {
+  const L = ctx.kroglaLevels[3];
+  const M = KL2.mirrorLevel(L);
+  eq(M.map[0].length, L.map[0].length);
+  eq(M.start, [L.size[0] - L.start[0], L.start[1]]);
+  const MM = KL2.mirrorLevel(M);
+  eq(MM.map, L.map); eq(MM.start, L.start); eq(MM.movers, L.movers); eq(MM.route, L.route);
+  eq(KL2.validateLevel(M), []);
+  ok(KA.runAutopilot(M).finished, 'zrcaljena proga ni rešljiva');
+});
+test('krogla: ghost (zapis → stiskanje → predvajanje, velikost)', ctx => {
+  const frames = [];
+  for (let i = 0; i < 2400; i++) { const t = i / 20; frames.push([5 + Math.sin(t) * 4 + t * 0.3, 1 + Math.sin(t * 3) * 0.2, 40 - t * 0.5, t * 0.7]); }
+  const s = KG.encode(frames);
+  ok(s.length < 20000, 'ghost za 2 min je ' + s.length + ' znakov');
+  const back = KG.decode(s);
+  eq(back.length, frames.length);
+  for (let i = 0; i < frames.length; i += 37) for (let k = 0; k < 3; k++) ok(Math.abs(back[i][k] - frames[i][k]) < 0.006, 'odstopanje');
+  const p = KG.sampleAt(back, 10.025);
+  ok(Math.abs(p.x - (back[200][0] + back[201][0]) / 2) < 1e-9);
+  const res = KA.runAutopilot(ctx.kroglaLevels[0]);
+  const g = KG.decode(KG.encode(res.frames));
+  const end = g[g.length - 1];
+  ok(Math.hypot(end[0] - res.world.ball.x, end[2] - res.world.ball.z) < 0.5, 'konec ghosta ni pri cilju');
+  return `2 min = ${(s.length / 1024).toFixed(1)} KB`;
+});
+test('krogla: validator na vseh progah in zaznava napak', ctx => {
+  ok(ctx.kroglaLevels.length >= 12, 'manj kot 12 prog');
+  for (const L of ctx.kroglaLevels) eq(KL2.validateLevel(L), [], L.id);
+  const bad = KL(['...', ' . ', '...'], { start: [1.5, 1.5], goal: [0.5, 1.5], checkpoints: [[9, 9]] });
+  bad.medals = { gold: 9, silver: 5, bronze: 3 };
+  const errs = KL2.validateLevel(bad).join('\n');
+  ok(/cilj/.test(errs) && /kontrolna točka 1/.test(errs) && /medalje/.test(errs) && /zvezdic/.test(errs), errs);
+});
+test('krogla: vse proge so rešljive (autopilot pod časom proge na Normalni)', ctx => {
+  const out = [];
+  for (const L of ctx.kroglaLevels) {
+    const res = KA.runAutopilot(L);
+    ok(res.finished, `${L.id}: autopilot ne pride do cilja`);
+    ok(res.time < KR.levelTime(L, 'normalna'), `${L.id}: ${res.time.toFixed(1)} s ≥ ${L.timeBonus} s`);
+    const w = KA.replayInputs(L, res.inputs);
+    ok(w.finished && Math.abs(w.finishT - res.time) < 1e-9, `${L.id}: predvajanje vhoda ni enako`);
+    out.push(`${L.id.slice(0, 2)}: ${res.time.toFixed(0)} s`);
+  }
+  return out.join(', ');
+});
+test('lokalno: ghosti (le boljši čas, seznam, podatki)', async () => {
+  clearLocal();
+  const [a, b] = await users('ga', 'gb');
+  eq((await a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 20000, data: 'QUJD' })).saved, true);
+  eq((await a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 25000, data: 'WFla' })).saved, false);
+  eq((await a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 18000, data: 'WFla' })).saved, true);
+  await b.saveGhost({ game: 'krogla', level: '01-x', timeMs: 19000, data: 'QkJC' });
+  await b.saveGhost({ game: 'krogla', level: '01-x', mirror: true, timeMs: 1000, data: 'QkJC' });
+  eq((await a.getGhosts({ game: 'krogla', level: '01-x' })).map(g => [g.user_id, g.time_ms]), [['test-ga', 18000], ['test-gb', 19000]]);
+  eq((await a.getGhost({ game: 'krogla', level: '01-x', userId: 'test-gb' })).data, 'QkJC');
+  eq(await a.getGhost({ game: 'krogla', level: '02-x' }), null);
+  await throwsCode(() => a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 1, data: 'x'.repeat(70000) }), 'invalid');
 });
 
 /**

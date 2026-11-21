@@ -7,7 +7,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 
 - Objavljeno: **https://madli007.github.io/mini-games/**
 - Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
-  (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled) in 13 napovedanih.
+  (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled), **Hrčkova krogla**
+  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv) in 12 napovedanih.
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
 - Backend: Supabase (anonimna prijava, RLS, realtime). Brez njega vse deluje v **offline načinu**.
 
@@ -49,12 +50,14 @@ Shema huba (`supabase/schema.sql`) je na projektu **že pognana**; pinball tabel
    Brez tega deluje vse razen povezovanja profila z emailom.
 4. *(Priporočeno)* *Authentication → Rate Limits*: omejitev anonimnih prijav na IP (privzeto 30/h) je za
    skupino prijateljev dovolj.
-5. **Čiščenje starih sob**: `pg_cron` je vklopljen in vsako uro pobriše sobe, starejše od 24 h
+5. **Hrčkova krogla (ghosti)**: `supabase/games/krogla.sql` (tabeli `krogla_levels`, `krogla_ghosts`, RPC `krogla_save_ghost`).
+   **Pognano 21. 11. 2026** (migracija `krogla_ghosts`). Po spremembi prog (`node tools/krogla-levels.mjs`) ga poženi znova.
+6. **Čiščenje starih sob**: `pg_cron` je vklopljen in vsako uro pobriše sobe, starejše od 24 h
    (opravilo `mg_cleanup_rooms`). Ročno: `select private.cleanup_old_rooms();`. Stare sobe se brišejo
    tudi sproti ob ustvarjanju nove.
 
 ### Preklop na drug Supabase projekt
-1. V novem projektu poženi `supabase/schema.sql` (in po želji `games/pinball/supabase/scores.sql`).
+1. V novem projektu poženi `supabase/schema.sql`, `supabase/games/krogla.sql` (in po želji `games/pinball/supabase/scores.sql`).
 2. Ponovi korake 1, 3 in 4 zgoraj.
 3. V `shared/config.js` vpiši `SUPABASE_URL` in `SUPABASE_ANON_KEY` (*Project Settings → API Keys →
    publishable*). **Nikoli ne vpiši `service_role` ključa.**
@@ -102,11 +105,13 @@ shared/                                   skupni API (dokumentacija: shared/READ
   adapters/local.js adapters/supabase.js adapters/types.js
 games/reakcija/                           demo igra (index.html, game.js, logic.js, game.css)
 games/ladjice/                            Potapljanje ladjic (logic.js, ai.js, content.js, fx.js, game.js)
+games/krogla/                             Hrčkova krogla (physics, level, rules, ghost, render, … · levels/*.json · README.md)
 games/pinball/                            kopija ALU PINBALL 2.0 (izvirnik v repoju pinball)
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/                           SQL posameznih iger (če ga potrebujejo)
 tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
+tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)
 prompts/01-hub.md, 02-trgovina.md         prompta, s katerima sta nastala hub in trgovina
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 CLAUDE.md                                 pravila repoja za AI agente

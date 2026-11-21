@@ -21,6 +21,7 @@ const PRESENCE_BEAT = 1000;      // presence utrip
 const PRESENCE_TIMEOUT = 3500;   // brez utripa → igralec ni več prisoten
 const ROOM_TTL = 24 * 3600e3;    // stare sobe se pobrišejo
 const HOST_STALE_MS = 30000;     // soba brez utripa hosta → prevzem hosta dovoljen vsem
+const GHOST_MAX = 60000;         // največja dolžina podatkov ghosta (znaki base64)
 
 const now = () => new Date().toISOString();
 
@@ -370,6 +371,39 @@ export class LocalBackend {
 
   async getAchievements({ game = null, userId = this.userId } = {}) {
     return S.load('db:ach', []).filter(a => a.user_id === userId && (!game || a.game === game));
+  }
+
+  /* ------------------------------- ghosti -------------------------------- */
+  // Ena vožnja na (igra, proga, zrcalo, igralec); shrani se le boljši čas (kot RPC <igra>_save_ghost).
+
+  async saveGhost({ game, level, mirror = false, timeMs, data }) {
+    if (!(timeMs > 0) || typeof data !== 'string' || data.length > GHOST_MAX || !/^[A-Za-z0-9+/=]*$/.test(data)) {
+      throw codedError('invalid', 'Neveljaven ghost.');
+    }
+    const key = `${game}|${level}|${mirror ? 1 : 0}|${this.userId}`;
+    const all = S.load('db:ghosts', {});
+    const cur = all[key];
+    if (cur && cur.time_ms <= timeMs) return { saved: false };
+    all[key] = { game, level, mirror: !!mirror, user_id: this.userId, time_ms: Math.round(timeMs), data, created_at: now() };
+    S.save('db:ghosts', all);
+    return { saved: true };
+  }
+
+  async getGhosts({ game, level, mirror = false, limit = 10 }) {
+    const profs = this._profiles();
+    return Object.values(S.load('db:ghosts', {}))
+      .filter(g => g.game === game && g.level === level && !!g.mirror === !!mirror)
+      .sort((a, b) => a.time_ms - b.time_ms).slice(0, limit)
+      .map(g => ({
+        user_id: g.user_id, time_ms: g.time_ms, created_at: g.created_at,
+        nickname: profs[g.user_id]?.nickname || '???', avatar: profs[g.user_id]?.avatar || { emoji: '❔', color: '#888' },
+        equipped: profs[g.user_id]?.equipped || {},
+      }));
+  }
+
+  async getGhost({ game, level, mirror = false, userId = this.userId }) {
+    const g = S.load('db:ghosts', {})[`${game}|${level}|${mirror ? 1 : 0}|${userId}`];
+    return g ? { user_id: g.user_id, time_ms: g.time_ms, data: g.data } : null;
   }
 
   /* -------------------------------- sobe --------------------------------- */

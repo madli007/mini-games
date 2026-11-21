@@ -1,0 +1,16 @@
+{
+  "levels": [
+    "01-ogrevanje.json",
+    "02-vrtnarija.json",
+    "03-skodelice.json",
+    "04-kuhinja.json",
+    "05-steklena-pot.json",
+    "06-tovarna.json",
+    "07-stolp.json",
+    "08-ledena-dvorana.json",
+    "09-nasilnezi.json",
+    "10-neon.json",
+    "11-nebo.json",
+    "12-nemogoce.json"
+  ]
+}

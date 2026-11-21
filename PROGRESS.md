@@ -225,3 +225,81 @@ Prompt: `prompts/04-ladjice.md`. Stanje: **končano** (20. 11. 2026).
 - **Igra z 5–10 igralci** (mreža 7×7) — preizkušeno le v testih (AI simulacija BR s 3–5 igralci), v brskalniku s 3.
 - **Dosežki** `royale`, `duh`, `vsi-kapitani`, `pogodbenik`, `snajper` — koda je, v brskalniku niso bili doseženi.
 - Pogodba se izbere na zaslonu postavitve; na telefonu je pod mrežo (treba se je pomakniti).
+
+---
+
+# Hrčkova krogla (`games/krogla/`)
+
+Prompt: `prompts/03-krogla.md`. Stanje: **končano** (21. 11. 2026).
+
+## Načrt
+
+- [x] Fizika (`physics.js`): fiksni korak 120 Hz, naklon, trenje (tla/led/lepilo), trki s ploščicami, kvadri, vrati in premičnimi
+      ploščicami, podkoraki (ne skozi tanko steno), padec → kontrolna točka po 1,2 s; premične/padajoče/vrtljive plošče, trakovi,
+      vzmeti, ventilatorji, dvigala, odbijači, kladiva, stikala + vrata, sklede, valovita tla; nasilneži, žage, ose, sesalci, magneti
+- [x] Format prog, validator in zrcaljenje (`level.js`), 12 prog v 3 sklopih (`levels/*.json`), generator `tools/krogla-levels.mjs`
+- [x] Pravila (`rules.js`): ura s prenosom, težavnosti, točke, medalje, odklepi, dnevni izbor + 5 dodatkov, 10 dosežkov
+- [x] Ghosti (`ghost.js`, ~12 KB za 2 min), skupni API `hub.saveGhost/getGhosts/getGhost` (oba adapterja), `ui.leaderboard({ onRow })`
+- [x] `supabase/games/krogla.sql` pognan kot migracija `krogla_ghosts`, advisors preverjeni, RLS/RPC preizkušen z lažnimi JWT
+- [x] Izris Three.js 0.160.0 (`render.js`), vhod (tipke, miška, palica, nagib), WebAudio zvok in glasba, samodejna kakovost
+- [x] Načini: turnir, na čas (medalje, ghosti: moj / razvijalčev / s lestvice), zrcalni turnir, dnevni izziv (prvi poskus šteje)
+- [x] Hub: `reportGame`, `reportEvent` (`krogla:proga|gold|sklop|turnir`), XP, dosežki, 4 naloge v `games.json`, vnos `live`
+- [x] Testi (14 novih, skupaj 70/70 v Node in `tests.html`), preverjanje v brskalniku, dokumentacija
+
+## Proge (autopilot · zlato / srebro / bron · ura na Normalni)
+
+| # | Proga | Novo | Autopilot | Medalje | Ura |
+|---|---|---|---|---|---|
+| 1 | Ogrevanje | široka pot, klančine | 17 s | 17 / 22 / 29 | 28 s |
+| 2 | Vrtnarija | ozke poti brez ograj, zavoji | 28 s | 28 / 36 / 47 | 41 s |
+| 3 | Skodelice | sklede, valovita tla | 19 s | 19 / 25 / 32 | 30 s |
+| 4 | Kuhinja | premične ploščice čez prepade | 46 s | 45 / 59 / 76 | 63 s |
+| 5 | Steklena pot | ozki mostovi, padajoče ploščice | 30 s | 30 / 39 / 50 | 44 s |
+| 6 | Tovarna | trakovi, kladiva, stikalo + vrata | 28 s | 27 / 36 / 46 | 41 s |
+| 7 | Stolp | spirala navzgor, dvigalo, ventilatorji | 34 s | 34 / 45 / 57 | 50 s |
+| 8 | Ledena dvorana | led, lepilo, vzmeti čez prepad | 22 s | 22 / 29 / 37 | 34 s |
+| 9 | Nasilneži | sovražne krogle, magneti | 18 s | 18 / 23 / 30 | 29 s |
+| 10 | Neon | vrtljive plošče, žage, ose | 24 s | 24 / 31 / 40 | 37 s |
+| 11 | Nebo | skoki z rampe, sesalec, vse skupaj | 20 s | 20 / 26 / 34 | 32 s |
+| 12 | Nemogoče | kratka, zelo težka | 25 s | 25 / 33 / 42 | 38 s |
+
+Autopilot vozi previdno (5–6 enot/s, čaka na premične dele), zato je zlato ≈ njegov čas (težko), bron ≈ 1,65 × (dosegljiv).
+Ura proge = 1,25 × autopilot + 6 s; autopilot je pred zaostritvijo končal turnir na Normalni s 5 min rezerve, zdaj ima po izračunu ~2,5 min (+ ure).
+
+## Dnevnik
+
+- **Fizika** je višinsko polje ploščic (vsaka ploščica ima funkcijo višine: ravno, klančina, valovi, sklede), krogla je
+  »točka na tleh« s polmerom za trke. Stopnica > 0,22 je zid. Premične ploščice in vrtljive plošče so dodatne površine, ki
+  kroglo prenašajo. Vse sovražnike in ovire poganja čas proge (deterministično), nasilneže pa stanje — ghosti in časi so pošteni.
+- **Proge** gradi »želvica« v generatorju (naprej, zavij, klančina, prepad …), ki sproti zapiše pot za autopilota.
+  Z `--dump=NN` se izriše proga s potjo in mesti padcev. Pri uglaševanju popravljeno: klančina tik pred zavojem se je
+  prepisala (zdaj ni klančin na zadnji ploščici pred zavojem), vrtljive plošče so morale pokriti prepad, vzmeti in skoki so
+  dobili več moči/zaleta, kladiva in ose imajo okna, ki jih autopilot počaka (`until`).
+- **Preizkušeno v brskalniku (offline):** cel turnir 12/12 na Normalni z `?bot=1` (autopilot skozi pravo zanko igre:
+  odštevanje, ura s prenosom, točke, povzetki prog, dosežki, `ui.results`), na čas z razvijalčevim ghostom (zlato, ghost
+  shranjen, +50 XP), izbira ghosta s klikom na lestvico, zrcaljena Kuhinja, dnevni izziv (uradni poskus → nato trening),
+  ročno: padec čez rob → vrnitev na start, ura teče, pavza ob skritem zavihku (sprožila se je sama, ko je bil pano skrit),
+  konec ob poteku ure (Noro). Dashboard: kovanci, napredek naloge »Odigraj igro Hrčkova krogla«, dosežki.
+- **Supabase (`?igralec=1`, `?igralec=2`):** igralec 1 prevozi Ogrevanje → vrstica v `game_scores` (`lvl:01-ogrevanje`) in
+  ghost v `krogla_ghosts` (1,8 KB); igralec 2 vidi rezultat na lestvici proge, klik na vrstico naloži ghost, vožnja z njim.
+  RLS z lažnimi JWT: boljši čas se shrani, slabši ne, zrcalo ločeno; zavrnjeno: nemogoč čas (< 30 % zlata), prevelik in
+  neveljaven `data`, neznana proga, neposreden insert/update (tudi s tujim `user_id`), pisanje v `krogla_levels`, anon.
+  Testna profila (KrTest1, KrTest2) in njune vrstice so izbrisani.
+- **Popravki po testiranju:** zagon pred inicializacijo spremenljivk (TDZ) → `boot()`; zvezdica na startu (Ogrevanje, Stolp);
+  lokalni odklepi/rekordi/dnevni poskus so bili skupni za brskalnik → zdaj ključi na igralca (`krogla:u:<id>:…`), dnevni
+  poskus se preveri še na strežniku; dodatek »Vse je led« je bil prepolzek (zdaj »spolzka« tla z več nadzora), »pol časa«
+  prestrog (zdaj 65 %); rezultat 0 se ne odda; glava menija na telefonu postavljena v stolpec.
+- **Advisors po migraciji:** varnost — le znana `auth_allow_anonymous_sign_ins` (kot vse tabele huba, namerno); zmogljivost —
+  `unused_index` za `krogla_ghosts_board` (INFO, nova tabela).
+
+## Ni bilo preverjeno
+
+- **Ročna igra po vseh progah** — proge so preverjeno rešljive z autopilotom (test + `?bot=1` v brskalniku), ročno sem vozil
+  le kratke odseke (tipke, palica). Občutek kontrol, težavnost za človeka in medalje »zlato težko, bron v 2–3 poskusih«
+  so uglašeni na autopilotu, ne na lastnih vožnjah — priporočam igranje in popravek faktorjev v generatorju.
+- **Dodatek »Vse je led« na Tovarni** — autopilot pade (kladiva + spolzka tla); človek naj bi zmogel, ni preverjeno.
+- **Nagib telefona** (`deviceorientation`, iOS dovoljenje) in **resnične naprave** — le emulacija 375×812 (palica, FPS).
+- **Zvok/glasba** — koda teče brez napak, poslušano ni bilo (brskalnik v avtomatizaciji).
+- **Samodejno zniževanje kakovosti** — v emulaciji je bilo 240 FPS, zato se ni sprožilo.
+- **Miška kot palica** — logika je, v avtomatiziranem brskalniku ni bila preizkušena.
+- Pinball test »multiball se začne s 3 žogicami« občasno pade (ok 3/4 zagonov) — obstaja že pred to igro, ni povezan s kroglo.
