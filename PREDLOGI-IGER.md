@@ -112,7 +112,7 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
       - **Zrcalni turnir**: odklene se, ko končaš turnir.
       - **Dnevni izziv**: dnevni seed izbere 3 proge in en dodatek dneva (npr. led povsod, dvojna hitrost
         sovražnikov). Ena lestvica za vse.
-      - **Rušilec (party, 2–8 igralcev)**: arena, izrivaš druge čez rob, točka za vsak izriv, na čas.
+      - **Rušilec (party, 2–8 igralcev)**: arena, izrivaš druge čez rob, točka za vsak izriv, na čas (prompt: `prompts/07-krogla-rusilec.md`).
         Host-authoritative kot Bomba arena. To naj bo drugi prompt, ko je singleplayer gotov.
     - **Povezava s hubom:** `hub.reportGame` po vsaki progi/turnirju, dosežki (zlato na vseh progah,
       turnir brez padca, zrcalni turnir), naloge v `games.json` (»Osvoji zlato medaljo«, »Končaj sklop 1«).
