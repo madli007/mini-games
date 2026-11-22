@@ -286,6 +286,82 @@ dnevni lestvici takoj vidi rivalstvo.
       prompt 2 = tekma do 10 igralcev z replayem v živo, dnevni izziv, več skakalnic in letalnica;
       prompt 3 = svetovni pokal (sezona v Supabase), kariera, predmeti v trgovini.
 
+### Fizikalne igre v slogu Krogle in pinballa
+
+Igre v istem duhu kot Hrčkova krogla in Alu Pinball: fizika s fiksnim korakom, proge ali mize v JSON-u,
+ghosti, dnevni seed in party način. Največja prednost je **ponovna uporaba obeh motorjev**: fizike, rendererja
+in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `games/pinball/`. Kodo uvažaj
+(kot Rušilec), ne kopiraj.
+
+**A) Na motorju Hrčkove krogle**
+
+37. **Hrčkov minigolf** ★★
+    - Uporablja isto fiziko krogle in isti urejevalnik prog. Namesto kotaljenja z vlečenjem nastaviš smer in moč udarca.
+    - Luknje imajo mline na veter, zanke, vzmeti, premične ploščice in led, torej mehanike, ki jih Krogla že pozna.
+    - **Do 10 igralcev potezno** (`room.setState`): vsi igrajo isto luknjo, ostali med udarcem gledajo replay.
+      Dnevna luknja gre na skupno lestvico. Rezultat je število udarcev (manj je bolje).
+    - Najboljše razmerje med vloženim delom in zabavo, ker je večina kode že napisane.
+    - Prompt: `prompts/10-minigolf.md`.
+38. **Balinanje** ★★
+    - Slovenska gostilniška klasika v 3D: najprej vržeš balinček, nato krogle, lahko pa tudi »izbiješ« nasprotnikovo kroglo.
+    - Twisti: steze s klancem, peskom ali ledom, veter po seedu, »nori« način z vzmetmi na stezi.
+    - Potezno, 2–8 igralcev v ekipah. Idealno za TV in telefone.
+39. **Nagibni labirint** ★
+    - Ne kotališ krogle, ampak **nagibaš celo ploščo** (nagib telefona je v Krogli že narejen). Lesena plošča,
+      luknje in kroglica.
+    - Kasnejši nivoji dodajo dve kroglici hkrati, vrtljive dele in magnete. Dnevni labirint je generiran iz seeda.
+    - Majhna, hitra igra, odlična za telefon.
+40. **Dirka frnikol (party za gledanje in stave)** ★★
+    - Na TV-ju se 8–16 frnikol spusti po dolgi progi s fiziko. Igralci pred štartom **stavijo kovance iz huba**
+      (prek RPC, z omejitvijo), med dirko pa imajo 2–3 »sunke«, s katerimi zrinejo svojo ali tujo frnikolo.
+    - Proge so iz urejevalnika Krogle. Slovenski komentator: »Rdeča prehiteva v zadnjem zavoju!«
+    - Zelo družabno, saj zabava tudi tiste, ki niso spretni.
+
+**B) Na motorju pinballa**
+
+41. **Druga miza in več igralcev v pinballu** ★★
+    - `table.js` naj postane podatkovna datoteka, da so mize JSON (kot proge v Krogli).
+    - Druga miza z drugo temo, npr. **»Hrčkova tovarna«** (crossover: multiball s hrčki, krogla kot misija na DMD-ju).
+    - **2–4 igralci izmenično** (igralec 1, 2, 3 … kot pri pravih avtomatih) prek room kode, drugi gledajo v živo.
+    - **Pinball dvoboj:** vsak na svoji mizi, določeni streli pošljejo nasprotniku »napad« (nagnjena miza,
+      krajši flipper, dodatna žogica).
+    - Tabele `public.scores` ne spreminjaj; nove mize dobijo svoje lestvice prek huba.
+42. **Žebljički (strelec na kline)** ★★
+    - Od zgoraj izstreliš kroglico, ta se odbija od klinov, cilj pa je podreti vse oranžne kline v omejenem številu strelov.
+    - Fizika odboja je ista kot v pinballu. Nivoji so JSON, dnevni nivo je enak za vse.
+    - Twisti: posebni klini (bomba, multiball, portal), premično korito na dnu za dodatno kroglico.
+43. **Verižna reakcija (fizikalna uganka)** ★★
+    - Na mizo postaviš omejen nabor kosov (rampe, vzmeti, flipper, bumper, ventilator), pritisneš ▶,
+      kroglica pa mora priti do cilja.
+    - Uporablja dele iz pinballa. Ena uganka na dan, lestvica šteje **najmanj uporabljenih kosov** in čas.
+    - Rešitve drugih vidiš kot replay, ko uganko rešiš sam.
+
+**C) Nove fizikalne igrače**
+
+44. **Zračni hokej** ★★
+    - 2D fizika plošček–palica. Dva igrata na enem telefonu (vsak ima svojo polovico) ali 1v1 online, host je avtoritativen.
+    - Powerupi: dva ploščka, ožji gol, »magnet«. Turnir do 8 igralcev z drevesom izločanja.
+45. **Biljard s twistom** ★★
+    - Potezno 1v1, zato je sinhronizacija enostavna. Poleg klasične mize so tu še **nore mize** z ovirami,
+      portali in premičnimi luknjami.
+    - Dnevni izziv: »spravi vse krogle v čim manj udarcih«.
+46. **Namizni nogomet** ★★
+    - Vsak telefon upravlja eno ali dve palici (poteg = premik, hiter švig = strel). 2v2 realtime, TV kaže mizo.
+47. **Pikado** ★
+    - Met s potegom prsta, rahlo tresenje roke in veter. Igri 501 in »okoli ure«, potezno do 10 igralcev.
+
+**D) Razširitve Hrčkove krogle**
+
+- **Dirka dveh:** online realtime na isti progi (original ima deljen zaslon), z ghosti ostalih.
+- **Skrite ključavnice** na progah, ki odklenejo skrivne arene v Rušilcu (omenjeno v `prompts/07-krogla-rusilec.md`;
+  preveri, ali je že narejeno).
+- **Skupnostne proge:** urejevalnik shrani progo v Supabase (`krogla_*` tabela), drugi jo igrajo in ocenijo,
+  »proga tedna« gre na lestvico.
+
+**Za začetek:** **Hrčkov minigolf** (največ ponovne uporabe in do 10 igralcev), nato **druga miza in več igralcev
+v pinballu** (pinball iz igre za enega postane družabna igra), potem **Balinanje** ali **Dirka frnikol** kot party
+igri za TV.
+
 ## Predlagan vrstni red
 
 1. **Hub + `shared/`** (prijava, profil, lestvica, lobby z room kodo)
