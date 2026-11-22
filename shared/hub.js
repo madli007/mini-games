@@ -270,6 +270,47 @@ export const hub = {
     catch (e) { console.warn('getGhost:', e.message); return null; }
   },
 
+  /* ------------------------- objavljene proge igralcev ------------------------- */
+  // Supabase: tabela <igra>_custom_levels, RPC <igra>_publish_level in <igra>_level_played
+  // (glej supabase/games/krogla.sql). Lestvica proge: submitScore s seedom 'custom:<id>'.
+  // Napake (e.code): invalid_level, level_too_big, too_many_levels, no_profile, not_authenticated.
+
+  /**
+   * Objavi progo (ali posodobi mojo objavo z istim hash).
+   * @param {{name:string, hash:string, data:Object, devMs:number, replace?:string|null, game?:string}} p
+   *   hash: 8 hex znakov (oblika proge), replace: id moje starejše objave, ki jo ta nadomesti
+   * @returns {Promise<{id:string, updated:boolean}>}
+   */
+  async publishLevel({ name, hash, data, devMs, replace = null, game = hub.gameId }) {
+    if (!hub.profile) throw Object.assign(new Error('Najprej izberi vzdevek.'), { code: 'no_profile' });
+    return hub.backend.publishLevel({ game, name, hash, data, devMs: Math.round(devMs), replace });
+  },
+
+  /**
+   * Seznam objavljenih prog (brez podatkov): [{ id, user_id, name, hash, dev_ms, width, depth, plays, created_at,
+   * nickname, avatar, equipped }]. sort: 'new' | 'popular'; userId: le proge tega igralca.
+   */
+  async listLevels({ sort = 'new', limit = 50, userId = null, game = hub.gameId } = {}) {
+    return hub.backend.listLevels({ game, sort, limit, userId });
+  },
+
+  /** Ena objavljena proga s podatki ({ …, data }) ali null. */
+  async getLevel(id, { game = hub.gameId } = {}) {
+    return hub.backend.getLevel({ game, id });
+  },
+
+  /** Izbriši svojo objavo. */
+  async deleteLevel(id, { game = hub.gameId } = {}) {
+    return hub.backend.deleteLevel({ game, id });
+  },
+
+  /** Zabeleži igranje objavljene proge (vsak igralec šteje enkrat). Napake se ne javijo. */
+  async levelPlayed(id, { game = hub.gameId } = {}) {
+    if (!hub.profile) return false;
+    try { return await hub.backend.levelPlayed({ game, id }); }
+    catch (e) { console.warn('levelPlayed:', e.message); return false; }
+  },
+
   /* ------------------------------ kovanci ----------------------------- */
 
   /** Trenutno stanje kovancev. */

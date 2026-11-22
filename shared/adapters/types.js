@@ -52,6 +52,11 @@
  * @property {(o:{game:string, seed?:string|null, asc?:boolean}) => Promise<number|null>} getMyBest
  * @property {(o:{game:string, key:string, title?:string, icon?:string}) => Promise<boolean>} unlock
  * @property {(o?:{game?:string, userId?:string}) => Promise<Object[]>} getAchievements
+ * @property {(o:{game:string, name:string, hash:string, data:Object, devMs:number, replace?:string|null}) => Promise<{id:string, updated:boolean}>} publishLevel
+ * @property {(o:{game:string, sort?:'new'|'popular', limit?:number, userId?:string|null}) => Promise<Object[]>} listLevels
+ * @property {(o:{game:string, id:string}) => Promise<Object|null>} getLevel
+ * @property {(o:{game:string, id:string}) => Promise<boolean>} deleteLevel
+ * @property {(o:{game:string, id:string}) => Promise<boolean>} levelPlayed
  * @property {(o:{game:string, maxPlayers?:number, settings?:Object, isPublic?:boolean}) => Promise<RoomRow>} createRoom
  * @property {(code:string) => Promise<RoomRow>} joinRoom
  * @property {(code:string) => Promise<Object|null>} findRoom

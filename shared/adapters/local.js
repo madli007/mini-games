@@ -22,6 +22,8 @@ const PRESENCE_TIMEOUT = 3500;   // brez utripa → igralec ni več prisoten
 const ROOM_TTL = 24 * 3600e3;    // stare sobe se pobrišejo
 const HOST_STALE_MS = 30000;     // soba brez utripa hosta → prevzem hosta dovoljen vsem
 const GHOST_MAX = 60000;         // največja dolžina podatkov ghosta (znaki base64)
+const LEVEL_MAX = 60000;         // največja velikost objavljene proge (znaki JSON)
+const LEVELS_PER_USER = 20;      // največ objavljenih prog na igralca
 
 const now = () => new Date().toISOString();
 
@@ -404,6 +406,73 @@ export class LocalBackend {
   async getGhost({ game, level, mirror = false, userId = this.userId }) {
     const g = S.load('db:ghosts', {})[`${game}|${level}|${mirror ? 1 : 0}|${userId}`];
     return g ? { user_id: g.user_id, time_ms: g.time_ms, data: g.data } : null;
+  }
+
+  /* ------------------------ objavljene proge igralcev ------------------------ */
+  // Enaka pravila kot RPC <igra>_publish_level: ime 2–40, hash 8 hex, ≤ 60.000 znakov, največ 20 na igralca.
+
+  async publishLevel({ game, name, hash, data, devMs, replace = null }) {
+    if (!(await this.getProfile())) throw codedError('no_profile', 'Najprej izberi vzdevek.');
+    const nm = String(name || '').trim();
+    const w = data?.size?.[0], d = data?.size?.[1];
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.map) || nm.length < 2 || nm.length > 40
+      || !/^[0-9a-f]{8}$/.test(hash || '') || !(devMs > 0 && devMs < 600000)
+      || !Number.isInteger(w) || !Number.isInteger(d) || w < 1 || w > 120 || d < 1 || d > 160) {
+      throw codedError('invalid_level', 'Proga ni veljavna (ime 2–40 znakov, mreža, čas autopilota).');
+    }
+    if (JSON.stringify(data).length > LEVEL_MAX) throw codedError('level_too_big', 'Proga je prevelika za objavo (največ ~60 KB).');
+    const all = S.load('db:levels', {});
+    const row = { name: nm, data, dev_ms: Math.round(devMs), width: w, depth: d, updated_at: now() };
+    const same = Object.values(all).find(l => l.game === game && l.user_id === this.userId && l.hash === hash);
+    if (same) { Object.assign(same, row); S.save('db:levels', all); return { id: same.id, updated: true }; }
+    if (replace && all[replace]?.user_id === this.userId) delete all[replace];
+    if (Object.values(all).filter(l => l.game === game && l.user_id === this.userId).length >= LEVELS_PER_USER) {
+      throw codedError('too_many_levels', 'Objaviš lahko največ 20 prog — najprej umakni katero od starih.');
+    }
+    const id = uuid();
+    all[id] = { id, game, user_id: this.userId, hash, plays: 0, created_at: now(), ...row };
+    S.save('db:levels', all);
+    return { id, updated: false };
+  }
+
+  _levelOut(l, withData = false) {
+    const p = this._profiles()[l.user_id];
+    const o = { id: l.id, user_id: l.user_id, name: l.name, hash: l.hash, dev_ms: l.dev_ms, width: l.width, depth: l.depth, plays: l.plays, created_at: l.created_at,
+      nickname: p?.nickname || '???', avatar: p?.avatar || { emoji: '❔', color: '#888' }, equipped: p?.equipped || {} };
+    if (withData) o.data = JSON.parse(JSON.stringify(l.data));
+    return o;
+  }
+
+  async listLevels({ game, sort = 'new', limit = 50, userId = null }) {
+    const by = sort === 'popular' ? (a, b) => b.plays - a.plays || b.created_at.localeCompare(a.created_at) : (a, b) => b.created_at.localeCompare(a.created_at);
+    return Object.values(S.load('db:levels', {})).filter(l => l.game === game && (!userId || l.user_id === userId))
+      .sort(by).slice(0, Math.min(200, limit)).map(l => this._levelOut(l));
+  }
+
+  async getLevel({ game, id }) {
+    const l = S.load('db:levels', {})[id];
+    return l && l.game === game ? this._levelOut(l, true) : null;
+  }
+
+  async deleteLevel({ game, id }) {
+    const all = S.load('db:levels', {});
+    if (!all[id] || all[id].game !== game || all[id].user_id !== this.userId) return false;
+    delete all[id];
+    S.save('db:levels', all);
+    return true;
+  }
+
+  async levelPlayed({ game, id }) {
+    if (!(await this.getProfile())) throw codedError('no_profile');
+    const all = S.load('db:levels', {});
+    const l = all[id];
+    if (!l || l.game !== game) return false;
+    const plays = S.load('db:levelPlays', {});
+    const k = id + '|' + this.userId;
+    if (plays[k]) return false;
+    plays[k] = now(); S.save('db:levelPlays', plays);
+    l.plays++; S.save('db:levels', all);
+    return true;
   }
 
   /* -------------------------------- sobe --------------------------------- */

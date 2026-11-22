@@ -1269,6 +1269,37 @@ test('lokalno: ghosti (le boljši čas, seznam, podatki)', async () => {
   await throwsCode(() => a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 1, data: 'x'.repeat(70000) }), 'invalid');
 });
 
+test('lokalno: objavljene proge (objava, posodobitev, seznam, igranja, brisanje, omejitve)', async ctx => {
+  clearLocal(); S.remove('db:levels'); S.remove('db:levelPlays');
+  const [a, b] = await users('la', 'lb');
+  const L = ctx.kroglaLevels[0];
+  const p1 = await a.publishLevel({ game: 'krogla', name: 'Moja', hash: 'abcdef01', data: L, devMs: 15000 });
+  eq(p1.updated, false);
+  eq((await a.publishLevel({ game: 'krogla', name: 'Moja 2', hash: 'abcdef01', data: L, devMs: 14000 })), { id: p1.id, updated: true });
+  await sleep(5);
+  const p2 = await b.publishLevel({ game: 'krogla', name: 'Tuja', hash: 'abcdef02', data: L, devMs: 9000 });
+  eq((await a.listLevels({ game: 'krogla' })).map(l => l.name), ['Tuja', 'Moja 2']);
+  eq((await a.listLevels({ game: 'krogla', userId: a.userId })).map(l => l.id), [p1.id]);
+  ok((await a.listLevels({ game: 'krogla' }))[0].nickname.startsWith('T_lb'));
+  eq((await a.listLevels({ game: 'krogla' }))[0].data, undefined, 'seznam brez podatkov');
+  eq((await b.getLevel({ game: 'krogla', id: p1.id })).data, L);
+  eq(await b.levelPlayed({ game: 'krogla', id: p1.id }), true);
+  eq(await b.levelPlayed({ game: 'krogla', id: p1.id }), false, 'isti igralec šteje enkrat');
+  await a.levelPlayed({ game: 'krogla', id: p1.id });
+  eq((await a.listLevels({ game: 'krogla', sort: 'popular' })).map(l => [l.name, l.plays]), [['Moja 2', 2], ['Tuja', 0]]);
+  eq(await a.deleteLevel({ game: 'krogla', id: p2.id }), false, 'tuje proge ni mogoče izbrisati');
+  // zamenjava starejše objave
+  const p3 = await a.publishLevel({ game: 'krogla', name: 'Nova različica', hash: 'abcdef03', data: L, devMs: 15000, replace: p1.id });
+  eq(await a.getLevel({ game: 'krogla', id: p1.id }), null);
+  ok(await a.deleteLevel({ game: 'krogla', id: p3.id }));
+  await throwsCode(() => a.publishLevel({ game: 'krogla', name: 'x', hash: 'abcdef04', data: L, devMs: 100 }), 'invalid_level');
+  await throwsCode(() => a.publishLevel({ game: 'krogla', name: 'Brez mreže', hash: 'abcdef04', data: { size: [1, 1] }, devMs: 100 }), 'invalid_level');
+  await throwsCode(() => a.publishLevel({ game: 'krogla', name: 'Velika', hash: 'abcdef04', data: { ...L, desc: 'x'.repeat(70000) }, devMs: 100 }), 'level_too_big');
+  for (let i = 0; i < 20; i++) await a.publishLevel({ game: 'krogla', name: 'Proga ' + i, hash: i.toString(16).padStart(8, '0'), data: L, devMs: 1000 });
+  await throwsCode(() => a.publishLevel({ game: 'krogla', name: 'Enaindvajseta', hash: 'ffffffff', data: L, devMs: 1000 }), 'too_many_levels');
+  S.remove('db:levels'); S.remove('db:levelPlays');
+});
+
 /* ------------------------------------------------------- Hrčkova krogla: urejevalnik prog */
 
 test('krogla urejevalnik: nova proga je veljavna razen zvezdic; normalizacija ne spremeni uradnih prog', ctx => {

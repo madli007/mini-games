@@ -11,7 +11,7 @@ import { normalizeRoomCode, level as levelOf } from '../util.js';
 const KNOWN = ['room_not_found', 'room_started', 'room_full', 'version_conflict', 'not_next_host',
   'no_profile', 'not_authenticated', 'too_many_rooms', 'move_conflict',
   'not_enough_coins', 'not_owned', 'not_free', 'locked', 'owned', 'unavailable', 'claimed', 'expired',
-  'impossible_time', 'ghost_too_big', 'unknown_level'];
+  'impossible_time', 'ghost_too_big', 'unknown_level', 'invalid_level', 'level_too_big', 'too_many_levels'];
 const MESSAGES = {
   room_not_found: 'Soba s to kodo ne obstaja.',
   room_started: 'Igra v tej sobi se je že začela.',
@@ -28,7 +28,18 @@ const MESSAGES = {
   not_owned: 'Tega predmeta nimaš.',
   claimed: 'Nagrada je že prevzeta.',
   expired: 'Naloga je potekla.',
+  invalid_level: 'Proga ni veljavna (ime 2–40 znakov, mreža, čas autopilota).',
+  level_too_big: 'Proga je prevelika za objavo (največ ~60 KB).',
+  too_many_levels: 'Objaviš lahko največ 20 prog — najprej umakni katero od starih.',
 };
+
+/** Vrstica objavljene proge (profil avtorja splošči kot pri ghostih). */
+function levelRow(r) {
+  return {
+    id: r.id, user_id: r.user_id, name: r.name, hash: r.hash, dev_ms: r.dev_ms, width: r.width, depth: r.depth, plays: r.plays, created_at: r.created_at,
+    nickname: r.profiles?.nickname || '???', avatar: r.profiles?.avatar || { emoji: '❔', color: '#888' }, equipped: r.profiles?.equipped || {},
+  };
+}
 
 /** Pretvori napako Supabase v codedError z znano oznako. */
 function wrap(err) {
@@ -242,6 +253,39 @@ export class SupabaseBackend {
   async getGhost({ game, level, mirror = false, userId = this.userId }) {
     const t = game.replace(/-/g, '_') + '_ghosts';
     return check(await this.client.from(t).select('user_id,time_ms,data').eq('user_id', userId).eq('level', level).eq('mirror', !!mirror).maybeSingle());
+  }
+
+  /* ------------------------ objavljene proge igralcev ------------------------ */
+  // Tabela <igra>_custom_levels, RPC <igra>_publish_level, <igra>_level_played (npr. supabase/games/krogla.sql).
+
+  async publishLevel({ game, name, hash, data, devMs, replace = null }) {
+    const fn = game.replace(/-/g, '_') + '_publish_level';
+    return check(await this.client.rpc(fn, { p_name: name, p_hash: hash, p_data: data, p_dev_ms: devMs, p_replace: replace }));
+  }
+
+  async listLevels({ game, sort = 'new', limit = 50, userId = null }) {
+    const t = game.replace(/-/g, '_') + '_custom_levels';
+    let q = this.client.from(t).select('id,user_id,name,hash,dev_ms,width,depth,plays,created_at,profiles(nickname,avatar,equipped)');
+    if (userId) q = q.eq('user_id', userId);
+    q = sort === 'popular' ? q.order('plays', { ascending: false }).order('created_at', { ascending: false }) : q.order('created_at', { ascending: false });
+    return check(await q.limit(Math.min(200, limit))).map(levelRow);
+  }
+
+  async getLevel({ game, id }) {
+    const t = game.replace(/-/g, '_') + '_custom_levels';
+    const r = check(await this.client.from(t).select('id,user_id,name,hash,data,dev_ms,width,depth,plays,created_at,profiles(nickname,avatar,equipped)').eq('id', id).maybeSingle());
+    return r ? { ...levelRow(r), data: r.data } : null;
+  }
+
+  async deleteLevel({ game, id }) {
+    const t = game.replace(/-/g, '_') + '_custom_levels';
+    const rows = check(await this.client.from(t).delete().eq('id', id).eq('user_id', this.userId).select('id'));
+    return rows.length > 0;
+  }
+
+  async levelPlayed({ game, id }) {
+    const fn = game.replace(/-/g, '_') + '_level_played';
+    return check(await this.client.rpc(fn, { p_id: id }));
   }
 
   /* -------------------------------- sobe --------------------------------- */

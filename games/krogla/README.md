@@ -146,6 +146,15 @@ strežniku, odklepov, turnirja, dnevnega izziva in dosežkov**; lokalni rekord (
 taki povezavi progo razširi (omejena velikost), obdrži le znana polja, jo validira (`validateLevel`) in ponudi »Igraj« /
 »Shrani med moje proge«; ime in opis sta vedno besedilo (`textContent`). Pokvarjena povezava → prijazno sporočilo.
 
+**Proge skupnosti.** »🌍 Objavi« v urejevalniku (le preverjeno rešljiva proga brez napak; ob prvi objavi prijava/vzdevek prek huba)
+objavi progo za vse igralce: `hub.publishLevel` → tabela `krogla_custom_levels` (RPC `krogla_publish_level`, `supabase/games/krogla.sql`;
+ime 2–40 znakov, ≤ 60 KB, največ 20 na igralca; ista oblika proge istega avtorja = posodobitev, spremenjena = nova različica, ki nadomesti
+staro). V igri je razdelek **»🌍 Proge skupnosti«** (Najnovejše / Najbolj igrane / Moje objave; `?community=<id>` odpre progo): avtor,
+velikost, število igralcev, lestvica proge (`game_scores`, seed `custom:<id>`, čas v ms, »na časten način«; časi pod 30 % autopilota se ne
+pošljejo), »Shrani med moje proge«, avtor jo lahko umakne. Proga iz baze se pred igranjem preveri (`sanitizeLevel` → `validateLevel`).
+Proge skupnosti ne vplivajo na turnir, odklepe, dnevni izziv in dosežke; ghost ostane lokalen. Offline adapter dela enako v `localStorage`
+(vidne so le objave iz tega brskalnika).
+
 **Nova uradna proga iz urejevalnika** (za razvijalce):
 1. Uredi progo v urejevalniku (id `NN-ime`, `NN` = naslednja številka; lokacija po številki, za 13+ izberi `look`),
    preveri rešljivost in »Izračunaj medalje«.

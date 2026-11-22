@@ -342,7 +342,7 @@ Zasloni prej/po: scratchpad seje (`shots/prej-*.jpg`, `shots/po-*.jpg`).
 
 ## Hrčkova krogla — urejevalnik prog
 
-Prompt: `prompts/06-krogla-urejevalnik.md`. Stanje: **točke 1–5 končane** (22. 11. 2026); točka 6 (objava na Supabase) ni narejena.
+Prompt: `prompts/06-krogla-urejevalnik.md`. Stanje: **končano, vključno s točko 6** (proge skupnosti na Supabase, 22. 11. 2026).
 Fizika, renderer, uradne proge, časi, lestvice in ghosti uradnih prog nespremenjeni.
 
 ### Načrt
@@ -357,7 +357,7 @@ Fizika, renderer, uradne proge, časi, lestvice in ghosti uradnih prog nespremen
 - [x] Igra: kartica in meni »Moje proge« (Na čas brez uradnih lestvic/ghostov/dosežkov/odklepov, lokalni rekord in ghost), »✏️ Urejevalnik«
 - [x] Deljenje `?custom=` (deflate + base64url, omejitve velikosti, `validateLevel`, ime/opis kot `textContent`, prijazna napaka)
 - [x] Testi: 8 novih (88/88 v Node in `tests.html`), README razdelek »Urejevalnik prog«
-- [ ] Točka 6 — objava prog na Supabase (glej »Naslednji korak«)
+- [x] Točka 6 — proge skupnosti na Supabase (glej spodaj)
 
 ### Dnevnik
 - **Bajtna enakost.** Formula medalj je zdaj ena (`rules.js`); po `node tools/krogla-levels.mjs` je `git diff --stat games/krogla/levels supabase`
@@ -386,10 +386,26 @@ Fizika, renderer, uradne proge, časi, lestvice in ghosti uradnih prog nespremen
 - Shranjevanje prejete proge »💾 Shrani med moje proge« v drugem brskalniku (isti brskalnik jo pravilno prepozna kot že shranjeno).
 - Vse uradne proge kot kopije v urejevalniku (preverjena 06), Firefox/Safari, Supabase način.
 
-### Naslednji korak (točka 6, neobvezno)
-`supabase/games/krogla.sql`: tabela `krogla_custom_levels` (id, `user_id`, ime, `data` jsonb z omejeno velikostjo, `dev_ms`, ustvarjeno),
-RLS (berejo prijavljeni, pišeš/brišeš svoje, omejitev števila prog na igralca); lestvica lastne proge prek `hub.submitScore` s seedom
-`custom:<id>` (preveri, ali gre brez spremembe sheme huba; `public.scores` ne spreminjaj); offline adapter enako; nato advisors.
+### Proge skupnosti (točka 6)
+- **Shema** (`supabase/games/krogla.sql`, pognana na projektu `mini-games` kot migracija `krogla_custom_levels`): tabeli `krogla_custom_levels`
+  (ime, hash, `data` jsonb ≤ 60 KB, `dev_ms`, velikost, `plays`; unikatno `(user_id, hash)`) in `krogla_custom_plays`; RLS: branje za prijavljene,
+  brisanje le svojih, pisanje samo prek `private.krogla_publish_level` (omejitve, največ 20 na igralca, zamenjava starejše različice) in
+  `private.krogla_level_played` (vsak igralec šteje enkrat). Lestvica proge = `game_scores` s seedom `custom:<id>` (`seed` je prosto besedilo
+  ≤ 64 znakov — sheme huba ni bilo treba spreminjati, `public.scores` nedotaknjena; dashboard bere le dnevne seede).
+- **RLS preizkušen** z lažnim JWT v transakciji z `rollback` (14 scenarijev): objava, posodobitev z istim hash, štetje igranj (drugič ne
+  šteje), zavrnjeno kratko ime, prevelika proga, neposreden insert/update (permission denied), tuj igralec vidi a ne more izbrisati,
+  ne vidi tujih igranj, avtor izbriše, 21. objava → `too_many_levels`.
+- **Advisors:** varnost — nič novega tipa (le obstoječe »anonymous access« za vse tabele, ker je anonimna prijava namerna, in »leaked
+  password protection«); zmogljivost — »unused index« (INFO) za nove indekse.
+- **Hub:** `publishLevel`, `listLevels`, `getLevel`, `deleteLevel`, `levelPlayed` v obeh adapterjih (offline: `db:levels`, `db:levelPlays`,
+  iste omejitve), dokumentirano v `shared/README.md`, test lokalnega adapterja (89/89).
+- **Urejevalnik:** »🌍 Objavi« (posodobi / nova različica / umakni; preveri, ali objava še obstaja). **Igra:** razdelek »🌍 Proge skupnosti«
+  (Najnovejše / Najbolj igrane / Moje objave, lestvica proge, shrani med moje, umik), `?community=<id>`.
+- **Preverjeno offline v brskalniku:** objava → seznam → vožnja v pravi zanki igre (autopilot kot vhod) → rezultat le v `custom:<id>`,
+  plays = 1, lestvica proge pokaže čas → umik iz igre → urejevalnik pozabi staro objavo; telefon 375×812; konzola brez napak.
+- **Ni preverjeno:** objava in branje prek pravega Supabase odjemalca v brskalniku (za to bi moral ustvariti pravi testni profil na
+  produkcijskem projektu) — strežniški del je preizkušen s SQL, odjemalec uporablja enak vzorec poizvedb kot ghosti. Ni moderacije
+  (»Prijavi«) in ni strežniških ghostov za proge skupnosti.
 
 ---
 

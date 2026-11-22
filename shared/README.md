@@ -107,6 +107,23 @@ const g = await hub.getGhost({ level: '03-skodelice', userId: list[0].user_id })
   (preveri velikost in nemogoče čase). Nova igra skopira `supabase/games/krogla.sql` in zamenja predpono.
 - Lestvica z izbiro vrstice: `ui.leaderboard(el, { …, onRow: (row, tr) => …, rowHint: row => ' 👻' })` (npr. klik → ghost tega igralca).
 
+### Objavljene proge igralcev (»proge skupnosti«)
+Za igre z urejevalnikom prog (Hrčkova krogla). Igralec objavi progo, vsi prijavljeni jo vidijo in igrajo; lestvica proge
+je navaden `submitScore` s seedom `'custom:<id>'` (brez spremembe sheme huba).
+```js
+const { id, updated } = await hub.publishLevel({ name, hash, data, devMs, replace });   // vrže napako z e.code
+const list = await hub.listLevels({ sort: 'new' | 'popular', limit: 50, userId });       // brez data, z nickname/avatar/equipped
+const L = await hub.getLevel(id);                                                         // { …, data } ali null
+await hub.deleteLevel(id);                                                                // samo svojo → true/false
+await hub.levelPlayed(id);                                                                // vsak igralec šteje enkrat (plays)
+```
+- Omejitve (oba adapterja): ime 2–40 znakov, `hash` 8 hex znakov (ista proga istega igralca = posodobitev), `data` ≤ 60.000 znakov
+  JSON z `map` in `size`, `devMs` (0, 600.000), največ 20 prog na igralca. Kode napak: `invalid_level`, `level_too_big`, `too_many_levels`.
+- Offline: `localStorage` (`db:levels`, `db:levelPlays`). Supabase: tabeli **`<igra>_custom_levels`** (branje za vse prijavljene, brisanje
+  le svojih) in **`<igra>_custom_plays`**, RPC **`<igra>_publish_level(p_name, p_hash, p_data, p_dev_ms, p_replace)`** in
+  **`<igra>_level_played(p_id)`** (`security definer` v shemi `private`, glej `supabase/games/krogla.sql`).
+- `data` je tuj vnos: igra ga mora pred igranjem validirati, ime prikazati kot besedilo (`textContent`).
+
 ### Kovanci, naloge, trgovina, kozmetika
 **Vsaka igra po vsaki odigrani igri pokliče `hub.reportGame`** (solo in multiplayer, enkrat na igralca):
 ```js

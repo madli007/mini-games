@@ -4,7 +4,7 @@
    3D predogled, testna vožnja, autopilot, osnutki, uvoz/izvoz in deljenje s povezavo.
    Logika proge je v editor/model.js (testi v tests/tests.js).
    ===================================================================== */
-import { ui } from '../../shared/hub.js';
+import { hub, ui } from '../../shared/hub.js';
 import * as S from '../../shared/storage.js';
 import { validateLevel, formatLevelJson, loadLevels } from './level.js';
 import { runAutopilot } from './autopilot.js';
@@ -30,7 +30,7 @@ const num = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toString().replace
 /* ===================================================================== */
 
 const st = {
-  L: null, key: null, ready: false, verified: null,
+  L: null, key: null, ready: false, verified: null, published: null,
   layer: 1,
   tile: '.', tileTool: 'brush', brush: 1,
   hTool: 'set', hValue: 1, hBrush: 1,
@@ -108,7 +108,7 @@ function loop2d() {
 
 function openDraft(d, { fit = true } = {}) {
   st.L = M.normalize(clone(d.L));
-  st.key = d.key; st.ready = !!d.ready; st.verified = d.verified || null;
+  st.key = d.key; st.ready = !!d.ready; st.verified = d.verified || null; st.published = d.published || null;
   st.sel = null; st.routeSel = null; st.pathEdit = false; st.pathSel = null; st.trace = null; st.startHere = null;
   history.clear();
   S.save(D.CURRENT_KEY, st.key);
@@ -129,7 +129,7 @@ function scheduleSave() {
 function flushSave() {
   clearTimeout(saveT);
   if (st.saved) return;
-  const { dropped } = D.saveDraft({ key: st.key, L: st.L, ready: st.ready, verified: st.verified });
+  const { dropped } = D.saveDraft({ key: st.key, L: st.L, ready: st.ready, verified: st.verified, published: st.published });
   S.save(D.CURRENT_KEY, st.key);
   st.saved = true;
   renderSaved();
@@ -756,6 +756,7 @@ function renderStatus() {
     ${st.warnings.length ? `<span class="warn" title="Stopnice brez klančine (plast Višine)">⚠ Stopnic: ${st.warnings.length}</span>` : ''}
     <span class="${ver ? 'good' : 'warn'}">${ver ? `✔ Rešljiva (${st.verified.by === 'autopilot' ? 'autopilot' : 'testna vožnja'}, ${num(st.verified.time, 1)} s)` : '○ Rešljivost ni preverjena'}</span>
     ${st.ready ? '<span class="good">🎮 V »Moje proge«</span>' : ''}
+    ${st.published ? `<span class="${st.published.hash === M.levelHash(L) ? 'good' : 'warn'}">🌍 ${st.published.hash === M.levelHash(L) ? 'Objavljena' : 'Objavljena starejša različica'}</span>` : ''}
     <span class="ed-hint">${L.size[0]}×${L.size[1]} · <span class="mg-kbd">?</span> bližnjice</span>`;
   $('#stErr')?.addEventListener('click', showErrors);
 }
@@ -1039,6 +1040,68 @@ async function toggleReady() {
   if (v) location.href = withQs('index.html', 'play=' + encodeURIComponent(st.key));
 }
 
+/* ------------------------------------------------------------ objava med »Proge skupnosti« */
+
+/** Hub (prijava, profil) šele ob objavi — urejevalnik deluje tudi brez strežnika. */
+async function ensureHub() {
+  await hub.init({ gameId: 'krogla' });
+  return hub.profile;
+}
+
+async function publish() {
+  if (!requireReady('Objava med »Proge skupnosti«')) return;
+  if (!(await ensureHub())) return;
+  const hash = M.levelHash(st.L);
+  const time = st.L.dev?.time ?? st.verified?.time;
+  let data;
+  try { data = sanitizeLevel(clone(st.L)); } catch (e) { ui.toast(e.message, { icon: '⚠️' }); return; }
+  // objava je morda umaknjena v igri (ali objavljena v drugem načinu, npr. offline)
+  if (st.published) {
+    let still = true;
+    try { still = !!(await hub.getLevel(st.published.id)); } catch { /* brez povezave: pusti */ }
+    if (!still) { st.published = null; st.saved = false; flushSave(); renderStatus(); }
+  }
+  const pub = st.published;
+  const box = document.createElement('div');
+  box.className = 'mg-stack';
+  const fresh = !pub, same = pub && pub.hash === hash;
+  box.innerHTML = `<p style="margin:0">${fresh ? 'Proga bo vidna vsem igralcem v igri pod <b>»🌍 Proge skupnosti«</b>, z lastno lestvico časov.'
+      : same ? 'Ta proga je že objavljena. Objava posodobi ime in opis.' : '<b>Proga se je od objave spremenila.</b> Nova različica nadomesti staro — lestvica stare različice se ne prenese.'}</p>
+    <p class="mg-small mg-muted" style="margin:0">Objavljaš kot <b id="pubWho"></b>${hub.offline ? ' · <span style="color:var(--mg-yellow)">offline način: objava je vidna le v tem brskalniku</span>' : ''}. Največ 20 objavljenih prog na igralca.</p>
+    <div class="ed-row"><button type="button" class="mg-btn mg-btn--primary" data-a="pub">🌍 ${fresh ? 'Objavi' : same ? 'Posodobi objavo' : 'Objavi novo različico'}</button>
+      ${pub ? '<button type="button" class="mg-btn mg-btn--danger" data-a="del">Umakni objavo</button>' : ''}
+      ${pub ? '<a class="mg-btn mg-btn--ghost" id="pubOpen">Odpri v igri</a>' : ''}</div>`;
+  box.querySelector('#pubWho').textContent = hub.profile.nickname;
+  if (pub) box.querySelector('#pubOpen').href = withQs('index.html', 'community=' + encodeURIComponent(pub.id));
+  let close;
+  box.addEventListener('click', async e => {
+    const a = e.target.closest('[data-a]')?.dataset.a;
+    if (!a) return;
+    e.target.closest('button').disabled = true;
+    try {
+      if (a === 'pub') {
+        const r = await hub.publishLevel({ name: st.L.name, hash, data, devMs: Math.max(1, Math.round((time || 60) * 1000)), replace: pub && !same ? pub.id : null });
+        st.published = { id: r.id, hash };
+        st.saved = false; flushSave(); renderStatus();
+        close?.();
+        const v = await ui.modal({ title: '🌍 Objavljeno', html: '<p>Proga je med »Proge skupnosti«. Prijatelji jo najdejo v meniju igre.</p>',
+          actions: [{ label: 'Zapri', value: false }, { label: 'Odpri v igri', value: true, kind: 'primary' }] });
+        if (v) location.href = withQs('index.html', 'community=' + encodeURIComponent(r.id));
+      } else if (a === 'del') {
+        if (!(await ui.confirm('Umaknem progo iz »Proge skupnosti«? Njena lestvica ne bo več dosegljiva.', { danger: true, yes: 'Umakni' }))) { e.target.closest('button').disabled = false; return; }
+        await hub.deleteLevel(pub.id);
+        st.published = null; st.saved = false; flushSave(); renderStatus();
+        close?.();
+        ui.toast('Objava umaknjena.', { icon: '🗑️' });
+      }
+    } catch (err) {
+      e.target.closest('button').disabled = false;
+      ui.toast(err.message || 'Objava ni uspela.', { icon: '⚠️', duration: 4000 });
+    }
+  });
+  ui.modal({ title: '🌍 Proge skupnosti', content: box, actions: [{ label: 'Zapri', value: null }], onOpen: (_, c) => { close = c; } });
+}
+
 async function share() {
   if (!requireReady('Deljenje')) return;
   let data;
@@ -1120,6 +1183,7 @@ function bindUi() {
   $('#btnBot').onclick = runBot;
   $('#btnExport').onclick = exportModal;
   $('#btnShare').onclick = share;
+  $('#btnPublish').onclick = publish;
   $('#btnReady').onclick = toggleReady;
   $('#btn3d').onclick = toggle3d;
   $('#btnHelp').onclick = help;
