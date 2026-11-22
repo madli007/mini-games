@@ -318,6 +318,7 @@ dnevni lestvici takoj vidi rivalstvo.
     - **Predlog razdelitve:** prompt 1 = fizika, kontrole, 3 skakalnice, točkovanje, trening z ghostom;
       prompt 2 = tekma do 10 igralcev z replayem v živo, dnevni izziv, več skakalnic in letalnica;
       prompt 3 = svetovni pokal (sezona v Supabase), kariera, predmeti v trgovini.
+    - Prompti: `prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 
 ### Fizikalne igre v slogu Krogle in pinballa
 
