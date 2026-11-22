@@ -300,7 +300,7 @@ export function botGame(seed = 1, skill = 0.75) {
     modes: g.modesCompleted, wizards: g.wizards, multiballs: ev.multiball || 0, jackpots: ev.jackpot || 0,
     ramps: ev.rampMade || 0, orbits: ev.orbit || 0, scoops: ev.scoopEnter || 0, drains: ev.drain || 0,
     modeStarts: ev.modeStart || 0, extraBalls: ev.extraBall || 0, searches: ev.ballSearch || 0,
-    escapes: ev.escape || 0, tilts: ev.tilt || 0, mystery: ev.mystery || 0, maxCombo: g.maxCombo,
+    escapes: ev.escape || 0, tilts: ev.tilt || 0, mystery: ev.mystery || 0, kickbacks: ev.kickback || 0, maxCombo: g.maxCombo,
   };
 }
 

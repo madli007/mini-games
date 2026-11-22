@@ -72,7 +72,7 @@ A·L·U kanali zgoraj, 3 pop bumperji »Al 13« (**Impol · Impol Seval · Impol
 - **Combo**: zaporedni veliki streli (orbit, rampa, code review) v 4 s; prikaz na DMD. Zaporedne rampe dajo še rampni combo.
 - **Code review**: 3 zadetki → **mystery award** (točke, lock, extra ball, ball save, množitelj, prižgana misija, kickback).
 - **Extra ball** (»Rondela«) se prižge po 8 orbitih (pobereš ga v livarni).
-- **Kickback** v levem outlanu; spinner ga ponovno prižge (vsakih 25 obratov). **Ball save** 10 s po izstrelitvi.
+- **Kickback** v levem outlanu; spinner ga ponovno prižge (vsakih 50 obratov). **Ball save** 10 s po izstrelitvi.
 - **Bonus** ob koncu žogice: zbran bonus × množitelj (TILT ga izniči).
 
 ### Misije (začnejo se v livarni, ko je misija prižgana)

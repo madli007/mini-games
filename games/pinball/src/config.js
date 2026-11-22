@@ -46,7 +46,7 @@ export const CFG = {
   rampZaMisijo: 3,            // koliko ramp prižge naslednjo misijo
   orbitZaExtraBall: 8,
   reviewZaMystery: 3,
-  spinZaKickback: 25,
+  spinZaKickback: 50,
 };
 
 // logične dimenzije mize in fizika (uglašeno — previdno!)

@@ -731,7 +731,16 @@ export class Game {
     // fizika
     const n = Math.max(1, Math.round(dt / STEP));
     const sdt = dt / n;
-    for (let i = 0; i < n; i++) this.phys.step(sdt, this.balls);
+    for (let i = 0; i < n; i++) {
+      this.phys.step(sdt, this.balls);
+      // kickback: ko žogica ob steni preleti vrh outlane vodila, jo usmeri poševno v igralno polje,
+      // sicer se zaleti v spodnji rob odbojnika ob levi steni in pade nazaj v outlane
+      for (const b of this.balls) {
+        if (b.kickT === undefined) continue;
+        if (b.y < 672 && b.vy < 0) { b.vx = 1150; b.vy = -1750; b.kickT = undefined; }
+        else if (this.time - b.kickT > 0.6) b.kickT = undefined;
+      }
+    }
 
     // ohladitve in animacije elementov
     for (const s of T.segs) { if (s.cool > 0) s.cool -= dt; }
@@ -759,7 +768,7 @@ export class Game {
       }
       // kickback v levem outlanu
       if (b.x < 55 && b.y > 880 && b.vy > 0 && this.kickback && !this.tilted && this.state === 'play') {
-        b.x = 37; b.y = 900; b.vx = 0; b.vy = -2100;
+        b.x = 33; b.y = 900; b.vx = 0; b.vy = -2100; b.kickT = this.time;
         this.kickback = false;
         this.say(N.sling + '!', 'kickback · spinner ga spet prižge', PAL.code, { dur: 1.4, small: true });
         this.emit('kickback', { x: 37, y: 920 });
