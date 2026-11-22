@@ -42,8 +42,41 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 5. **Topovi na terenu (Worms-like, do 10 igralcev)** ★★
    - Igralci so na vrsti po potezah, teren je uničljiv, nastaviš kot in moč strela, po vmesnih krogih kupuješ orožja.
    - Ker je potezna, je odlična za Supabase in brez težav prenese 10 igralcev.
-6. **Motorist fizika** ★
-   - 2D motor po hribčkih, trije nivoji in »ghost« najboljšega časa iz Supabase.
+6. **Motorist (fizikalni trial)** ★★★
+   - **Žanr:** motoristični trial s strani: plin, zavora in nagibanje telesa po progi z ovirami (skakalnice,
+     hlodi, zaboji, gugalnice, stopnice, strmine). Ime, proge in videz so naši, ne kopija nobene obstoječe igre.
+   - **Fizika:** motor sta **dve kolesi in šasija z vzmetenjem**, voznik premika težišče naprej in nazaj. Plin
+     poganja zadnje kolo, zavora obe. Nagib je glavni vhod: pristanek na kolesih, zamah na stopnico, sprednje kolo
+     na tleh pri strmem vzponu.
+     - Priporočeno: **Planck.js** (port Box2D, CDN s pripeto verzijo) za zglobe, vzmeti in dinamične predmete
+       (hlodi, zaboji, mostovi, ki se podrejo). Alternativa je lastna fizika kot pri pinballu (več kontrole, veliko več dela).
+     - **Fiksen korak** (npr. 120 Hz), da so časi pošteni. Ghost se snema kot **položaji** (kot `ghost.js` v Krogli),
+       ne kot vnosi, ker se Box2D med napravami lahko rahlo razide.
+     - Voznik je ob padcu **ragdoll** (zglobi), kar je polovica zabave.
+     - **Stran z drsniki** (`?debug=1`) za moč motorja, vzmetenje, trenje gum in moč nagiba.
+   - **Grafika 2,5D:** fizika je 2D, izris 3D s Three.js. Kamera s strani rahlo sledi in se pri skokih oddalji,
+     ozadje ima globino. Uporabi dele rendererja Krogle (nebo, teksture, post-processing, samodejna kakovost).
+   - **Proge:** JSON s terenom (lomljena črta ali krivulje) in objekti: zaboji, hlodi, gugalnice, eksplozivni sodi,
+     mostovi, ki se podrejo, dvigala, kontrolne točke. Teme: kamnolom, gozd s hlodi, gradbišče, **aluminijasta
+     tovarna** (crossover s pinballom: valjarna, tekoči trakovi, žerjavi), zimska proga z ledom, nočna z neonom.
+     Urejevalnik je veliko lažji kot pri Krogli (2D: rišeš črto terena, postavljaš objekte), zato so skupnostne
+     proge realne že v drugem promptu.
+   - **Točkovanje:** čas in **napake**. Vsak padec je +1 napaka in vrnitev na kontrolno točko. Medalje so odvisne
+     od časa in napak (zlato = 0 napak in pod časom). Povzetek: »Padci: 3 · Čas 1:12,40 · Srebro«.
+   - **Kontrole:** tipkovnica ↑ plin, ↓ zavora, ←/→ nagib. Telefon: levi palec nagib (dve tipki ali drsnik),
+     desni palec plin in zavora; opcijsko nagib telefona.
+   - **Načini:**
+     - **proge v sklopih** (lahke, srednje, težke, ekstremne) z ghostom svojega in prijateljevega rekorda;
+     - **dnevna proga** (generirana iz seeda ali izbrana iz nabora, šteje prvi poskus);
+     - **dirka do 10 prijateljev:** vsi hkrati na isti progi, drugi so prosojni ghosti v živo prek `room.send`
+       (brez trkov), zmaga prvi v cilju z najmanj napakami;
+     - kasneje **skupnostne proge** (»proga tedna«) in predmeti v trgovini (barva motorja, čelada, dres, sled;
+       fizika je za vse enaka).
+   - **Tveganje:** vse je v občutku vožnje. Če je motor »plavajoč« ali preveč nervozen, igra ni zabavna, zato naj prvi
+     prompt res izdela drsnike in progo, ki samo preizkuša kontrole.
+   - **Predlog razdelitve:** prompt 1 = fizika, voznik z ragdollom, kontrole, 2,5D izris, 10 prog v dveh sklopih,
+     napake, medalje, ghost, drsniki; prompt 2 = urejevalnik, skupnostne proge v Supabase, dnevna proga, še 10 prog;
+     prompt 3 = dirka do 10 igralcev v živo, sezona, predmeti v trgovini.
 
 ### Multiplayer arene
 
@@ -361,6 +394,68 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 **Za začetek:** **Hrčkov minigolf** (največ ponovne uporabe in do 10 igralcev), nato **druga miza in več igralcev
 v pinballu** (pinball iz igre za enega postane družabna igra), potem **Balinanje** ali **Dirka frnikol** kot party
 igri za TV.
+
+### Šport (nadaljevanje skokov)
+
+Igre v slogu Smučarskih skokov (36): jasne faze, deterministični replayi iz vnosov, prava pravila točkovanja,
+tekma med prijatelji in sezona.
+
+**Skupna osnova: športni okvir.** Ko bodo narejeni skoki, iz njih izlušči skupni modul (npr. `games/skoki/sport/`
+ali `shared/sport.js`): tekma v serijah (v drugi obraten vrstni red), replay v živo iz vnosov, sezona svetovnega
+pokala s točkami 100-80-60…, dnevno prizorišče in vreme po seedu, kariera z odklepanjem prizorišč. Vsaka spodnja
+igra potem vse to dobi skoraj zastonj.
+
+**Zimski športi**
+
+48. **Biatlon** ★★★
+    - **Tek:** ritem pritiskanja levo-desno. Prehiter ritem dvigne srčni utrip, prepočasen izgubi čas. Na klancih
+      in spustih se odločaš, kdaj počivati.
+    - **Strelišče:** merek niha glede na utrip in veter, zadržiš dih (tipka), a le za kratek čas. Pet tarč, za vsako
+      zgrešeno kazenski krog.
+    - Napetost je v odločitvi: na strelišče prehiter ali izgubljati čas za počitek.
+    - **Do 10 igralcev hkrati** (skupinski štart), ostali so ghosti na progi. Prizorišče npr. izmišljena »Pokljuka«.
+49. **Veleslalom / slalom** ★★
+    - Pogled od zadaj ali od zgoraj. Smučar zavija z nagibom, ti izbiraš linijo: ožji zavoj je počasnejši,
+      preširok pomeni zgrešena vratca.
+    - Proge so JSON (vratca, naklon, led ali južni sneg), teren in vratca se dnevno spremenijo po seedu.
+    - Dva teka, seštevek časa, ghost najboljšega.
+50. **Bob in sankanje** ★★
+    - **Štart:** ritem tipk za porivanje. **Kanal:** izbiraš linijo v zavojih (visoko ali nizko). Zaletiš se v steno
+      = izguba hitrosti, previsoko v zavoju = prevrnitev.
+    - Kratki teki po ~50 s, zato odlično za party z »še en poskus«.
+
+**Poletni in »slovenski« športi**
+
+51. **Kolesarska etapna dirka** ★★★
+    - Ni igra refleksov, ampak **taktike**: energija, zavetrje v skupini, napadi na klancih, šprint na koncu.
+    - Etape so profili v JSON-u (ravnina, gorska etapa, kronometer), skupni seštevek kot »Dirka po Sloveniji«
+      z majicami (rumena, pikčasta, zelena).
+    - **Do 10 prijateljev v istem pelotonu**, realtime ali z odločitvami ob kontrolnih točkah, ostale kolesarje vodi AI.
+    - Najbolj družabna od teh, ker vsi razumejo trenutek »zdaj napadem«.
+52. **Športno plezanje** ★★
+    - **Balvan:** kombiniraš prijeme (katera roka, kam). Moč podlakti pada, dinamični skok je tveganje s tajmingom.
+    - **Težavnost:** smer na čas; počitek na dobrem oprimku obnovi moč, a vzame čas.
+    - Smeri so JSON (prijemi, kakovost, razdalje), smer dneva je enaka za vse.
+53. **Kajak na divjih vodah** ★★
+    - Tok reke z valji in povratnimi tokovi, vratca zgoraj in spodaj (spodnja proti toku). Dotik vratc +2 s,
+      izpuščena +50 s.
+    - Prizorišče npr. izmišljen »Tacen«. Tok je lahko preprosto 2D polje sil (kot ventilatorji v Krogli).
+54. **Atletski mnogoboj (metanja)** ★★
+    - **Kladivo:** ritem vrtenja, spust ob pravem kotu. **Kopje:** zalet, odmet, kot. **Krogla:** moč in kot.
+    - Vsaka disciplina traja eno minuto, skupaj **mnogoboj** s točkovno tabelo.
+55. **Koš: prosti meti in »Konj«** ★
+    - Met z vlečenjem, prava parabola, odboj od obroča in table (fizika žogice iz pinballa).
+    - Party igra **»Konj«**: kdor zadene, določi met, drugi ga morajo ponoviti; zgrešen met = črka K-O-N-J.
+      Potezno do 10 igralcev.
+
+**Krovna ideja**
+
+56. **Zimske in poletne igre** ★★ (ko obstajajo vsaj 3–4 športi)
+    - Vikend dogodek za prijatelje: več disciplin zapored (skoki, biatlon, bob, slalom …) in skupna **tabela medalj**.
+    - Sezona se poveže z dosežki in nagradami v trgovini (dresi, zastave).
+
+**Za začetek:** najprej **skoki** (postavijo okvir), nato **kolesarska dirka** (najbolj družabna) ali **biatlon**
+(najbolj podoben skokom).
 
 ## Predlagan vrstni red
 
