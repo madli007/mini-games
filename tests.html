@@ -26,13 +26,15 @@
     const schemaSql = await (await fetch('supabase/schema.sql', { cache: 'no-cache' })).text();
     const kIdx = await (await fetch('games/krogla/levels/index.json', { cache: 'no-cache' })).json();
     const kroglaLevels = await Promise.all(kIdx.levels.map(async f => (await fetch('games/krogla/levels/' + f, { cache: 'no-cache' })).json()));
+    const rIdx = await (await fetch('games/rusilec/arenas/index.json', { cache: 'no-cache' })).json();
+    const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => (await fetch('games/rusilec/arenas/' + f, { cache: 'no-cache' })).json()));
     const log = s => {
       const line = document.createElement('div');
       line.textContent = s;
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

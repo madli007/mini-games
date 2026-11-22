@@ -175,6 +175,7 @@ function fallGone(w, i) {
   const t0 = w.fallTiles.get(i);
   if (t0 == null) return false;
   const dt = w.t - t0;
+  if (w.permFall) return dt > 0.7;   // arene (Rušilec): odpadla ploščica se ne vrne
   return dt > 0.7 && dt < 4.5;
 }
 
@@ -282,7 +283,7 @@ export function fallTileState(w, i) {
   if (t0 == null) return { shake: 0, drop: 0 };
   const dt = w.t - t0;
   if (dt < 0.7) return { shake: dt / 0.7, drop: 0 };
-  if (dt < 4.5) return { shake: 0, drop: 0.5 * 9 * (dt - 0.7) ** 2 };
+  if (dt < 4.5 || w.permFall) return { shake: 0, drop: 0.5 * 9 * (dt - 0.7) ** 2 };
   return { shake: 0, drop: 0 };
 }
 
@@ -401,7 +402,7 @@ function integrate(w, b, ax, az, dt, ev) {
       b.z += w.g.dz[i] * P.CONVEYOR * dt;
     }
   }
-  const s = SURF[b.grounded ? b.surf : 'air'];
+  const s = SURF[b.grounded ? (b.forceSurf || b.surf) : 'air'];   // forceSurf: Rušilec (Zmrzal)
   let gx = 0, gz = 0;
   if (b.grounded) {
     // naklon iz višine podlage (končne razlike znotraj iste ploščice)
@@ -701,4 +702,82 @@ export function respawn(w) {
 /** Vrh tal pod točko (za senco in kamero). */
 export function groundBelow(w, x, z, fromY = Infinity) {
   return groundAt(w, w.ball, x, z, fromY).h;
+}
+
+/* =====================================================================
+   Več teles (Rušilec — party arena). Singleplayer (step) teh funkcij ne
+   uporablja; svet ostane isti, le krogel je več in vsaka ima svoj hlad.
+   ===================================================================== */
+
+/** Novo telo (krogla) na (x, z), postavljeno na tla. */
+export function makeBody(w, x, z, r = w.R) { return newBody(x, z, r, w); }
+
+/** Premakni čas sveta za STEP (premične plošče, žage, ose …) — enkrat na korak, pred stepBody. */
+export function advanceWorld(w) {
+  w.t += STEP; w.steps++;
+  updateDynamic(w);
+}
+
+/** Vrh tal v (x, z) pod višino fromY (za bote, izhodišča in sence). */
+export function groundY(w, x, z, fromY = Infinity) {
+  return groundAt(w, w.ball, x, z, fromY).h;
+}
+
+/**
+ * En korak za poljubno telo: sile, integracija s trki ob ploščice/kvadre/odbijače,
+ * vzmeti, kladiva, žage, ose. Hlad (cooldown) je za vsako telo posebej (b.cd).
+ * Dogodki dobijo b.id. Padec (y < killY) preveri klicatelj.
+ * @param {Object} w svet
+ * @param {Object} b telo (makeBody)
+ * @param {number} ix vhod x (|v| ≤ 1)
+ * @param {number} iz vhod z
+ * @param {Object[]} ev seznam dogodkov
+ * @param {number} [fx] dodatna sila x (npr. magnet, veter)
+ * @param {number} [fz]
+ */
+export function stepBody(w, b, ix, iz, ev, fx = 0, fz = 0) {
+  const m = Math.hypot(ix, iz);
+  if (m > 1) { ix /= m; iz /= m; }
+  const f = forces(w, b);
+  const local = [];
+  integrate(w, b, ix + (f[0] + fx) / P.ACCEL, iz + (f[1] + fz) / P.ACCEL, STEP, local);
+  const cd = b.cd || (b.cd = new Map());
+  const cool2 = (key, t) => { const c = cd.get(key); if (c != null && w.t < c) return false; cd.set(key, w.t + t); return true; };
+  const L = w.L;
+  for (const sp of L.springs || []) {
+    if (b.grounded && (b.x - sp.x) ** 2 + (b.z - sp.z) ** 2 < 0.42 ** 2 && cool2(sp, 0.4)) {
+      const pw = sp.power || 8;
+      b.vx = sp.dir[0] * pw; b.vz = sp.dir[1] * pw;
+      b.vy = sp.up || 7; b.grounded = false; b.on = null;
+      local.push({ type: 'spring', sp });
+    }
+  }
+  for (const hm of L.hammers || []) {
+    const st = hammerPhase(w, hm);
+    if (st.ph !== 'strike' || st.f < 0.5) continue;
+    if (b.x > hm.x - b.r && b.x < hm.x + hm.w + b.r && b.z > hm.z - b.r && b.z < hm.z + hm.d + b.r && cool2(hm, 0.3)) {
+      const d = hm.dir || [0, 1];
+      b.vx = d[0] * 9; b.vz = d[1] * 9; b.vy = 4.5; b.grounded = false; b.on = null; b.stun = 0.45;
+      local.push({ type: 'hammer' });
+    }
+  }
+  for (const s of w.saws) {
+    const dx = b.x - s.pos[0], dz = b.z - s.pos[1];
+    const rr = b.r + s.r;
+    if (dx * dx + dz * dz < rr * rr && Math.abs(b.y - b.r - (s.y ?? (b.y - b.r))) < 0.8 && cool2(s, 0.6)) {
+      const d = Math.hypot(dx, dz) || 1;
+      b.vx = dx / d * 7.5; b.vz = dz / d * 7.5; b.stun = 0.6;
+      local.push({ type: 'saw' });
+    }
+  }
+  for (const s of w.wasps) {
+    const dx = b.x - s.pos[0], dz = b.z - s.pos[1];
+    const rr = b.r + s.r;
+    if (dx * dx + dz * dz < rr * rr && cool2(s, 0.5)) {
+      const d = Math.hypot(dx, dz) || 1;
+      b.vx += dx / d * 6; b.vz += dz / d * 6;
+      local.push({ type: 'wasp' });
+    }
+  }
+  for (const e of local) { e.id = b.id; ev.push(e); }
 }

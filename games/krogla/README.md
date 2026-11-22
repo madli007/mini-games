@@ -38,6 +38,7 @@ Razvojni parameter `?bot=1`: proge vozi autopilot skozi pravo zanko igre (za pre
 | `autopilot.js` | »voznik« po točkah poti (`route`) — test rešljivosti in razvijalčev ghost |
 | `render.js` + `render/` | Three.js `0.160.0` (CDN, importmap): `looks.js` (lokacije po progah), `textures.js` (proceduralne PBR teksture), `sky.js` (nebo + IBL/PMREM), `materials.js` (dither prosojnost, plapolanje), `terrain.js` (teren, vertex AO, robovi), `objects.js` (ovire in sovražniki), `ball.js` (steklo, hrček s shell krznom), `fx.js` (delci, sled), `decor.js` (okras), `post.js` (bloom, AO, SMAA/FXAA, barvna korekcija, tilt-shift) |
 | `input.js`, `audio.js` | vhod (tipke, miška, palica, nagib) · WebAudio učinki in glasba |
+| `secrets.js` | skrite ključavnice (Neon, Nebo), ki odklenejo skrivni areni v Rušilcu (`../rusilec/`); zunaj fizike in JSON-a prog |
 | `game.js` | meni, načini, stanja (odštevanje, igra, pavza, povzetek, konec), hub |
 
 **Videz krogle** je parameter (`DEFAULT_SKIN` v `render.js`: `glass`, `opacity`, `rim`, `rider` = `'hamster'` ali emoji, `fur`, `trail`; nova polja `tint` (barva globine stekla), `roughness` (0–0,3), `pattern` (`none|stripes|dots|stars|hex`)).

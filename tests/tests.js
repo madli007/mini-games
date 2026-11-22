@@ -24,6 +24,7 @@ import * as KL2 from '../games/krogla/level.js';
 import * as KE from '../games/krogla/editor/model.js';
 import * as KS from '../games/krogla/editor/share.js';
 import * as KD from '../games/krogla/editor/drafts.js';
+import { rusilecTests } from './rusilec.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1458,6 +1459,9 @@ test('krogla urejevalnik: osnutki (omejitev, pripravljene ostanejo)', () => {
   KD.removeDraft('pripravljena'); eq(KD.getDraft('pripravljena'), null);
   S.remove(KD.DRAFTS_KEY);
 });
+
+/* ------------------------------------------------------- Rušilec (tests/rusilec.js) */
+rusilecTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

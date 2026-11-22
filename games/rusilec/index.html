@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Rušilec — party arena Hrčkove krogle: hrčki v kroglah nad prepadom, 2–8 igralcev na telefonih, host na TV-ju.">
+<title>Rušilec · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23ff6b3d'/%3E%3Ccircle cx='6' cy='7' r='3.4' fill='%23bfeaff' opacity='.8'/%3E%3Ccircle cx='11' cy='10' r='2.6' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+<!-- Three.js: ista pripeta verzija kot Hrčkova krogla (renderer, materiali in hrček so skupni) -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="mg">
+  <main class="mg-container mg-stack" id="menu" aria-live="polite">
+    <div class="mg-empty"><span class="mg-spin"></span> Nalagam arene …</div>
+  </main>
+
+  <section class="mg-container mg-hidden" id="lobby" aria-label="Lobby">
+    <div class="ru-lobby">
+      <div id="lobbyMain"></div>
+      <aside class="mg-stack" id="lobbySide"></aside>
+    </div>
+  </section>
+
+  <section class="ru-play mg-hidden" id="play" aria-label="Arena">
+    <canvas id="cv" aria-label="Arena"></canvas>
+    <div class="ru-top">
+      <span class="ru-chip ru-clock" id="hClock">3:00</span>
+      <span class="ru-chip" id="hRound"></span>
+      <span class="ru-chip ru-me" id="hMe"></span>
+      <span class="ru-chip" id="hPlace"></span>
+    </div>
+    <div class="ru-btns">
+      <button class="ru-btn" id="btnBoard" type="button" aria-label="Lestvica">🏆</button>
+      <button class="ru-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+      <button class="ru-btn" id="btnExit" type="button" aria-label="Zapusti">✕</button>
+    </div>
+    <div class="ru-feed" id="feed" aria-live="polite"></div>
+    <aside class="ru-board" id="board" aria-label="Lestvica"></aside>
+    <div class="ru-banner" id="banner"></div>
+    <div class="ru-msg" id="msg" aria-live="assertive"></div>
+    <div class="ru-stick mg-hidden" id="stick" aria-label="Palica za upravljanje"><div class="ru-knob" id="knob"></div></div>
+    <button class="ru-dash mg-hidden" id="btnDash" type="button" aria-label="Sunek">SUNEK<small>preslednica</small></button>
+    <div class="ru-fps mg-hidden" id="fps"></div>
+    <div class="ru-overlay mg-hidden" id="overlay" role="dialog" aria-modal="true"></div>
+  </section>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

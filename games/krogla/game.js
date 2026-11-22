@@ -15,6 +15,8 @@ import { runAutopilot, pilot } from './autopilot.js';
 import { Renderer, DEFAULT_SKIN, QUALITY, QUALITY_ORDER, detectQuality } from './render.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
+import { secretsFor, touches, lockKey } from './secrets.js';
+import * as THREE from 'three';
 
 const GAME = 'krogla';
 const $ = s => document.querySelector(s);
@@ -164,7 +166,8 @@ function mainHtml() {
           preostali čas se prenese v naslednjo progo.</p>
         <div class="kr-row"><button class="mg-btn mg-btn--ghost mg-btn--small" data-act="help">Kako igrati</button>
           <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="settings">⚙️ Nastavitve</button>
-          <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="boards">🏆 Lestvice</button></div>
+          <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="boards">🏆 Lestvice</button>
+          <a class="mg-btn mg-btn--pink mg-btn--small" href="${hub.link('games/rusilec/')}">💥 Rušilec (party)</a></div>
       </div>
     </div>
     <div class="kr-cards">
@@ -835,6 +838,7 @@ function simStep() {
   step(w, ix, iz);
   play.rec.sample(w.t, b);
   for (const e of w.events) onEvent(e);
+  checkSecrets(w, b);
   // opozorila (telegraf) za kladiva in magnete v bližini
   (w.L.hammers || []).forEach((h, k) => {
     const ph = hammerPhase(w, h).ph;
@@ -884,6 +888,50 @@ function onEvent(e) {
     case 'land': audio.play('land'); renderer.impact(b, 2.5, 'land'); break;
     case 'shake': audio.play('shake'); break;
     case 'switch': audio.play('switch'); msg('Vrata odprta!'); break;
+  }
+}
+
+/* ------------------------------------------------------------ skrite ključavnice (Rušilec) */
+
+const locksKey = 'krogla:locks';
+/** Komaj vidne ključavnice na stranskih poteh (le še neodklenjene). Zunaj fizike: ne vplivajo na čas ali ghost. */
+function addSecrets(L, world) {
+  const have = S.load(locksKey, []);
+  return secretsFor(L).filter(sc => !have.includes(sc.arena)).map(sc => {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: '#ffd36a', metalness: 0.9, roughness: 0.25, emissive: '#ffb020', emissiveIntensity: 0.35, transparent: true, opacity: 0.32, depthWrite: false });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.025, 8, 20), mat);
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.22, 0.035), mat);
+    shaft.position.y = -0.17;
+    const bit = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 0.035), mat);
+    bit.position.set(0.04, -0.25, 0);
+    g.add(ring, shaft, bit);
+    const gy = groundBelowSafe(world, sc.x, sc.z);
+    g.position.set(sc.x, gy + 0.45, sc.z);
+    renderer.level.add(g);
+    return { sc, g, gy, taken: false };
+  });
+}
+function groundBelowSafe(world, x, z) {
+  const i = Math.floor(z) * world.g.W + Math.floor(x);
+  const h = world.g.h[i];
+  return Number.isFinite(h) ? h : 0;
+}
+function checkSecrets(w, b) {
+  for (const k of play.secrets || []) {
+    if (k.taken) continue;
+    if (k.g.parent !== renderer.level) renderer.level.add(k.g);   // sprememba kakovosti ponovno zgradi sceno
+    k.g.rotation.y = w.t * 1.6;
+    k.g.position.y = k.gy + 0.45 + Math.sin(w.t * 2.4) * 0.05;
+    if (!touches(k.sc, b, k.gy)) continue;
+    k.taken = true;
+    k.g.visible = false;
+    renderer.burst(k.sc.x, k.gy + 0.5, k.sc.z, '#ffd23f', 26, 3);
+    audio.play('checkpoint');
+    const have = S.load(locksKey, []);
+    if (!have.includes(k.sc.arena)) S.save(locksKey, [...have, k.sc.arena]);
+    ui.toast(`Odklenil si areno ${k.sc.name} v Rušilcu!`, { icon: '🗝️', duration: 4000 });
+    hub.unlock(lockKey(k.sc.arena), { title: 'Ključavnica: ' + k.sc.name, icon: '🗝️' });
   }
 }
 
@@ -1001,6 +1049,7 @@ async function startLevel() {
   lastHammer = new Map();
   play = { L, base, world, rec: new Recorder(), acc: 0, state: 'count', prevBall: { x: world.ball.x, y: world.ball.y, z: world.ball.z }, falls: 0, token: my, pilot: BOT ? pilot(world, L.route || []) : null };
   play.rec.sample(0, world.ball);
+  play.secrets = mode.custom ? [] : addSecrets(L, world);
   $('#overlay').classList.add('mg-hidden');
   // oznaka proge
   const n = mode.idx + 1, total = mode.levels.length;

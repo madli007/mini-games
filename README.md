@@ -8,7 +8,9 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 - Objavljeno: **https://madli007.github.io/mini-games/**
 - Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
   (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled), **Hrčkova krogla**
-  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv) in 12 napovedanih.
+  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv), **Rušilec**
+  (party arena Hrčkove krogle za 2–8 igralcev v realnem času: izrivanje čez rob, 9 aren, boti, ekipe, TV pogled),
+  **Zaporedje** in napovedane igre.
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
 - Backend: Supabase (anonimna prijava, RLS, realtime). Brez njega vse deluje v **offline načinu**.
 
@@ -106,12 +108,14 @@ shared/                                   skupni API (dokumentacija: shared/READ
 games/reakcija/                           demo igra (index.html, game.js, logic.js, game.css)
 games/ladjice/                            Potapljanje ladjic (logic.js, ai.js, content.js, fx.js, game.js)
 games/krogla/                             Hrčkova krogla (physics, level, rules, ghost, render, … · levels/*.json · README.md)
+games/rusilec/                            Rušilec (match, collide, net, bots, arena, view · arenas/*.json · README.md)
 games/pinball/                            kopija ALU PINBALL 2.0 (izvirnik v repoju pinball)
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/                           SQL posameznih iger (če ga potrebujejo)
 tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
 tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)
+tools/rusilec-arenas.mjs                  generator aren Rušilca (arenas/*.json + index.json)
 prompts/01-hub.md, 02-trgovina.md         prompta, s katerima sta nastala hub in trgovina
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 CLAUDE.md                                 pravila repoja za AI agente

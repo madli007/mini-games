@@ -79,6 +79,24 @@
     ]
   },
   {
+    "id": "rusilec",
+    "name": "Rušilec",
+    "description": "Hrčki v kroglah v areni nad prepadom. Izrini prijatelje čez rob, preden poteče čas. 2–8 igralcev.",
+    "icon": "💥",
+    "path": "games/rusilec/",
+    "players": { "min": 1, "max": 8 },
+    "mode": "realtime",
+    "tags": ["party", "arkada", "spretnost"],
+    "status": "live",
+    "color": "#ff6b3d",
+    "quests": [
+      { "id": "play", "tier": "e", "text": "Odigraj igro Rušilca", "event": "play:rusilec", "target": 1 },
+      { "id": "izriv-5", "tier": "m", "text": "Izrini 5 nasprotnikov v Rušilcu", "event": "rusilec:izriv", "target": 5 },
+      { "id": "zmaga", "tier": "h", "text": "Zmagaj igro Rušilca", "event": "rusilec:zmaga", "target": 1 },
+      { "id": "w-izriv-30", "tier": "w", "text": "Izrini 30 nasprotnikov ta teden", "event": "rusilec:izriv", "target": 30 }
+    ]
+  },
+  {
     "id": "zaporedje",
     "name": "Zaporedje",
     "description": "Polja zasvetijo, ti ponoviš. Vsak krog en korak več. Dnevno zaporedje za vse ali spominski dvoboj do 10 igralcev.",

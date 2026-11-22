@@ -471,3 +471,80 @@ Prompt: `prompts/08-zaporedje.md`. Stanje: **končano** (21. 11. 2026).
   prvem `pointerdown`/tipki).
 - Modifikatorja *Samo posluh* in *Turbo* v brskalniku (le testi logike); `prefers-reduced-motion` s sistemsko nastavitvijo.
 - Supabase način (vse v offline adapterju), Safari/Firefox, pravi telefon z vibracijo.
+
+# Rušilec (`games/rusilec/`)
+
+Prompt: `prompts/07-krogla-rusilec.md`. Stanje: **končano** (22. 11. 2026).
+
+## Načrt
+
+- [x] `collide.js` — trki krogla–krogla (3D impulz z maso, »bonk«), sunek z ohlajanjem in maso, Odbijač
+- [x] `match.js` — runda: pripisovanje izrivov (zadnji dotik 4 s), samomor −1/0, dvojni izriv, maščevanje, biljard,
+      hat-trick, ponovni prihod (najbolj oddaljeno izhodišče, 1,5 s neranljivost), finale (krušenje), nagla smrt,
+      ekipe, Zadnji na plošči + duhovi, zlati hrček, pobiralke s seedom, serializacija (prenos hosta), igra z več rundami, nagrade, XP
+- [x] `arena.js` + 9 aren (7 odprtih + Vrtiljak in Oblak skrivni) v formatu prog, generator `tools/rusilec-arenas.mjs`
+- [x] `bots.js` — Lahek/Srednji/Težek, izogibanje robu/kladivom/žagam, BFS pot čez mostove
+- [x] `net.js` — posnetki (Int16 + base64, ~300 B / 8 krogel), vhod, ura hosta, interpolacija, popravek napovedi, zanesljivi dogodki
+- [x] `view.js` (podrazred `Renderer`), `sound.js` (podrazred `Audio`), `game.js`, `index.html`, `game.css`
+- [x] Razširitev `krogla/physics.js` brez spremembe singleplayerja (`makeBody`, `advanceWorld`, `stepBody`, `groundY`, `permFall`, `forceSurf`)
+- [x] Skrite ključavnice v krogli (`krogla/secrets.js`, Neon → Vrtiljak, Nebo → Oblak), povezava »💥 Rušilec (party)« v meniju krogle
+- [x] `games.json` (live, 1–8, 4 naloge), README-ji, 15 novih testov (`tests/rusilec.js`)
+
+## Dnevnik
+
+- **Fizika:** trk dveh krogel pri največji hitrosti premakne kroglo za ≤ 0,22 na korak (120 Hz), premer je 0,64 — ni
+  tuneliranja (test). Impulz je simetričen (gibalna količina ohranjena), »bonk« faktor (1 + 1,15·v/MAXV) poveča odboj
+  hitrih trkov. Sunek: 11,5 m/s (MAXV 13 ga ne odreže), masa 2,6× za 0,38 s.
+- **Pripisovanje:** ob trku si oba zapomnita drugega; biljard se prenese, če je krogla, ki zadene, sama v 0,8 s dobila
+  ≥ 3,5 m/s od nekoga drugega (zato tisti, ki sune s težko kroglo, ne »prenese« dotika naprej).
+- **Krušenje:** robne ploščice so `x`; v areni se ne sprožijo ob dotiku, ampak po razporedu (`crumbleSchedule`) iz časa
+  runde — host in klienti ga izračunajo enako. `permFall` jih pusti zrušene. Renderer jih pobarva kot tla (rdeče ob tresenju).
+- **Boti:** prvi poskus je na Tekočem traku padal (trak vleče ven, kladivo meče čez rob) in na Oblaku obtičal (ozki
+  mostovi). Dodano: trak šteje kot bližji rob, odboj od kladiv/žag, BFS pot po ploščicah, ozek most ni »beg od roba«.
+  Rezultat (Srednji, 60 s proti pasivnemu): 4–13 izrivov, 0 samomorov na vseh arenah.
+- **Soba med igro ostane `lobby`** (host takoj po `start` vrne status), da se lahko pridružijo novi (opazovalci do
+  naslednje runde). Na dashboardu je soba vidna med aktivnimi lobbyji.
+- **Odklep skrivnih aren** velja le prek dosežka igralca (ne lokalnega zapisa brskalnika) — sicer bi v testu z več
+  zavihki vsi gostje »podedovali« odklep. Krogla lokalno (`krogla:locks`) le skrije že pobrano ključavnico.
+- **Ključavnica** je bila po samodejnem znižanju kakovosti nevidna (`setQuality` ponovno zgradi sceno) → ob vsakem
+  koraku se doda nazaj.
+- **Telefon:** kamera v portretu bolj od zgoraj (1,12 rad) in arena višje (kontrole spodaj); skrit čip »Runda«.
+  `navigator.vibrate` le po prvi interakciji (sicer napaka v konzoli).
+- **Host v skritem zavihku:** rAF miruje → simulacija teče tudi s časovnikom (50 ms; brskalnik ga lahko upočasni).
+
+## Preverjeno
+
+- `node tests/run-node.mjs` in `tests.html`: **104/104** (89 prejšnjih nespremenjenih + 15 Rušilca; testi krogle in
+  rešljivost prog zeleni, autopilot na Neonu in Nebu da enak čas kot `dev.time`). Opomba: `tests.html` lahko ob
+  ponovnem zagonu v istem brskalniku pokaže 5 neuspehov lokalnega adapterja (ostanki `mg-test:` iz prejšnjega zagona);
+  po brisanju teh ključev 104/104 — obstoječa krhkost, ne povezana z Rušilcem.
+- Offline v 3–5 zavihkih (`?offline=1`, `?igralec=7/9`): soba prek kode in `?room=`, 3 runde na različnih arenah
+  (Ring → Tekoči trak → Drsališče) z boti, izbira arene med rundami; **odhod hosta sredi runde** (nov host Ana, runda
+  teče naprej od t = 19,9 s, točke in zaporedne številke dogodkov se nadaljujejo); osvežitev igralca med rundo (vrne se
+  s točkami); vrnitev prejšnjega hosta; **pridružitev med igro** (opazovalka, v 3. rundi zraven); vsi zavihki so imeli
+  enak killfeed, točke in končne rezultate; način **Ekipe** (zmagali Rdeči, XP 60/20); **Zadnji na plošči** z duhovi
+  (zmaga zadnji, pravilna mesta); **TV** pogled; vadba z boti; zlati hrček (krona).
+- **Supabase** (`?igralec=1/2/3`, soba HAR5, 3 ljudje + 2 bota): pri klientu 15,0 posnetka/s, tresenje časa 19 ms,
+  največja vrzel 77 ms, brez izgubljenih dogodkov; vhod klienta pride do hosta, napaka napovedi lastne krogle ≤ 0,35 m;
+  konec igre → `reportGame`, 20 XP, napredek naloge pri vseh treh. Testni profili (RuTest1–3), njihove vrstice in soba
+  so izbrisani; `scores` (pinball) nedotaknjena.
+- Ključavnica na Neonu pobrana → toast, dosežek `krogla:kljucavnica-vrtiljak`; v sobi, kjer host areno nima, se Vrtiljak
+  odklene, ko se pridruži igralec, ki jo ima; igra na Vrtiljaku.
+- Kontrole: tipka D premakne kroglo v desno glede na kamero, preslednica = sunek (11 m/s, ohlajanje 3 s).
+- Telefon 375×812 (arena zgoraj, palica + SUNEK), namizje 800×600, TV pogled; konzola brez napak v igri, Hrčkovi krogli
+  in na dashboardu.
+
+## Ni narejeno
+
+- Lokalni multiplayer na eni tipkovnici (neobvezno) — ni narejen.
+- Urejevalnik prog ne odpira/shranjuje aren (arene se urejajo v generatorju ali ročno v JSON).
+- Neobvezne arene Stolp in Nasilneži (Nemogoče je dodana); lestvica »izrivi ta teden« (neobvezno).
+- Nagib telefona za Rušilca (palica in tipke da; `Input` nagib podpira, ni pa gumba za vklop).
+
+## Ni bilo preverjeno
+
+- Pravi telefoni (FPS z 8 kroglami na pravi napravi, vibracija, iOS zvok). V emulaciji brskalnika je samodejna
+  kakovost padla na Nizko pri ~30 FPS, kar je omejitev testnega okolja (več zavihkov z WebGL hkrati).
+- Igra z 8 ljudmi (dosežek `osem`), daljše runde (3/5 min) do konca, nagla smrt v živo v brskalniku (le testi logike).
+- Gladkost na mobilnem omrežju (Supabase je bil preizkušen z vseh treh igralcev na istem računalniku).
+- Safari/Firefox.

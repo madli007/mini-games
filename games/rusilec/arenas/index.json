@@ -1,0 +1,13 @@
+{
+ "arenas": [
+  "01-ring.json",
+  "02-cvetlicni-lonec.json",
+  "03-kroznik.json",
+  "04-pult.json",
+  "05-tekoci-trak.json",
+  "06-drsalisce.json",
+  "07-vrtiljak.json",
+  "08-oblak.json",
+  "09-nemogoce.json"
+ ]
+}
