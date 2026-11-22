@@ -28,13 +28,15 @@
     const kroglaLevels = await Promise.all(kIdx.levels.map(async f => (await fetch('games/krogla/levels/' + f, { cache: 'no-cache' })).json()));
     const rIdx = await (await fetch('games/rusilec/arenas/index.json', { cache: 'no-cache' })).json();
     const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => (await fetch('games/rusilec/arenas/' + f, { cache: 'no-cache' })).json()));
+    const herodleFixture = await (await fetch('tests/fixtures/herodle-compare.json', { cache: 'no-cache' })).json();
+    const herodleHeroesSql = await (await fetch('supabase/games/herodle-heroes.sql', { cache: 'no-cache' })).text();
     const log = s => {
       const line = document.createElement('div');
       line.textContent = s;
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

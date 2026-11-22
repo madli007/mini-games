@@ -25,6 +25,7 @@ import * as KE from '../games/krogla/editor/model.js';
 import * as KS from '../games/krogla/editor/share.js';
 import * as KD from '../games/krogla/editor/drafts.js';
 import { rusilecTests } from './rusilec.js';
+import { herodleTests } from './herodle.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1462,6 +1463,9 @@ test('krogla urejevalnik: osnutki (omejitev, pripravljene ostanejo)', () => {
 
 /* ------------------------------------------------------- Rušilec (tests/rusilec.js) */
 rusilecTests(test, { eq, ok });
+
+/* ------------------------------------------------------- Herodle (tests/herodle.js) */
+herodleTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

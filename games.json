@@ -121,6 +121,28 @@
     ]
   },
   {
+    "id": "herodle",
+    "name": "Herodle",
+    "description": "Ugani skritega superjunaka dneva po namigih v barvah. Bonus vprašanja, niz dni in lestvica prijateljev.",
+    "icon": "🦸",
+    "path": "games/herodle/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["daily", "kviz", "ugibanje"],
+    "status": "live",
+    "scoreOrder": "asc",
+    "scoreUnit": "poskusov",
+    "color": "#ff3b5c",
+    "quests": [
+      { "id": "solve", "tier": "e", "text": "Reši dnevnega Herodla", "event": "daily:herodle", "target": 1 },
+      { "id": "star", "tier": "e", "text": "V Herodlu dobi bonus zvezdico", "event": "herodle:star", "target": 1 },
+      { "id": "classic-4", "tier": "m", "text": "Reši Klasiko Herodla v največ 4 poskusih", "event": "herodle:classic", "target": 1, "cmp": "lte", "goal": 4 },
+      { "id": "stars-3", "tier": "h", "text": "Zberi 3 ⭐ v enem bonusu Herodla", "event": "herodle:stars", "target": 1, "cmp": "gte", "goal": 3 },
+      { "id": "w-days-5", "tier": "w", "text": "Reši Herodla 5 dni ta teden", "event": "herodle:solved-day", "target": 5 },
+      { "id": "w-stars-12", "tier": "w", "text": "Zberi 12 bonus zvezdic v Herodlu ta teden", "event": "herodle:star", "target": 12 }
+    ]
+  },
+  {
     "id": "bomba-arena",
     "name": "Bomba arena",
     "description": "Postavljaj bombe, ruši zidove, poberi powerupe in ostani zadnji na areni.",

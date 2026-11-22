@@ -548,3 +548,121 @@ Prompt: `prompts/07-krogla-rusilec.md`. Stanje: **končano** (22. 11. 2026).
 - Igra z 8 ljudmi (dosežek `osem`), daljše runde (3/5 min) do konca, nagla smrt v živo v brskalniku (le testi logike).
 - Gladkost na mobilnem omrežju (Supabase je bil preizkušen z vseh treh igralcev na istem računalniku).
 - Safari/Firefox.
+
+# Herodle (`games/herodle/`)
+
+Prompt: `prompts/09-herodle.md` (1. od treh faz). Stanje: **1. faza končana** (22. 11. 2026). Naslednji:
+`prompts/14-herodle-nacini.md` (Emoji, Kostum, Dosje, arhiv), `prompts/15-herodle-dvoboj.md`.
+
+## Načrt
+
+- [x] `heroes.js` — 180 likov (107 Marvel, 73 DC, 83 MCU, 60+ zlobcev), vsa polja; 49 likov z `unsure`
+- [x] `logic.js` — primerjava (ekipe/izvori delno, ±10 let, puščice), težki način, offline razpored brez ponovitev
+      (cikel = premešan bazen; mešani se izogne liku MCU/DC istega dne), iskanje brez šumnikov, bonus (6 tipov,
+      3 na dan), deljenje (#N od `EPOCH` 2026-11-22), statistika/nizi, komentator (26 variant), XP
+- [x] `daily.js` (online/offline adapter, enak vmesnik), `modes/klasika.js` (vmesnik načina), `main.js`, `store.js`,
+      `search.js`, `bonus.js`, `sound.js`, `index.html`, `game.css` (stripovski neon, halftone, flip, POW!, visok kontrast)
+- [x] Bonus po zmagi + kartica »Dosje razkrit«; stanje po vprašanjih (osvežitev ga ne ponovi)
+- [x] Statistika po bazenu (histogram 1–10+, današnji poudarjen), »Prijatelji danes« (lestvica + mini porazdelitev)
+- [x] Deljenje (`navigator.share` na telefonu, sicer odložišče, sicer okno z besedilom)
+- [x] 8 dosežkov, XP, `reportGame` + `reportEvent` (`herodle:classic`, `herodle:star`, `herodle:stars`, `herodle:solved-day`)
+- [x] `games.json` (live, 6 nalog), testi `tests/herodle.js` (20 testov; skupaj 123/123), fikstura 200 parov
+- [x] Supabase: `supabase/games/herodle.sql` + generiran `herodle-heroes.sql` (`tools/herodle-sql.mjs`), pognano kot
+      migraciji `herodle` in `herodle_heroes_data`; razpored 1200 vrstic (400 dni × 3 načini) do 2027-12-26
+
+## Dnevnik
+
+- **Neločljivi liki.** Original five X-Men (vsi 1963, mutant, rojen) in moški Fantastic Four bi imeli enake vse
+  atribute → vzeti so Professor X, Cyclops (izvor + nesreča — poškodba glave), Beast (+ serum), Jean Grey; Iceman,
+  Angel, Human Torch, Thing, Colossus in Heimdall izpuščeni. Hulk je »Antijunak« (sicer = Spider-Man), War Machine
+  ima še »Trening« (sicer = Ant-Man), Mandarin »Tehnologija + Trening« (sicer = Kang). Test to varuje.
+- **Dovoljene vrednosti** so razširjene glede na tabelo v promptu: ekipe (Defenders, Sinister Six, Bratovščina,
+  Black Order, Hydra, Thunderbolts, Inhumans, Eternals, X-Force, Justice Society, Green Lantern Corps, Rogues,
+  Legion of Doom, Batova družina), vrste (Inhuman, Demon, Drugo), izvor (Kozmično).
+- **firstFilm** = prvi celovečerni kino film (igrani ali animirani — zato Miles/Spider-Gwen 2018, Krypto 2022);
+  liki brez zanesljivega podatka imajo `null` (vprašanje se ne postavi).
+- **Bonus:** napačni igralci/imena iz istega univerzuma in istega spola (sicer je bila edina igralka očiten odgovor);
+  drsnik začne vsaj 6 let stran od pravilnega leta.
+- **Najdba med testom:** stanje dneva v `localStorage` se je delilo med offline in Supabase načinom (online je pokazal
+  offline rešitev) → `store.setScope('<adapter>-<userId>')`.
+- **SQL:** `herodle_cmp` je ena funkcija za `herodle_check` in `herodle_compare`; `herodle_fill` vstavlja le manjkajoče
+  dni (`md5(salt || mode || date || id)`, okno `min(n − 1, 120)`); mešani bazen se izogne liku MCU/DC istega dne.
+
+## Preverjeno
+
+- `node tests/run-node.mjs` in `tests.html`: 123/123 (20 testov Herodla).
+- Offline (`?offline=1`): rešeni vsi trije bazeni (Mešano v 3, MCU v 1 → Jasnovidec, DC predaja), `?date=` 23.–28. 11.
+  (niz 3, predaja prekine niz, histogram s 3/5/10+, povprečje 5,8), bonus po osvežitvi nadaljuje pri 2. vprašanju,
+  deljenje, težki način (zavrne Wonder Woman z razlogom, stikalo zaklenjeno med igro), dosežki/XP/kovanci.
+- Supabase (testni profil `?igralec=hdtest1`): Klasika rešena prek RPC; odgovori `herodle_check` pred rešitvijo
+  vsebujejo le barve (brez id-ja lika — preverjeno na surovem HTTP odgovoru); `herodle_daily` z anon ključem →
+  401, prijavljen → 403; shema `private` (sol) ni izpostavljena; `herodle_check` brez prijave → 401;
+  `herodle_reveal` za danes brez `give_up` → `not_past`; predaja zapiše vrstico v `herodle_giveups`;
+  fikstura 200/200 enaka s `herodle_compare`. Razpored: 0 ponovitev v oknu, 0 trkov mešani/MCU/DC, bazena pravilna.
+- Advisors: security — za Herodle le INFO »RLS brez pravil« (`herodle_daily`, `private.herodle_secret`; namenoma)
+  in obstoječi WARN o anonimni prijavi (velja za ves projekt); performance — nič novega.
+- Testni profil `HdTest` in njegove vrstice izbrisani (auth.users, profiles + kaskada); liki in razpored ostanejo.
+- Telefon 375×812 in namizje 1280: posnetki pregledani (kratice v ozkih celicah, avtocomplete pod vnosom).
+- Konzola brez napak v igri in na dashboardu (offline); online le pričakovani 401/403 iz varnostnih testov.
+
+## Ni bilo preverjeno
+
+- Pravi telefon s tipkovnico: pritrditev polja nad tipkovnico (`visualViewport`, predlogi navzgor) — emulator nima
+  tipkovnice. Vlečenje pri razvrščanju na dotik (gumbi ▲▼ delujejo).
+- Zvok na pravi napravi, `navigator.share` na telefonu, `prefers-reduced-motion` s sistemsko nastavitvijo.
+- Prehod čez polnoč (»Nov dan, nov junak«) — le koda (preverja vsakih 20 s).
+- Dosežka `teden`/`mesec` (logika nizov je testirana, celotnega teka ne).
+- »Ta teden« v Prijateljih: lestvica huba vrne najboljši rezultat igralca čez vse seede igre (vključno z MCU/DC).
+
+## Ročno preverjanje podatkov (`unsure`)
+
+Ta polja se ne uporabljajo v bonus vprašanjih; po preverjanju jih odstrani iz `unsure` (in popravi vrednost):
+- `captain-america`: firstFilm = 1990
+- `hulk`: alignment = "Antijunak"
+- `black-widow`: home = "Moskva"
+- `scarlet-witch`: species = "Mutant"
+- `quicksilver`: species = "Mutant"
+- `ant-man`: nemesis = "kang"
+- `wasp`: firstFilm = 2015, alterEgo = "Janet van Dyne"
+- `captain-marvel`: species = "Človek", home = "Hala"
+- `ms-marvel`: species = "Inhuman"
+- `yelena-belova`: home = "Moskva"
+- `red-guardian`: alignment = "Antijunak"
+- `star-lord`: species = "Človek", nemesis = "ronan"
+- `drax`: species = "Vesoljec"
+- `nebula`: home = "Titan"
+- `mantis`: species = "Vesoljec"
+- `ebony-maw`: firstComic = 2013, home = "Titan", nemesis = "doctor-strange"
+- `killmonger`: home = "Wakanda"
+- `abomination`: home = "Moskva"
+- `red-skull`: firstFilm = 1990
+- `mandarin`: firstFilm = 2021
+- `sersi`: firstComic = 1963
+- `silver-surfer`: gender = "M"
+- `galactus`: firstFilm = 2007, nemesis = "silver-surfer"
+- `lizard`: firstFilm = 2012
+- `cyclops`: origins = ["Rojen","Nesreča"], nemesis = "apocalypse"
+- `beast`: firstFilm = 2003
+- `psylocke`: firstFilm = 2006
+- `emma-frost`: firstFilm = 2011
+- `sabretooth`: home = "Kanada"
+- `juggernaut`: home = "Westchester"
+- `apocalypse`: nemesis = "cyclops"
+- `cable`: home = "New York"
+- `blade`: home = "London"
+- `superman`: firstFilm = 1951
+- `batman`: firstFilm = 1966
+- `shazam`: firstComic = 1939
+- `plastic-man`: home = "New York"
+- `krypto`: firstFilm = 2022
+- `guy-gardner`: home = "Baltimore"
+- `metamorpho`: home = "Metropolis"
+- `hawkgirl`: alterEgo = "Shiera Hall"
+- `terra`: nemesis = "beast-boy"
+- `two-face`: firstFilm = 1989
+- `king-shark`: species = "Polbog"
+- `deathstroke`: home = "Jump City", nemesis = "nightwing"
+- `black-manta`: home = "Atlantski ocean"
+- `trigon`: home = "Azarath"
+- `lobo`: actors = ["Jason Momoa"], firstFilm = 2026
+Ostali podatki so iz spomina in niso bili preverjeni z zunanjimi viri; najbolj tvegani so `home` (kje »živi«) in `firstFilm`.

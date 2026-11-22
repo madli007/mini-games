@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#0b0716">
+<meta name="description" content="Herodle — ugani skritega superjunaka dneva po namigih v barvah. Bonus vprašanja, niz dni in lestvica prijateljev.">
+<title>Herodle · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ff3b5c'/%3E%3Cpath d='M8 2 9.8 6 14 6.3 10.8 9 11.8 13.5 8 11.2 4.2 13.5 5.2 9 2 6.3 6.2 6z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&display=swap">
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg hd-body">
+  <main class="hd">
+    <div id="simBanner"></div>
+    <div class="hd-top">
+      <div class="hd-tabs" id="modeTabs" role="tablist" aria-label="Načini"></div>
+      <div class="hd-icons">
+        <button type="button" class="hd-ibtn" id="btnStats" aria-label="Statistika" title="Statistika">📊</button>
+        <button type="button" class="hd-ibtn" id="btnSettings" aria-label="Nastavitve" title="Nastavitve">⚙️</button>
+        <button type="button" class="hd-ibtn" id="btnHelp" aria-label="Pomoč" title="Pomoč">❔</button>
+        <button type="button" class="hd-ibtn" id="btnSound" aria-label="Utišaj" title="Zvok">🔊</button>
+      </div>
+    </div>
+    <div class="hd-layout">
+      <section class="hd-main" id="modeRoot" aria-label="Igra"></section>
+      <aside class="hd-side">
+        <section class="hd-panel">
+          <h2 class="hd-h">Prijatelji danes</h2>
+          <div id="friendsHist"></div>
+          <div id="friends"></div>
+        </section>
+        <section class="hd-panel hd-panel--legend">
+          <h2 class="hd-h">Legenda</h2>
+          <div id="sideLegend"></div>
+        </section>
+      </aside>
+    </div>
+    <footer class="hd-foot">Neuradna fan igra, ni povezana z Marvel ali DC. Brez uradnih slik in logotipov — imena in dejstva so za zabavo.</footer>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
