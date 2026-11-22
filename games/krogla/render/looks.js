@@ -107,8 +107,8 @@ export const LOOKS = {
 
 const BY_NUM = { '01': 'garden', '02': 'garden', '03': 'kitchen', '04': 'kitchen', '05': 'crystal', '06': 'factory', '07': 'tower', '08': 'ice', '09': 'arena', '10': 'neon', '11': 'sky', '12': 'inferno' };
 
-/** Lokacija za progo (po številki id-ja; neznane proge po sklopu). */
+/** Lokacija za progo (izrecni `look` iz urejevalnika, sicer po številki id-ja; neznane proge po sklopu). */
 export function lookFor(L) {
-  const id = BY_NUM[String(L.id || '').slice(0, 2)] || L.look || ['garden', 'factory', 'arena'][(L.set || 1) - 1] || 'garden';
+  const id = (LOOKS[L.look] && L.look) || BY_NUM[String(L.id || '').slice(0, 2)] || ['garden', 'factory', 'arena'][(L.set || 1) - 1] || 'garden';
   return { id, ...LOOKS[id] };
 }

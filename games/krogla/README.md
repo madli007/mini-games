@@ -100,3 +100,57 @@ Vsi sovražniki so deterministični (poti in časovniki iz časa proge, nasilne�
 5. Na Supabase ponovno poženi `supabase/games/krogla.sql` (doda progo v `krogla_levels`, sicer RPC zavrne ghost).
 
 Proge lahko pišeš tudi ročno v JSON (brez generatorja) — `route` je potreben le za test rešljivosti.
+
+## Urejevalnik prog (`editor.html`)
+
+Odpre se iz menija igre (kartica »Moje proge« → ✏️ Urejevalnik); ni ločena igra v `games.json`. Dela neposredno na formatu
+proge (isti JSON kot `levels/*.json`). Moduli: `editor.js` (UI), `editor/model.js` (čista logika: resize, ploščice, zapolni,
+klančine, opozorila višin, objekti, razveljavi/uveljavi — testi v `tests/tests.js`), `editor/view2d.js` (tloris),
+`editor/preview3d.js` (3D predogled z obstoječim `Renderer` + orbit kamera prek `renderer.debugCam`, testna vožnja),
+`editor/drafts.js` (osnutki in lokalni rekordi), `editor/share.js` (povezava za deljenje). Barvne teme so v `themes.js`
+(skupne z generatorjem), formula medalj v `rules.js` (`medalsFromTime`, `timeBonusFromTime`, `scoringFromRun`).
+
+**Plasti** (tipke `1`–`5`): **Ploščice** (paleta vseh znakov; čopič 1–5, pravokotnik, zapolni, pipeta) ·
+**Višine** (barvni prikaz + številke; nastavi, dvigni/spusti ±0,5, *klančina*: povleci od ene višine do druge v isti
+vrstici/stolpcu in vmes se postavijo pravi znaki klančin; rdeče črte = stopnica > 0,22, ki je krogla ne prevozi) ·
+**Objekti** (start, cilj, kontrolne točke, zvezdice/ure, premične plošče, vrtiljaki, vzmeti, ventilatorji, odbijači,
+sklede, kladiva, stikala + vrata, kvadri, vsi sovražniki; ikona, smer in območje delovanja na tlorisu; plošča lastnosti
+desno; poti žag/os/plošč: »✏️ Urejaj točke poti«) · **Pot autopilota** (`route`: točke s `speed`, `r`, `stop`, `wait`,
+`until`, `mover`; »Iz zadnje vožnje« naredi pot iz tvoje testne vožnje) · **Lastnosti** (ime, opis, id, sklop, lokacija
+`look`, barvna tema, `camYaw`, medalje in čas, velikost mreže na vsaki strani, »Obreži prazne robove«).
+
+| Bližnjica | |
+|---|---|
+| kolešček · srednji gumb / presledek + vleka · `Home` | zoom · premik pogleda · cela proga (telefon: dva prsta, tap = postavi, dolg pritisk = meni) |
+| `B` `R` `F` `K` (Alt + klik) · `U` `J` `L` · `[` `]` | čopič/nastavi, pravokotnik, zapolni, pipeta · dvigni, spusti, klančina · velikost čopiča |
+| `Del` · `Ctrl+D` · puščice · `Esc` | izbriši · podvoji · premakni izbrani objekt (Shift = 0,1) · prekliči |
+| `Ctrl+Z` · `Ctrl+Y` / `Ctrl+Shift+Z` · `Ctrl+S` | razveljavi · uveljavi (poteza čopiča = ena operacija) · shrani |
+| `T` · desni klik → »Začni tukaj« · `Tab` · `?` | testna vožnja (`R` znova, `Esc` nazaj na isto mesto) · od izbrane točke · 3D da/ne · pomoč |
+
+**Preverjanje in objava.** Statusna vrstica kaže zvezdice (mora jih biti 5), napake validatorja (klik → skok na mesto) in
+rešljivost. »🤖 Preveri rešljivost« požene `runAutopilot` s sledjo (na tlorisu: sled in ✕ na mestih padcev); ko pride do
+cilja, ponudi »Izračunaj medalje in časovni bonus« (ista formula kot generator, zapiše tudi `dev`). Rešljivost potrdi tudi
+lastna testna vožnja od starta do cilja. Sprememba mreže ali objektov preverjanje razveljavi (ime, opis, tema in medalje
+ne). Brez preverjene rešljivosti proge ni mogoče označiti »✅ Pripravljeno« ali deliti.
+
+**Osnutki** so v `localStorage` (`krogla:editor:drafts`, največ 30; samodejno shranjevanje). »📁 Proge«: nova proga,
+osnutki s sličico, kopija uradne proge (spremeni se le `id` → `…-kopija`), uvoz datoteke ali prilepljenega JSON-a.
+»⬇ Izvozi«: datoteka `NN-ime.json` v enaki obliki kot uradne proge (`formatLevelJson`) ali odložišče.
+
+**Moje proge v igri.** Pripravljene proge so v meniju »Moje proge«: način Na čas **brez uradne lestvice, ghostov na
+strežniku, odklepov, turnirja, dnevnega izziva in dosežkov**; lokalni rekord (`krogla:custom-best`) in ghost
+(`krogla:custom-ghost:<hash>`, hash proge brez imena/teme/medalj). `hub.reportGame` kot pri Na čas (največ 1× na minuto).
+
+**Deljenje brez strežnika.** »🔗 Deli« ustvari `games/krogla/?custom=<podatki>`: JSON → `CompressionStream('deflate')`
+(če ga brskalnik ima, predpona `z`, sicer `j`) → base64url. Nad ~8000 znaki urejevalnik predlaga izvoz datoteke. Igra ob
+taki povezavi progo razširi (omejena velikost), obdrži le znana polja, jo validira (`validateLevel`) in ponudi »Igraj« /
+»Shrani med moje proge«; ime in opis sta vedno besedilo (`textContent`). Pokvarjena povezava → prijazno sporočilo.
+
+**Nova uradna proga iz urejevalnika** (za razvijalce):
+1. Uredi progo v urejevalniku (id `NN-ime`, `NN` = naslednja številka; lokacija po številki, za 13+ izberi `look`),
+   preveri rešljivost in »Izračunaj medalje«.
+2. »⬇ Izvozi« → shrani datoteko v `games/krogla/levels/` in jo dodaj v `levels/index.json`.
+3. `node tools/krogla-levels.mjs` — generator ročno dodanih prog ne prepiše in jih ne odstrani iz `index.json`
+   (ostanejo na svojem mestu), validira jih in njihove zlate čase doda v SQL blok `BEGIN LEVELS`.
+4. `node tests/run-node.mjs` (validator + rešljivost vseh prog v `index.json`), nato na Supabase ponovno poženi
+   `supabase/games/krogla.sql` (proga v `krogla_levels`, sicer RPC zavrne ghost).

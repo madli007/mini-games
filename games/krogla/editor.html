@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Urejevalnik prog za Hrčkovo kroglo — riši ploščice, višine in ovire, preizkusi progo v 3D in jo deli s povezavo.">
+<title>Urejevalnik prog · Hrčkova krogla · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='3' fill='%234de1ff'/%3E%3Ccircle cx='8' cy='8' r='4' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="editor.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="mg ed">
+  <header class="ed-top">
+    <a class="mg-btn mg-btn--ghost mg-btn--small" id="btnBack" href="index.html">◀ Nazaj v igro</a>
+    <div class="ed-name"><b id="edName">…</b> <span class="ed-saved" id="edSaved"></span></div>
+    <div class="ed-actions">
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnFiles" type="button" title="Nova, osnutki, uradne proge, uvoz">📁 Proge</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnUndo" type="button" title="Razveljavi (Ctrl+Z)" aria-label="Razveljavi">↶</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnRedo" type="button" title="Uveljavi (Ctrl+Y)" aria-label="Uveljavi">↷</button>
+      <button class="mg-btn mg-btn--green mg-btn--small" id="btnTest" type="button" title="Testna vožnja (T)">▶ Preizkusi</button>
+      <button class="mg-btn mg-btn--cyan mg-btn--small" id="btnBot" type="button" title="Autopilot prevozi pot (route)">🤖 Preveri rešljivost</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnExport" type="button" title="Prenesi JSON, kopiraj">⬇ Izvozi</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnShare" type="button" title="Povezava do proge">🔗 Deli</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnReady" type="button" title="Pokaži v igri med »Moje proge«">✅ Pripravljeno</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btn3d" type="button" title="Pokaži/skrij 3D (Tab)">🧊 3D</button>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnHelp" type="button" title="Bližnjice (?)" aria-label="Pomoč">?</button>
+    </div>
+  </header>
+
+  <div class="ed-main">
+    <aside class="ed-left" aria-label="Plasti in orodja">
+      <div class="ed-layers" role="tablist" id="layers"></div>
+      <div class="ed-tools" id="tools"></div>
+    </aside>
+    <section class="ed-center" aria-label="Tloris proge">
+      <canvas id="cv2d" aria-label="Tloris proge"></canvas>
+      <div class="ed-coords" id="coords"></div>
+      <div class="ed-zoom"><button class="ed-ib" id="zIn" type="button" aria-label="Povečaj">＋</button><button class="ed-ib" id="zOut" type="button" aria-label="Pomanjšaj">－</button><button class="ed-ib" id="zFit" type="button" aria-label="Cela proga" title="Cela proga (Home)">⤢</button></div>
+    </section>
+    <aside class="ed-right">
+      <div class="ed-3d" id="box3d">
+        <canvas id="cv3d" aria-label="3D predogled"></canvas>
+        <div class="ed-3dhint">vleci = vrti · desni gumb/Shift = premik · kolešček = zoom</div>
+        <button class="ed-ib ed-3dfit" id="fit3d" type="button" title="Cela proga" aria-label="Cela proga v 3D">⤢</button>
+      </div>
+      <div class="ed-props" id="props"></div>
+    </aside>
+  </div>
+  <footer class="ed-status" id="status" aria-live="polite"></footer>
+
+  <section class="ed-drive mg-hidden" id="drive" aria-label="Testna vožnja">
+    <div class="ed-dhud">
+      <span class="ed-chip" id="dTime">0,00</span>
+      <span class="ed-chip" id="dStars">★ 0/5</span>
+      <span class="ed-chip" id="dFalls">padci 0</span>
+      <span class="ed-chip ed-chip--dim" id="dFrom"></span>
+      <span class="ed-spacer"></span>
+      <button class="mg-btn mg-btn--ghost mg-btn--small" id="dRestart" type="button">↺ Znova (R)</button>
+      <button class="mg-btn mg-btn--primary mg-btn--small" id="dBack" type="button">✕ Nazaj (Esc)</button>
+    </div>
+    <div class="ed-stick mg-hidden" id="dStick"><div class="ed-knob" id="dKnob"></div></div>
+    <div class="ed-dover mg-hidden" id="dOver"></div>
+  </section>
+  <div class="ed-menu mg-hidden" id="ctxMenu" role="menu"></div>
+
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

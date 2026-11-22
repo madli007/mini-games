@@ -340,6 +340,57 @@ Zasloni prej/po: scratchpad seje (`shots/prej-*.jpg`, `shots/po-*.jpg`).
 - `prefers-reduced-motion` preverjen le s simulacijo (`renderer.reduced = true`), ne s sistemsko nastavitvijo.
 - Firefox/Safari (iOS) in WebGL1 rezerva.
 
+## Hrčkova krogla — urejevalnik prog
+
+Prompt: `prompts/06-krogla-urejevalnik.md`. Stanje: **točke 1–5 končane** (22. 11. 2026); točka 6 (objava na Supabase) ni narejena.
+Fizika, renderer, uradne proge, časi, lestvice in ghosti uradnih prog nespremenjeni.
+
+### Načrt
+- [x] Skupna logika: `themes.js` (teme iz generatorja), `rules.js` → `medalsFromTime`, `timeBonusFromTime`, `scoringFromRun`,
+      `level.js` → `formatLevelJson`; generator jih uporablja in ohrani ročno dodane JSON proge v `index.json` (in jih doda v SQL blok)
+- [x] `editor/model.js` (čisto): nova proga, normalizacija, resize na vseh straneh s premikom vseh koordinat, ploščice, zapolni,
+      klančina iz dveh višin, opozorila višin, objekti (20 vrst) in poti, `History` (razveljavi/uveljavi), `levelHash`, iskanje mesta napake
+- [x] `editor.html` + `editor.js` + `editor/view2d.js`: 5 plasti, orodja, plošča lastnosti, statusna vrstica, kontekstni meni, bližnjice, pomoč
+- [x] `editor/preview3d.js`: 3D z obstoječim `Renderer` (debounce 300 ms, orbit prek `renderer.debugCam`), testna vožnja (od starta ali »Začni tukaj«)
+- [x] Autopilot s sledjo in padci na tlorisu, »Izračunaj medalje« (formula generatorja + `dev`), rešljivost tudi z lastno vožnjo
+- [x] Osnutki (`krogla:editor:drafts`, 30, samodejno), izvoz JSON / odložišče, uvoz datoteke / prilepi / kopija uradne proge
+- [x] Igra: kartica in meni »Moje proge« (Na čas brez uradnih lestvic/ghostov/dosežkov/odklepov, lokalni rekord in ghost), »✏️ Urejevalnik«
+- [x] Deljenje `?custom=` (deflate + base64url, omejitve velikosti, `validateLevel`, ime/opis kot `textContent`, prijazna napaka)
+- [x] Testi: 8 novih (88/88 v Node in `tests.html`), README razdelek »Urejevalnik prog«
+- [ ] Točka 6 — objava prog na Supabase (glej »Naslednji korak«)
+
+### Dnevnik
+- **Bajtna enakost.** Formula medalj je zdaj ena (`rules.js`); po `node tools/krogla-levels.mjs` je `git diff --stat games/krogla/levels supabase`
+  prazen. Ohranjanje ročnih prog preizkušeno s kopijo proge 01 kot `13-rocna.json` (ostala na svojem mestu v `index.json`, v SQL bloku), nato odstranjeno.
+- **Kopija uradne proge** spremeni le `id` (`06-tovarna-kopija`), zato je izvoz brez sprememb enak datoteki razen `id` (preverjeno za 06).
+  Lokacija se za id-je 01–12 izbere po številki; izrecni `look` (novo, nevtralno za uradne proge, ki ga nimajo) ima prednost.
+- **Rešljivost** je vezana na `levelHash` (mreža, višine, objekti; brez imena, teme, medalj, sklopa in poti autopilota) z urejenimi ključi —
+  prvotna različica je bila odvisna od vrstnega reda polj, zato deljena proga ni bila prepoznana kot ista (popravljeno, test).
+- **Najdbe med preverjanjem:** `commit` je vračal rezultat funkcije namesto »spremenjeno« (validator se ni osvežil); desni klik je meni
+  odprl in v istem dogodku zaprl; barvni emoji na tlorisu so prevzeli prosojnost prejšnjega `fillStyle`; števci na paleti se niso osvežili.
+- **Determinizem:** testna vožnja z autopilotom kot vhodom (pravi `Input` → `step`) pride do cilja v 14,08 s, enako kot `runAutopilot`.
+
+### Preverjeno (offline, `?offline=1`)
+- Nova proga od nič (12×30): start, pot s klančino (3 klančine iz višin 0 → 1,5), prepad s premično ploščo, 5 zvezdic, kontrolna točka, žaga,
+  cilj → autopilot do cilja (14,08 s, 0 padcev) → medalje 14/19/24 s, čas 24 s → testna vožnja od točke in od starta do cilja.
+- Razveljavi/uveljavi čez 12 klikov na tloris (Ctrl+Z ×12 → natanko prvotna proga, Ctrl+Y ×12 → natanko končna); resize sever +1, zahod +2
+  prek gumbov: start, cilj, kontrolna točka, zvezdice, plošča, žaga in route premaknjeni za (+2, +1), točka na plošči ostane odmik.
+- Osvežitev strani: osnutek in status rešljivosti ostaneta. Postavi/povleci/izbriši zvezdico z miško.
+- »Moje proge« → odigraj → lokalni rekord in ghost shranjena; v localStorage ni `db:scores` ne `db:ghosts` (uradne lestvice nedotaknjene).
+- »Deli« (783 znakov) v drugem zavihku odpre isto progo; pokvarjen `?custom=` pokaže prijazno napako; konzola brez napak.
+- Telefon 375×812: urejevalnik brez vodoravnega drsenja (3D privzeto skrit), »Moje proge« → igranje s palico. Uradni Na čas (`?lvl=1`) deluje.
+
+### Ni bilo preverjeno
+- Urejanje s pravim dotikom (tap = postavi, dva prsta, dolg pritisk = meni) — koda je, v emulaciji so bili kliki z miško.
+- Testna vožnja s tipkovnico od starta do cilja (skozi premično ploščo) — od starta jo je peljal autopilot prek pravega vhoda, ročno le od točke do cilja.
+- Shranjevanje prejete proge »💾 Shrani med moje proge« v drugem brskalniku (isti brskalnik jo pravilno prepozna kot že shranjeno).
+- Vse uradne proge kot kopije v urejevalniku (preverjena 06), Firefox/Safari, Supabase način.
+
+### Naslednji korak (točka 6, neobvezno)
+`supabase/games/krogla.sql`: tabela `krogla_custom_levels` (id, `user_id`, ime, `data` jsonb z omejeno velikostjo, `dev_ms`, ustvarjeno),
+RLS (berejo prijavljeni, pišeš/brišeš svoje, omejitev števila prog na igralca); lestvica lastne proge prek `hub.submitScore` s seedom
+`custom:<id>` (preveri, ali gre brez spremembe sheme huba; `public.scores` ne spreminjaj); offline adapter enako; nato advisors.
+
 ---
 
 # Zaporedje (`games/zaporedje/`)

@@ -149,6 +149,14 @@ export function mirrorLevel(L) {
   return out;
 }
 
+/**
+ * JSON proge v obliki datotek levels/*.json (zamik 1, števila v seznamih v isti vrstici).
+ * Uporabljata ga generator in izvoz urejevalnika.
+ */
+export function formatLevelJson(L) {
+  return JSON.stringify(L, null, 1).replace(/\n\s+(?=[\d\-\]])/g, ' ') + '\n';
+}
+
 /* --------------------------------------------------------- nalaganje */
 
 /**

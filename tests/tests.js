@@ -21,6 +21,9 @@ import * as KR from '../games/krogla/rules.js';
 import * as KG from '../games/krogla/ghost.js';
 import * as KA from '../games/krogla/autopilot.js';
 import * as KL2 from '../games/krogla/level.js';
+import * as KE from '../games/krogla/editor/model.js';
+import * as KS from '../games/krogla/editor/share.js';
+import * as KD from '../games/krogla/editor/drafts.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1264,6 +1267,165 @@ test('lokalno: ghosti (le boljši čas, seznam, podatki)', async () => {
   eq((await a.getGhost({ game: 'krogla', level: '01-x', userId: 'test-gb' })).data, 'QkJC');
   eq(await a.getGhost({ game: 'krogla', level: '02-x' }), null);
   await throwsCode(() => a.saveGhost({ game: 'krogla', level: '01-x', timeMs: 1, data: 'x'.repeat(70000) }), 'invalid');
+});
+
+/* ------------------------------------------------------- Hrčkova krogla: urejevalnik prog */
+
+test('krogla urejevalnik: nova proga je veljavna razen zvezdic; normalizacija ne spremeni uradnih prog', ctx => {
+  const L = KE.newLevel({ name: 'Moja proga', num: 20 });
+  eq(L.id, '20-moja-proga');
+  eq(KL2.validateLevel(L).map(e => /zvezdic/.test(e)), [true]);
+  for (const O of ctx.kroglaLevels) {
+    const c = JSON.parse(JSON.stringify(O));
+    KE.normalize(c);
+    eq(KL2.formatLevelJson(c), KL2.formatLevelJson(O), O.id);
+  }
+  const bad = { map: ['..', '.....', '.'], hmap: ['1'] };
+  KE.normalize(bad);
+  eq(bad.size, [5, 3]); eq(bad.map, ['..   ', '.....', '.    ']); eq(bad.hmap, ['10000', '00000', '00000']);
+  eq(KE.slugify('Čžš Proga! 2'), 'czs-proga-2');
+});
+test('krogla urejevalnik: resize premakne objekte, start, cilj, poti in route', ctx => {
+  const O = ctx.kroglaLevels.find(L => L.id.startsWith('04'));   // premične plošče in route na plošči
+  const L = JSON.parse(JSON.stringify(O));
+  ok(KE.resizeLevel(L, { left: 2, top: 3, right: 1, bottom: -1 }));
+  eq(L.size, [O.size[0] + 3, O.size[1] + 2]);
+  eq(L.map.length, L.size[1]); ok(L.map.every(r => r.length === L.size[0]) && L.hmap.every(r => r.length === L.size[0]));
+  eq(L.start, [O.start[0] + 2, O.start[1] + 3]); eq(L.goal, [O.goal[0] + 2, O.goal[1] + 3]);
+  eq(L.map[3].slice(2, 2 + O.size[0]), O.map[0]);
+  eq(L.movers[0].path[0], [O.movers[0].path[0][0] + 2, O.movers[0].path[0][1], O.movers[0].path[0][2] + 3]);
+  O.route.forEach((w, i) => eq([L.route[i].x, L.route[i].z], w.mover != null ? [w.x, w.z] : [w.x + 2, w.z + 3], 'route ' + i));
+  eq(KL2.validateLevel(L), []);
+  // fizika: ista vožnja autopilota po premiku
+  const a = KA.runAutopilot(O), b = KA.runAutopilot(L);
+  ok(b.finished && Math.abs(a.time - b.time) < 0.05, `čas ${a.time} → ${b.time}`);
+  // odstranjevanje: nazaj na prvotno
+  ok(KE.resizeLevel(L, { left: -2, top: -3, right: -1, bottom: 1 }));
+  eq(L.map.slice(0, -1), O.map.slice(0, -1)); eq(L.start, O.start); eq(L.movers, O.movers);
+  // sovražnik s potjo
+  const E = KE.newLevel(); const r = KE.addObj(E, 'saw', 7.5, 10.5);
+  KE.resizeLevel(E, { left: 1, top: 1 });
+  eq(E.enemies[r.i].path[0], [8.5, 11.5]);
+});
+test('krogla urejevalnik: ploščice, zapolni, klančina, opozorila višin', () => {
+  const L = KE.newLevel({ W: 10, D: 10 });
+  ok(KE.setTile(L, 0, 0, '#')); ok(!KE.setTile(L, 0, 0, '#')); ok(!KE.setTile(L, 0, 0, 'Q'));
+  const n = KE.floodFill(L, 0, 5, 'i');   // praznina levo od poti
+  ok(n > 20, 'flood ' + n); eq(L.map[5][0], 'i'); eq(L.map[5][5], '.'); eq(L.map[0][0], '#');
+  // klančina gor proti severu iz višine 0 na 1,5 (3 klančine)
+  const R = KE.newLevel({ W: 5, D: 12 });
+  for (let r = 0; r < 12; r++) KE.setTile(R, 2, r, '.');
+  KE.setHeight(R, 2, 1, 1.5);
+  const res = KE.smoothRamp(R, [2, 8], [2, 1]);
+  ok(res.ok && !res.msg, JSON.stringify(res));
+  eq([7, 6, 5, 4, 3, 2].map(r => R.map[r][2]), ['^', '^', '^', '.', '.', '.']);
+  eq([7, 6, 5, 4].map(r => KE.heightAt(R, 2, r)), [0, 0.5, 1, 1.5]);
+  const col = (A, lo, hi) => KE.heightWarnings(A).filter(w => w.c === 2 && w.c2 === 2 && w.r >= lo && w.r2 <= hi);
+  eq(col(R, 1, 11), []);
+  // navzdol (B nižje): klančine tik pred B
+  const R2 = KE.newLevel({ W: 5, D: 12 });
+  for (let r = 0; r < 12; r++) { KE.setTile(R2, 2, r, '.'); KE.setHeight(R2, 2, r, 2); }
+  KE.setHeight(R2, 2, 10, 1);
+  KE.smoothRamp(R2, [2, 3], [2, 10]);
+  eq([8, 9].map(r => R2.map[r][2] + KE.heightAt(R2, 2, r)), ['^1.5', '^1']);
+  eq(col(R2, 0, 10), []);
+  KE.setHeight(R2, 2, 0, 0);
+  eq(col(R2, 0, 10).map(w => [w.r, w.r2, w.diff]), [[0, 1, 2]]);
+  const short = KE.smoothRamp(R2, [2, 0], [2, 2]);
+  ok(short.ok && /potrebuje 4 klančin/.test(short.msg), short.msg);
+});
+test('krogla urejevalnik: objekti (dodaj, premakni, podvoji, izbriši, poti)', () => {
+  const L = KE.newLevel();
+  const s = KE.addObj(L, 'star', 7.5, 10.5);
+  eq(L.pickups[s.i], { t: 'star', x: 7.5, z: 10.5 });
+  const m = KE.addObj(L, 'mover', 7.5, 5.5);
+  eq(L.movers[m.i].path, [[7.5, 0, 5.5], [11.5, 0, 5.5]]);
+  KE.moveObj(L, m, 6.5, 4.5);
+  eq(L.movers[m.i].path, [[6.5, 0, 4.5], [10.5, 0, 4.5]]);
+  eq(KE.kindOf(L, m), 'mover');
+  const h = KE.addObj(L, 'hammer', 7.5, 8.5);
+  eq([L.hammers[h.i].x, L.hammers[h.i].z], [6, 8]);
+  eq(KE.pickObj(L, 7.6, 8.4), h);
+  const d = KE.duplicateObj(L, s);
+  eq([L.pickups[d.i].x, L.pickups[d.i].z], [8.5, 10.5]);
+  const w = KE.addObj(L, 'wasp', 3, 3);
+  eq(KE.kindOf(L, w), 'wasp'); eq(L.enemies[w.i].t, 'wasp');
+  eq(KE.addPathPt(L, w, 9, 9, 0), 1); eq(L.enemies[w.i].path[1], [9, 9]);
+  ok(KE.removePathPt(L, w, 1)); eq(L.enemies[w.i].path.length, 4);
+  // route na premični plošči: indeks se popravi ob brisanju plošče
+  const m2 = KE.addObj(L, 'mover', 3.5, 3.5);
+  L.route.push({ mover: m2.i, x: 0, z: 0 });
+  ok(KE.removeObj(L, m)); eq(L.route[L.route.length - 1].mover, m2.i - 1);
+  ok(!KE.removeObj(L, { arr: 'start' }));
+  eq(KE.locateError(L, 'proga: kontrolna točka 1 [9, 9] ni na tleh'), [9, 9]);
+  eq(KE.locateError(L, 'neznan znak ploščice »Q« v vrstici 3, stolpec 4'), [4.5, 3.5]);
+});
+test('krogla urejevalnik: razveljavi/uveljavi čez 12 operacij (poteza čopiča = ena)', () => {
+  let L = KE.newLevel();
+  const H = new KE.History();
+  const snaps = [JSON.stringify(L)];
+  for (let k = 0; k < 12; k++) {
+    H.begin(L);
+    for (const [c, r] of KE.brushCells(k, 3, 3)) KE.setTile(L, c, r, 'i');   // ena poteza, več celic
+    KE.setTile(L, k, 12, 'g');
+    ok(H.end(L), 'operacija ' + k);
+    snaps.push(JSON.stringify(L));
+  }
+  H.begin(L); ok(!H.end(L), 'prazna operacija se ne zapiše');
+  for (let k = 11; k >= 0; k--) { L = H.undo(L); eq(JSON.stringify(L), snaps[k]); }
+  eq(H.undo(L), null);
+  for (let k = 1; k <= 12; k++) { L = H.redo(L); eq(JSON.stringify(L), snaps[k]); }
+  L = H.undo(L); H.apply(L, x => KE.setTile(x, 0, 0, '#'));
+  ok(!H.canRedo, 'nova operacija pobriše uveljavi');
+});
+test('krogla urejevalnik: medalje in časovni bonus = formula generatorja', ctx => {
+  eq(KR.medalsFromTime(20), { gold: 20, silver: 26, bronze: 33 });
+  eq(KR.timeBonusFromTime(20), 31);
+  for (const L of ctx.kroglaLevels) {
+    const s = KR.scoringFromRun({ time: L.dev.time, falls: 0 });
+    // uradne medalje so iz natančnega časa (dev je zaokrožen), zato le približno
+    ok(Math.abs(s.medals.gold - L.medals.gold) <= 1 && Math.abs(s.timeBonus - L.timeBonus) <= 1, L.id);
+  }
+  const res = KA.runAutopilot(ctx.kroglaLevels[0]);
+  const s = KR.scoringFromRun(res);
+  eq(s.medals, ctx.kroglaLevels[0].medals); eq(s.timeBonus, ctx.kroglaLevels[0].timeBonus); eq(s.dev, ctx.kroglaLevels[0].dev);
+});
+test('krogla urejevalnik: deljenje s povezavo (stisnjeno, pokvarjeno, preveliko)', async ctx => {
+  const L = ctx.kroglaLevels.find(x => x.id.startsWith('06'));
+  const data = await KS.encodeLevel(L);
+  ok(/^[zj][A-Za-z0-9_-]+$/.test(data), 'base64url');
+  const back = await KS.decodeLevel(data);
+  eq(back, L);
+  if (typeof CompressionStream === 'function') ok(data[0] === 'z' && data.length < JSON.stringify(L).length / 3, 'stiskanje ' + data.length);
+  for (const bad of ['', 'x', 'zAAAA', 'j' + btoa('{"a":1}'), 'j!!!', data.slice(0, 40)]) {
+    let msg = null;
+    try { await KS.decodeLevel(bad); } catch (e) { msg = e.message; }
+    ok(msg && !/undefined/.test(msg), 'brez napake za »' + bad.slice(0, 12) + '«');
+  }
+  const evil = { ...L, name: '<img src=x onerror=alert(1)>', extra: 'x', map: [...L.map] };
+  const ev = await KS.decodeLevel(await KS.encodeLevel(evil));
+  eq(ev.extra, undefined); eq(ev.name, evil.name);   // ime ostane besedilo (izpis vedno kot textContent)
+});
+test('krogla urejevalnik: osnutki (omejitev, pripravljene ostanejo)', () => {
+  S.remove(KD.DRAFTS_KEY);
+  const keep = { key: 'pripravljena', L: KE.newLevel({ name: 'Moja' }), ready: true, verified: null };
+  KD.saveDraft(keep);
+  for (let i = 0; i < KD.MAX_DRAFTS + 3; i++) KD.saveDraft({ key: 'k' + i, L: KE.newLevel({ name: 'P' + i }), ready: false });
+  const list = KD.listDrafts();
+  eq(list.length, KD.MAX_DRAFTS);
+  ok(list.some(d => d.key === 'pripravljena'), 'pripravljena proga ostane');
+  eq(KD.readyDrafts().map(d => d.key), ['pripravljena']);
+  const d = KD.getDraft('pripravljena');
+  ok(!KD.isVerified(d));
+  d.verified = { hash: KE.levelHash(d.L), time: 10, by: 'autopilot' };
+  ok(KD.isVerified(d));
+  d.L.name = 'Drugo ime'; ok(KD.isVerified(d), 'ime ne vpliva na rešljivost');
+  d.L.route = [{ x: 1, z: 1 }]; ok(KD.isVerified(d), 'pot autopilota ne vpliva na rešljivost');
+  const re = {}; for (const k of Object.keys(d.L).reverse()) re[k] = d.L[k];
+  eq(KE.levelHash(re), KE.levelHash(d.L), 'hash ni odvisen od vrstnega reda polj');
+  KE.setTile(d.L, 0, 0, '.'); ok(!KD.isVerified(d), 'sprememba mreže razveljavi preverjanje');
+  KD.removeDraft('pripravljena'); eq(KD.getDraft('pripravljena'), null);
+  S.remove(KD.DRAFTS_KEY);
 });
 
 /**

@@ -68,6 +68,25 @@ export function medalFor(L, sec) {
   if (sec <= L.medals.bronze) return 'bronze';
   return null;
 }
+/**
+ * Medalje iz časa vožnje autopilota (sekunde). Isto formulo uporabljata generator prog in urejevalnik.
+ * @param {number} a čas autopilota (s)
+ */
+export function medalsFromTime(a) {
+  return { gold: Math.ceil(a * 0.97), silver: Math.ceil(a * 1.28), bronze: Math.ceil(a * 1.65) };
+}
+/** Časovni bonus proge (s) iz časa autopilota. */
+export const timeBonusFromTime = a => Math.ceil(a * 1.25 + 6);
+
+/**
+ * Medalje, časovni bonus in `dev` iz rezultata runAutopilot (če ne pride do cilja, se računa s 60 s).
+ * @param {{finished:boolean, time:number|null, falls:number}} res
+ */
+export function scoringFromRun(res) {
+  const a = res.time || 60;
+  return { medals: medalsFromTime(a), timeBonus: timeBonusFromTime(a), dev: { time: res.time != null ? Math.round(res.time * 10) / 10 : null, falls: res.falls } };
+}
+
 export const MEDAL = { gold: { icon: '🥇', name: 'zlato' }, silver: { icon: '🥈', name: 'srebro' }, bronze: { icon: '🥉', name: 'bron' } };
 
 /** XP za končane proge v turnirju (največ 12 prog). */

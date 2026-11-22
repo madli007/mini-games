@@ -9,7 +9,9 @@
    rešljiva, in izmerimo čase za medalje. Rezultat je navaden JSON (format: games/krogla/README.md).
    ===================================================================== */
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
-import { validateLevel, heightChar } from '../games/krogla/level.js';
+import { validateLevel, heightChar, formatLevelJson } from '../games/krogla/level.js';
+import { THEMES } from '../games/krogla/themes.js';
+import { medalsFromTime, timeBonusFromTime } from '../games/krogla/rules.js';
 import { runAutopilot } from '../games/krogla/autopilot.js';
 
 const ROOT = new URL('../', import.meta.url);
@@ -17,18 +19,7 @@ const OUT = new URL('games/krogla/levels/', ROOT);
 const CHECK = process.argv.includes('--check');
 const ONLY = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);
 
-const THEMES = {
-  vrt: { sky: ['#1b1446', '#ff7ac8'], fog: '#3a2160', floor: '#3ddc84', side: '#1f6f4a', edge: '#b6ffcf', accent: '#ffd23f', wall: '#ff4fd8' },
-  kuhinja: { sky: ['#120f2e', '#ffb35c'], fog: '#40264a', floor: '#ffd9a8', side: '#a0603a', edge: '#fff2d6', accent: '#ff4fd8', wall: '#4de1ff' },
-  steklo: { sky: ['#06142e', '#4de1ff'], fog: '#0d2a4a', floor: '#9fe8ff', side: '#2a6f9a', edge: '#e6fbff', accent: '#ff4fd8', wall: '#ffd23f' },
-  tovarna: { sky: ['#110a1c', '#ff7a1a'], fog: '#2e1a1a', floor: '#c9c3b8', side: '#6b5a4a', edge: '#ffd23f', accent: '#ff3b5c', wall: '#ff7a1a' },
-  stolp: { sky: ['#0b0b2a', '#a78bfa'], fog: '#231a4a', floor: '#d6c8ff', side: '#5a4a9a', edge: '#ffffff', accent: '#ffd23f', wall: '#ff4fd8' },
-  led: { sky: ['#071a33', '#bfe9ff'], fog: '#173a5e', floor: '#e4f6ff', side: '#5a90c0', edge: '#ffffff', accent: '#ff4fd8', wall: '#4de1ff' },
-  arena: { sky: ['#1a0610', '#ff3b5c'], fog: '#3a0f1e', floor: '#ffc0cb', side: '#8a2a4a', edge: '#ffd23f', accent: '#4de1ff', wall: '#ff3b5c' },
-  neon: { sky: ['#050510', '#5b1a8a'], fog: '#1a0a2e', floor: '#2b2b55', side: '#131330', edge: '#ff4fd8', accent: '#39ff88', wall: '#4de1ff' },
-  nebo: { sky: ['#0a1f5c', '#ffd0f0'], fog: '#5a6fb0', floor: '#ffffff', side: '#9aa8e0', edge: '#ffd23f', accent: '#ff4fd8', wall: '#a78bfa' },
-  nemogoce: { sky: ['#000000', '#ff3b5c'], fog: '#1a0000', floor: '#ffd23f', side: '#5a3a00', edge: '#ff3b5c', accent: '#4de1ff', wall: '#ff3b5c' },
-};
+// barvne teme so v games/krogla/themes.js (iste uporablja urejevalnik prog)
 
 /* ===================================================================== */
 /*  Želvica                                                              */
@@ -465,6 +456,29 @@ function dump(L, res) {
   for (const f of (res.trace || []).slice(0, 8)) console.log(`  padec t=${f.t.toFixed(1)} pri ${f.x.toFixed(2)}, ${f.z.toFixed(2)} (točka poti ${f.k})`);
 }
 
+/**
+ * Združi generirane proge z obstoječim index.json: mesta generiranih prog zapolni po vrstnem redu generatorja,
+ * ročno dodane proge (datoteke, ki jih generator ne pozna) ostanejo na svojem mestu, nove generirane gredo na konec.
+ */
+async function mergeIndex(out) {
+  let old = [];
+  try { old = JSON.parse(await readFile(new URL('index.json', OUT), 'utf8')).levels || []; } catch { /* prvi zagon */ }
+  const known = new Set(LEVELS.map(d => d.meta.id + '.json'));
+  const queue = out.map(L => L.id + '.json');
+  const files = [], manual = [];
+  for (const f of old) {
+    if (known.has(f)) { if (queue.length) files.push(queue.shift()); continue; }
+    try {
+      const L = JSON.parse(await readFile(new URL(f, OUT), 'utf8'));
+      const errs = validateLevel(L);
+      if (errs.length) console.log('✘ ' + errs.join('\n✘ '));
+      files.push(f); manual.push(L);
+    } catch { console.log(`(index.json: »${f}« ne obstaja ali ni veljaven JSON — odstranjeno)`); }
+  }
+  files.push(...queue);
+  return { files, manual };
+}
+
 async function main() {
   const out = [];
   let bad = 0;
@@ -478,8 +492,8 @@ async function main() {
     const A = res.time;
     if (!res.finished) { const b = res.world.ball; console.log(`✘ ${L.id}: autopilot ne pride do cilja (padci ${res.falls}, krogla ${b.x.toFixed(1)}, ${b.z.toFixed(1)})`); bad++; }
     const a = A || 60;
-    L.medals = meta.medals || { gold: Math.ceil(a * 0.97), silver: Math.ceil(a * 1.28), bronze: Math.ceil(a * 1.65) };
-    L.timeBonus = meta.timeBonus || Math.ceil(a * 1.25 + 6);
+    L.medals = meta.medals || medalsFromTime(a);
+    L.timeBonus = meta.timeBonus || timeBonusFromTime(a);
     L.dev = { time: A != null ? r1(A) : null, falls: res.falls };
     const errs = validateLevel(L);
     if (errs.length) { console.log('✘ ' + errs.join('\n✘ ')); bad++; }
@@ -488,12 +502,15 @@ async function main() {
   }
   if (CHECK || ONLY || DUMP) { process.exit(bad ? 1 : 0); }
   await mkdir(OUT, { recursive: true });
-  for (const L of out) await writeFile(new URL(L.id + '.json', OUT), JSON.stringify(L, null, 1).replace(/\n\s+(?=[\d\-\]])/g, ' ') + '\n');
-  await writeFile(new URL('index.json', OUT), JSON.stringify({ levels: out.map(L => L.id + '.json') }, null, 2) + '\n');
+  for (const L of out) await writeFile(new URL(L.id + '.json', OUT), formatLevelJson(L));
+  // ročno dodane proge (JSON brez generatorja, npr. iz urejevalnika) ostanejo v index.json na svojem mestu
+  const { files, manual } = await mergeIndex(out);
+  await writeFile(new URL('index.json', OUT), JSON.stringify({ levels: files }, null, 2) + '\n');
+  if (manual.length) console.log('Ročno dodane proge (ohranjene): ' + manual.map(L => L.id).join(', '));
   const sqlUrl = new URL('supabase/games/krogla.sql', ROOT);
   try {
     let sql = await readFile(sqlUrl, 'utf8');
-    const rows = out.map(L => `  ('${L.id}', ${Math.round(L.medals.gold * 1000)})`).join(',\n');
+    const rows = [...out, ...manual].map(L => `  ('${L.id}', ${Math.round(L.medals.gold * 1000)})`).join(',\n');
     const block = `-- BEGIN LEVELS (tools/krogla-levels.mjs)\ninsert into public.krogla_levels (level, gold_ms) values\n${rows}\non conflict (level) do update set gold_ms = excluded.gold_ms;\n-- END LEVELS`;
     sql = sql.replace(/-- BEGIN LEVELS[\s\S]*?-- END LEVELS/, block);
     await writeFile(sqlUrl, sql);

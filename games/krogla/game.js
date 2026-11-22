@@ -4,7 +4,10 @@
    ===================================================================== */
 import { hub, ui, util } from '../../shared/hub.js';
 import * as S from '../../shared/storage.js';
-import { loadLevels, mirrorLevel } from './level.js';
+import { loadLevels, mirrorLevel, validateLevel } from './level.js';
+import * as CD from './editor/drafts.js';
+import { levelHash } from './editor/model.js';
+import { decodeLevel } from './editor/share.js';
 import { createWorld, step, STEP, respawn, hammerPhase, magnetState } from './physics.js';
 import * as R from './rules.js';
 import { Recorder, encode, decode } from './ghost.js';
@@ -71,6 +74,12 @@ async function boot() {
   await refreshAch();
   showMenu();
   if (DEV_LVL && ORDER[DEV_LVL - 1]) startTrial(ORDER[DEV_LVL - 1]);
+  // lastna proga: ?custom=<podatki> (povezava »Deli«) ali ?play=<osnutek> (iz urejevalnika)
+  if (QS.get('custom')) showShared(QS.get('custom'));
+  else if (QS.get('play')) {
+    const d = CD.getDraft(QS.get('play'));
+    if (d) startCustom(d.L, { key: d.key }); else ui.toast('Te proge ni med tvojimi osnutki.', { icon: '⚠️' });
+  }
   // prvi dotik odklene zvok
   addEventListener('pointerdown', () => audio.unlock(), { passive: true });
   addEventListener('keydown', () => audio.unlock(), { passive: true });
@@ -118,6 +127,8 @@ function showMenu(view = 'main', arg) {
   else if (view === 'trial') m.innerHTML = trialHtml(arg);
   else if (view === 'boards') m.innerHTML = boardsHtml();
   else if (view === 'settings') m.innerHTML = settingsHtml();
+  else if (view === 'custom') m.innerHTML = customHtml();
+  else if (view === 'shared') m.innerHTML = '<div id="sharedBox"><div class="mg-empty"><span class="mg-spin"></span> Odpiram progo …</div></div>';
   bindMenu(view, arg);
   window.scrollTo({ top: 0 });
   if (!menuShow) startMenuShow();
@@ -180,6 +191,13 @@ function mainHtml() {
         <p class="mg-small mg-muted" style="margin:0">${d.official ? '🎯 Prvi poskus danes <b>šteje za lestvico</b>. Ostali so trening.' : '✅ Uradni poskus si že odigral — zdaj je trening (ne šteje).'}
           Nov izziv čez <b id="midnight">${fmtLeft(nextMidnight() - Date.now())}</b>.</p>
         <button class="mg-btn ${d.official ? 'mg-btn--pink' : 'mg-btn--ghost'} mg-btn--block" data-act="daily">${d.official ? 'Začni uradni poskus' : 'Trening'}</button>
+      </div>
+      <div class="mg-card">
+        <h2 class="mg-title">Moje proge</h2>
+        <p class="mg-muted" style="margin:0">Nariši svojo progo v urejevalniku, jo preizkusi in deli s prijatelji s povezavo. Lokalni rekordi in ghosti, brez uradnih lestvic.</p>
+        <p class="mg-small" style="margin:0">Pripravljenih prog: <b>${CD.readyDrafts().length}</b></p>
+        <div class="kr-row"><button class="mg-btn mg-btn--cyan" data-act="custom">Moje proge</button>
+          <a class="mg-btn mg-btn--ghost" href="${editorUrl()}">✏️ Urejevalnik</a></div>
       </div>
     </div>
     <div class="mg-grid mg-grid--2">
@@ -269,9 +287,21 @@ function bindMenu(view, arg) {
       else if (act === 'mirror') startTourney(b.dataset.diff, true);
       else if (act === 'daily') startDaily();
       else if (act === 'start-trial') startTrial(b.dataset.id);
+      else if (act === 'custom') showMenu('custom');
+      else if (act === 'start-custom') { const d = CD.getDraft(b.dataset.key); if (d) startCustom(d.L, { key: d.key }); }
+      else if (act === 'unready-custom') {
+        const d = CD.getDraft(b.dataset.key);
+        if (d && await ui.confirm('Odstranim progo iz »Moje proge«? Osnutek ostane v urejevalniku.', { yes: 'Odstrani' })) { CD.saveDraft({ ...d, ready: false }); showMenu('custom'); }
+      }
       return;
     }
     const lv = e.target.closest('[data-lvl]');
+    const cu = e.target.closest('[data-custom]');
+    if (cu && view === 'custom') {
+      m.querySelectorAll('.kr-lvl').forEach(x => x.setAttribute('aria-pressed', x === cu));
+      customDetail(cu.dataset.custom);
+      return;
+    }
     if (lv && view === 'trial') {
       if (lv.classList.contains('locked')) { ui.toast('Progo najprej dosezi v turnirju (Normalna ali Noro).', { icon: '🔒' }); return; }
       m.querySelectorAll('.kr-lvl').forEach(x => x.setAttribute('aria-pressed', x === lv));
@@ -291,6 +321,7 @@ function bindMenu(view, arg) {
     bindMenu._mid = setInterval(() => { const el = $('#midnight'); if (el) el.textContent = fmtLeft(nextMidnight() - Date.now()); else clearInterval(bindMenu._mid); }, 30000);
     syncBest();
   }
+  if (view === 'custom') fillCustomList(arg);
   if (view === 'trial') {
     $('#mirrorChk')?.addEventListener('change', e => { S.save(uk('trialMirror'), e.target.checked); showMenu('trial', arg); });
     if (arg) trialDetail(arg);
@@ -388,6 +419,125 @@ function trialDetail(id) {
     rowHint: () => ' <span title="Izberi ghosta" aria-hidden="true">👻</span>',
   });
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ------------------------------------------------------------ moje proge (urejevalnik, deljenje) */
+
+/** Povezava do urejevalnika (ohrani ?offline in ?igralec). */
+function editorUrl(extra = '') {
+  const q = ['offline', 'igralec'].filter(k => QS.has(k)).map(k => k + '=' + encodeURIComponent(QS.get(k)));
+  if (extra) q.push(extra);
+  return 'editor.html' + (q.length ? '?' + q.join('&') : '');
+}
+
+function customHtml() {
+  return `<button class="mg-btn mg-btn--ghost mg-btn--small kr-back" data-act="menu">← Meni</button>
+  <div class="mg-card mg-stack">
+    <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Moje proge</h2><a class="mg-btn mg-btn--ghost mg-btn--small" href="${editorUrl()}">✏️ Urejevalnik</a></div>
+    <p class="mg-muted mg-small" style="margin:0">Proge iz urejevalnika, označene »✅ Pripravljeno«, in proge, ki so ti jih poslali. Igra se kot Na čas, <b>brez uradne lestvice</b>;
+      rekord in ghost se shranita v tem brskalniku.</p>
+    <div class="kr-levels" id="customList"></div>
+  </div><div id="detail"></div>`;
+}
+
+function fillCustomList(sel) {
+  const el = $('#customList');
+  const list = CD.readyDrafts();
+  const bm = CD.customBest();
+  if (!list.length) {
+    el.innerHTML = `<p class="mg-empty" style="grid-column:1/-1">Še nimaš pripravljenih prog. Odpri ✏️ urejevalnik, nariši progo, preveri rešljivost in jo označi »✅ Pripravljeno«.</p>`;
+    return;
+  }
+  for (const d of list) {
+    const L = d.L, b = bm[levelHash(L)];
+    const md = b != null && L.medals ? R.medalFor(L, b / 1000) : null;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'kr-lvl'; btn.dataset.custom = d.key;
+    btn.setAttribute('aria-pressed', d.key === sel);
+    btn.innerHTML = `<span class="kr-lvl__n">${L.size[0]}×${L.size[1]}</span><span class="kr-lvl__name"></span>
+      <span class="kr-lvl__t">${b != null ? R.fmtTime(b) : '—'}</span>${md ? `<span class="kr-lvl__medal">${R.MEDAL[md].icon}</span>` : ''}`;
+    btn.querySelector('.kr-lvl__name').textContent = L.name;
+    el.appendChild(btn);
+  }
+  if (sel) customDetail(sel);
+}
+
+function customDetail(key) {
+  const d = CD.getDraft(key);
+  if (!d) return;
+  const L = d.L, b = CD.customBest()[levelHash(L)];
+  const el = $('#detail');
+  el.innerHTML = `<div class="mg-card mg-stack" style="margin-top:16px;max-width:560px">
+      <h2 class="mg-title" style="margin:0"></h2>
+      <p class="mg-muted" style="margin:0" id="cDesc"></p>
+      ${L.medals ? `<div class="kr-medals"><span>🥇 ${L.medals.gold} s</span><span>🥈 ${L.medals.silver} s</span><span>🥉 ${L.medals.bronze} s</span></div>` : ''}
+      <div>Moj rekord: <b>${b != null ? R.fmtTime(b) : '—'}</b>${CD.customGhost(levelHash(L)) ? ' · 👻 ghost shranjen' : ''}</div>
+      <button class="mg-btn mg-btn--green mg-btn--big mg-btn--block" data-act="start-custom" data-key="${esc(key)}">Vozi!</button>
+      <div class="kr-row"><a class="mg-btn mg-btn--ghost mg-btn--small" href="${editorUrl('draft=' + encodeURIComponent(key))}">✏️ Uredi</a>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="unready-custom" data-key="${esc(key)}">Odstrani iz »Moje proge«</button></div>
+      <p class="kr-kbd" style="margin:0">R = začni znova · Esc/P = pavza</p>
+    </div>`;
+  el.querySelector('h2').textContent = L.name;
+  el.querySelector('#cDesc').textContent = L.desc || '';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/** Proga iz povezave ?custom= (deljenje brez strežnika): preveri, nato »Igraj« ali »Shrani med moje proge«. */
+async function showShared(data) {
+  showMenu('shared');
+  const box = $('#sharedBox');
+  let L;
+  try { L = await decodeLevel(data); }
+  catch (e) {
+    box.innerHTML = `<div class="mg-card mg-stack" style="max-width:560px"><h2 class="mg-title" style="margin:0">😕 Povezava do proge ne deluje</h2>
+      <p class="mg-muted" style="margin:0" id="shErr"></p>
+      <p class="mg-small mg-muted" style="margin:0">Morda je bila povezava odrezana pri kopiranju. Prosi pošiljatelja, naj ti progo pošlje znova ali kot datoteko JSON (urejevalnik → 📁 Proge → Odpri datoteko).</p>
+      <div class="kr-row"><button class="mg-btn mg-btn--primary" data-act="menu">Na meni</button><a class="mg-btn mg-btn--ghost" href="${editorUrl()}">✏️ Urejevalnik</a></div></div>`;
+    box.querySelector('#shErr').textContent = e.message;
+    clearCustomParam();
+    return;
+  }
+  const hash = levelHash(L);
+  const have = CD.listDrafts().find(d => levelHash(d.L) === hash);
+  box.innerHTML = `<div class="mg-card mg-card--glow mg-stack" style="max-width:560px">
+      <p class="mg-small mg-muted" style="margin:0">🔗 Prejel si progo</p>
+      <h2 class="mg-title" style="margin:0"></h2>
+      <p class="mg-muted" style="margin:0" id="shDesc"></p>
+      <p class="mg-small" style="margin:0">${L.size[0]}×${L.size[1]} ploščic${L.medals ? ` · 🥇 ${L.medals.gold} s · 🥈 ${L.medals.silver} s · 🥉 ${L.medals.bronze} s` : ''}</p>
+      <div class="kr-row"><button class="mg-btn mg-btn--green mg-btn--big" id="shPlay">Igraj</button>
+        <button class="mg-btn mg-btn--cyan" id="shSave" ${have ? 'disabled' : ''}>${have ? '✔ Že med mojimi progami' : '💾 Shrani med moje proge'}</button>
+        <button class="mg-btn mg-btn--ghost" data-act="menu">Na meni</button></div>
+      <p class="mg-small mg-muted" style="margin:0">Lastne proge nimajo uradne lestvice; rekord in ghost se shranita v tem brskalniku.</p></div>`;
+  box.querySelector('h2').textContent = L.name;
+  box.querySelector('#shDesc').textContent = L.desc || '';
+  box.querySelector('#shPlay').onclick = () => startCustom(L, { key: have?.key || null });
+  box.querySelector('#shSave').onclick = e => {
+    const key = CD.newKey();
+    CD.saveDraft({ key, L, ready: true, verified: null, shared: true });
+    e.target.disabled = true; e.target.textContent = '✔ Shranjeno med moje proge';
+    box.querySelector('#shPlay').onclick = () => startCustom(L, { key });
+    ui.toast('Proga je med »Moje proge«.', { icon: '💾' });
+  };
+  clearCustomParam();
+}
+
+/** Odstrani ?custom= iz naslova (osvežitev ne odpre proge znova, naslov ostane kratek). */
+function clearCustomParam() {
+  try { const u = new URL(location.href); u.searchParams.delete('custom'); u.searchParams.delete('play'); history.replaceState(null, '', u.pathname + u.search); } catch { /* */ }
+}
+
+/** Igraj lastno progo (Na čas brez uradne lestvice, lokalni rekord in ghost). */
+function startCustom(L, { key = null } = {}) {
+  const errs = validateLevel(L);
+  if (errs.length) { ui.toast('Proga ni veljavna: ' + errs[0].replace(/^proga[^:]*: /, ''), { icon: '⚠️', duration: 4000 }); return; }
+  clearCustomParam();
+  const hash = levelHash(L);
+  const ghosts = [];
+  const g = CD.customGhost(hash);
+  if (g) try { ghosts.push({ frames: decode(g), color: '#4de1ff', label: 'Jaz' }); } catch { /* pokvarjen */ }
+  mode = { kind: 'trial', custom: { hash, key }, mirror: false, levels: [L], idx: 0, phys: {}, ghosts };
+  enterPlay();
+  startLevel();
 }
 
 function help() {
@@ -634,7 +784,7 @@ function hud() {
   if (mode.kind === 'trial') {
     clock.textContent = R.fmtTime((play.state === 'run' || play.state === 'pause' || play.state === 'done') ? w.t * 1000 : 0);
     clock.classList.remove('low');
-    const bb = best[mkey(play.base.id, mode.mirror)];
+    const bb = mode.custom ? CD.customBest()[mode.custom.hash] : best[mkey(play.base.id, mode.mirror)];
     sub.textContent = bb != null ? `rekord ${R.fmtTime(bb)}` : '';
   } else {
     clock.textContent = R.fmtClock(mode.run.clock);
@@ -736,8 +886,8 @@ async function startLevel() {
   $('#overlay').classList.add('mg-hidden');
   // oznaka proge
   const n = mode.idx + 1, total = mode.levels.length;
-  $('#hudLevel').textContent = mode.kind === 'trial' ? `${ORDER.indexOf(base.id) + 1}. ${base.name}` : `${n}/${total} · ${base.name}`;
-  const modeTxt = { tourney: `Turnir · ${R.DIFFS[mode.diff]?.name}`, mirror: `Zrcalo · ${R.DIFFS[mode.diff]?.name}`, daily: `Dnevni · ${mode.mod?.name}`, trial: mode.mirror ? 'Na čas · zrcaljeno' : 'Na čas' }[mode.kind];
+  $('#hudLevel').textContent = mode.custom ? '✏️ ' + base.name : mode.kind === 'trial' ? `${ORDER.indexOf(base.id) + 1}. ${base.name}` : `${n}/${total} · ${base.name}`;
+  const modeTxt = { tourney: `Turnir · ${R.DIFFS[mode.diff]?.name}`, mirror: `Zrcalo · ${R.DIFFS[mode.diff]?.name}`, daily: `Dnevni · ${mode.mod?.name}`, trial: mode.custom ? 'Moja proga · brez lestvice' : mode.mirror ? 'Na čas · zrcaljeno' : 'Na čas' }[mode.kind];
   $('#hudMode').textContent = modeTxt; $('#hudMode').classList.remove('mg-hidden');
   let add = 0;
   if (mode.kind !== 'trial') {
@@ -745,7 +895,10 @@ async function startLevel() {
     if (mode.kind === 'tourney' && R.countsForUnlock(mode.diff)) { reached.add(base.id); S.save(uk('reached'), [...reached]); }
   }
   const ban = $('#banner');
-  ban.innerHTML = `<h2>${esc(base.name)}${mode.mirror ? ' 🪞' : ''}</h2><p>${esc(base.desc || '')}${add ? ` · <b>+${String(add).replace('.', ',')} s</b>` : ''}</p>`;
+  // ime in opis vedno kot besedilo (lastne proge so lahko od drugod)
+  ban.innerHTML = `<h2></h2><p><span></span>${add ? ` · <b>+${String(add).replace('.', ',')} s</b>` : ''}</p>`;
+  ban.querySelector('h2').textContent = base.name + (mode.mirror ? ' 🪞' : '');
+  ban.querySelector('p span').textContent = base.desc || '';
   ban.classList.remove('mg-hidden');
   audio.startMusic(base.set);
   hud();
@@ -782,7 +935,7 @@ function pause() {
   input.keys.clear();
   overlay(`<div class="mg-card mg-card--glow kr-panel">
     <h2 class="mg-title">Pavza</h2>
-    <p class="mg-muted" style="margin:0">${esc(play.base.name)}${mode.kind !== 'trial' ? ` · ura ${R.fmtClock(mode.run.clock)}` : ''}</p>
+    <p class="mg-muted" style="margin:0"><span id="pauseName"></span>${mode.kind !== 'trial' ? ` · ura ${R.fmtClock(mode.run.clock)}` : ''}</p>
     <button class="mg-btn mg-btn--primary mg-btn--big" data-o="resume">Nadaljuj</button>
     ${mode.kind === 'trial' ? '<button class="mg-btn mg-btn--cyan" data-o="restart">Začni znova (R)</button>'
       : '<button class="mg-btn mg-btn--cyan" data-o="cp">Na kontrolno točko (−2 s)</button>'}
@@ -792,10 +945,12 @@ function pause() {
     else if (v === 'restart') { resume(); startLevel(); }
     else if (v === 'cp') { resume(); pressR(); }
     else if (v === 'quit') {
-      if (mode.kind === 'trial') showMenu('trial', play.base.id);
+      if (mode.custom) showMenu('custom');
+      else if (mode.kind === 'trial') showMenu('trial', play.base.id);
       else if (await ui.confirm('Zapustiš igro? Točke se ne bodo shranile.', { danger: true })) showMenu('main');
     }
   });
+  $('#pauseName').textContent = play.base.name;
 }
 
 function resume() {
@@ -832,6 +987,8 @@ async function levelDone() {
   renderer.celebrate(w.ball.x, w.ball.y, w.ball.z);
   const time = w.finishT;
   const stars = w.stars, falls = w.falls;
+  // lastna proga: brez dosežkov, dogodkov, uradne lestvice in ghostov na strežniku
+  if (mode.custom) return customDone(time, stars, falls);
   hub.reportEvent('krogla:proga', 1);
   if (base.id === ORDER[0]) unlock('prva-proga');
   if (stars >= 5) unlock('vse-zvezdice');
@@ -974,6 +1131,42 @@ async function trialDone(time, stars, falls) {
   });
   // R v povzetku = še enkrat
   play.state = 'done';
+}
+
+/** Cilj na lastni progi: samo lokalni rekord in ghost; hub.reportGame z isto omejitvijo kot Na čas. */
+async function customDone(time, stars, falls) {
+  const base = play.base, c = mode.custom;
+  const ms = Math.round(time * 1000);
+  const prev = CD.customBest()[c.hash];
+  const record = prev == null || ms < prev;
+  if (record) { CD.saveCustomBest(c.hash, ms); CD.saveCustomGhost(c.hash, encode(play.rec.frames)); }
+  const medal = base.medals ? R.medalFor(base, time) : null;
+  if (Date.now() - lastReportTrial > 60000) { lastReportTrial = Date.now(); hub.reportGame({ won: false, players: 1, score: ms }); }
+  play.next = () => startLevel();
+  play.state = 'done';
+  await sleep(600);
+  if (!play || play.base !== base) return;
+  overlay(`<div class="mg-card mg-card--glow kr-panel">
+    <div class="kr-medal">${medal ? R.MEDAL[medal].icon : '🏁'}</div>
+    <h2 class="mg-title">${record ? 'Nov rekord!' : 'Cilj!'}</h2>
+    <p class="mg-muted" style="margin:0" id="cdName"></p>
+    <div class="kr-stats">
+      <div><span>Čas</span><b>${R.fmtTime(ms)}</b></div>
+      <div><span>Rekord</span><b>${R.fmtTime(record ? ms : prev)}</b></div>
+      <div><span>Medalja</span><b>${medal ? R.MEDAL[medal].name : '—'}</b></div>
+      <div><span>Zvezdice</span><b>${stars}/5</b></div>
+    </div>
+    <p class="kr-note" style="margin:0">Moja proga — brez uradne lestvice${record ? ' · ghost shranjen lokalno' : ''}${falls ? ` · padci: ${falls}` : ''}</p>
+    <button class="mg-btn mg-btn--primary mg-btn--big" data-o="again">Še enkrat <span class="kr-kbd">(R / Enter)</span></button>
+    ${c.key ? '<button class="mg-btn mg-btn--cyan" data-o="edit">✏️ Uredi progo</button>' : ''}
+    <button class="mg-btn mg-btn--ghost" data-o="menu">Moje proge</button>
+  </div>`, v => {
+    play.next = null;
+    if (v === 'again') startLevel();
+    else if (v === 'edit') location.href = editorUrl('draft=' + encodeURIComponent(c.key));
+    else showMenu('custom', c.key);
+  });
+  $('#cdName').textContent = base.name;
 }
 
 // R tudi na zaslonu povzetka Na čas
