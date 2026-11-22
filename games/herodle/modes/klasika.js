@@ -12,6 +12,7 @@ import {
 } from '../logic.js';
 import { createSearch, token } from '../search.js';
 import { runBonus, heroCard, bonusSummary } from '../bonus.js';
+import { shareOut, powFx } from '../share.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -33,7 +34,8 @@ export function isSolved(store, date) { return store.loadGame('klasika', date).s
 
 export function mount(el, c) {
   root = el; ctx = c;
-  const saved = ctx.store.getSettings().pool;
+  // arhiv (2. faza): ctx.archive = { mode, onFinish }, ctx.date = pretekli dan, ctx.daily = lokalni lik, ctx.store = archiveView()
+  const saved = ctx.archive?.mode || ctx.store.getSettings().pool;
   mode = POOL_IDS.includes(saved) ? saved : 'klasika';
   render();
 }
@@ -59,9 +61,9 @@ function render() {
   game = ctx.store.loadGame(mode, ctx.date);
   const hard = game.hard ?? ctx.store.getSettings().hard;
   root.innerHTML = `<div class="hd-mode">
-    <div class="hd-pools" role="tablist" aria-label="Bazen">${POOLS.map(p => {
+    ${ctx.archive ? '' : `<div class="hd-pools" role="tablist" aria-label="Bazen">${POOLS.map(p => {
       return `<button class="hd-pool" role="tab" data-p="${p.id}" aria-selected="${p.id === mode}">${esc(p.label)}<span class="hd-pool__mark"></span></button>`;
-    }).join('')}</div>
+    }).join('')}</div>`}
     <div class="hd-status">
       <span class="hd-status__no">#${puzzleNumber(ctx.date)}</span>
       <span class="hd-status__pool">Klasika · ${esc(poolLabel(mode))}</span>
@@ -228,12 +230,14 @@ async function win() {
 
 async function report(n, firstToday) {
   const { hub } = ctx;
+  if (ctx.archive) { ctx.archive.onFinish({ mode, solved: true, attempts: n }); ctx.onChange(); return; }
   try {
     await hub.submitScore(n, { seed: `${ctx.date}:${mode}`, meta: { hard: !!game.hard, mode } });
     await hub.awardXp(xpFor({ solved: true, attempts: n }), 'herodle: klasika');
     hub.reportGame({ won: true, players: 1, score: n, daily: true })
       .then(() => hub.reportEvent('herodle:classic', n))
       .then(() => firstToday && hub.reportEvent('herodle:solved-day', 1))
+      .then(() => firstToday && hub.reportEvent('herodle:mode', 1))
       .catch(e => console.warn('[herodle] reportGame', e));
     await ctx.unlock('prvi-junak');
     if (n === 1) await ctx.unlock('jasnovidec');
@@ -243,6 +247,7 @@ async function report(n, firstToday) {
     if (st >= 7) await ctx.unlock('teden');
     if (st >= 30) await ctx.unlock('mesec');
     if (ctx.store.loadGame('klasika-mcu', ctx.date).solved && ctx.store.loadGame('klasika-dc', ctx.date).solved) await ctx.unlock('oba-svetova');
+    await ctx.afterSolve?.();
   } catch (e) {
     console.warn('[herodle] report', e);
   }
@@ -253,7 +258,8 @@ async function giveUp() {
   if (busy || finished()) return;
   const ok = await ctx.ui.modal({
     title: 'Predaš se?',
-    html: `<p>Razkrijem lik dneva v bazenu <b>${esc(poolLabel(mode))}</b>. Rezultat ne gre na lestvico, niz v tem bazenu se prekine.</p>`,
+    html: ctx.archive ? `<p>Razkrijem lik tega dne v bazenu <b>${esc(poolLabel(mode))}</b>.</p>`
+      : `<p>Razkrijem lik dneva v bazenu <b>${esc(poolLabel(mode))}</b>. Rezultat ne gre na lestvico, niz v tem bazenu se prekine.</p>`,
     actions: [{ label: 'Še poskusim', value: false }, { label: '🏳️ Predam se', value: true, kind: 'danger' }],
   });
   if (!ok || !root) return;
@@ -268,7 +274,8 @@ async function giveUp() {
     if (!game.reported) {
       game.reported = true;
       ctx.store.saveGame(mode, ctx.date, game);
-      ctx.hub.reportGame({ won: false, players: 1, daily: true }).catch(e => console.warn(e));
+      if (ctx.archive) ctx.archive.onFinish({ mode, solved: false, attempts: game.guesses.length });
+      else ctx.hub.reportGame({ won: false, players: 1, daily: true }).catch(e => console.warn(e));
     }
     search?.destroy(); search = null;
     root.querySelector('#hdSearch').innerHTML = '';
@@ -283,15 +290,7 @@ async function giveUp() {
   }
 }
 
-function pow() {
-  if (reduced()) return;
-  const el = document.createElement('div');
-  el.className = 'hd-pow';
-  el.setAttribute('aria-hidden', 'true');
-  el.innerHTML = '<span>POW!</span>';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1400);
-}
+const pow = () => powFx();
 
 /* ------------------------------------------------------------------ */
 /*  Konec dneva: bonus, kartica, deljenje, odštevalnik                  */
@@ -303,23 +302,28 @@ function showEnd(fresh) {
   const hero = ctx.byId.get(game.heroId);
   if (!hero) { el.innerHTML = ''; return; }
   const n = game.guesses.length;
-  const other = POOLS.filter(p => p.id !== mode && !isDone(ctx.store, p.id, ctx.date));
+  const other = ctx.archive ? [] : POOLS.filter(p => p.id !== mode && !isDone(ctx.store, p.id, ctx.date));
+  const nextMode = ctx.archive ? null : ctx.nextMode?.('klasika');
   el.innerHTML = `<section class="hd-endcard ${game.solved ? 'ok' : 'lost'}">
     <div class="hd-end__title">${game.solved
       ? `Bravo, uganil si ${vPoskusih(n).replace(String(n), `<b>${n}</b>`)}!${game.hard ? ' 💀' : ''}`
       : 'Predaja. Danes je bil to …'}</div>
     <div class="hd-end__hero">${token(hero, 'lg')}<b>${esc(hero.name)}</b></div>
     <div id="hdBonus" class="hd-bonus"></div>
-    <div class="hd-end__next">Naslednji junak čez <b id="hdCd">--:--:--</b></div>
+    ${ctx.archive ? '' : '<div class="hd-end__next">Naslednji junak čez <b id="hdCd">--:--:--</b></div>'}
     <div class="hd-end__btns">
       <button type="button" class="mg-btn mg-btn--primary" id="hdShare">📤 Deli rezultat</button>
       <button type="button" class="mg-btn mg-btn--cyan" id="hdStats">📊 Statistika</button>
       ${other.length ? `<button type="button" class="mg-btn mg-btn--ghost" id="hdNext" data-p="${other[0].id}">Še ${esc(other[0].label)} →</button>` : ''}
+      ${nextMode ? `<button type="button" class="mg-btn mg-btn--ghost" id="hdNextMode">Naslednji način → ${nextMode.icon} ${esc(nextMode.label)}</button>` : ''}
+      ${!ctx.archive && ctx.shareAll ? '<button type="button" class="mg-btn mg-btn--ghost" id="hdShareAll">📋 Deli vse današnje</button>' : ''}
     </div>
     <div id="hdCard"></div>
   </section>`;
   el.querySelector('#hdShare').addEventListener('click', share);
   el.querySelector('#hdStats').addEventListener('click', () => ctx.openStats(mode));
+  el.querySelector('#hdNextMode')?.addEventListener('click', () => { ctx.goMode(nextMode.id); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  el.querySelector('#hdShareAll')?.addEventListener('click', () => ctx.shareAll());
   el.querySelector('#hdNext')?.addEventListener('click', e => {
     mode = e.currentTarget.dataset.p;
     ctx.store.setSettings({ pool: mode });
@@ -375,7 +379,7 @@ async function bonus(fresh) {
       ctx.store.saveGame(mode, ctx.date, game);
       const { hub } = ctx;
       if (b.stars > 0) {
-        hub.awardXp(5 * b.stars, 'herodle: bonus').catch(() => {});
+        if (!ctx.archive) hub.awardXp(5 * b.stars, 'herodle: bonus').catch(() => {});   // arhiv: ⭐ le za naloge
         hub.reportEvent('herodle:star', 1, { times: b.stars }).catch(() => {});
       }
       hub.reportEvent('herodle:stars', b.stars).catch(() => {});
@@ -399,14 +403,6 @@ async function share() {
   const results = game.guesses.map(g => g.r);
   const text = shareText({ date: ctx.date, mode, results, solved: game.solved, gaveUp: game.gaveUp, hard: !!game.hard,
     stars: game.bonus.done ? game.bonus.stars : null });
-  try {
-    if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ text }); return; }
-  } catch (e) { if (e?.name === 'AbortError') return; }
-  try {
-    await navigator.clipboard.writeText(text);
-    ctx.ui.toast('Rezultat je v odložišču.', { icon: '📋' });
-  } catch {
-    ctx.ui.modal({ title: 'Deli rezultat', html: `<textarea class="mg-input hd-sharebox" rows="8" readonly>${esc(text)}</textarea>` });
-  }
+  await shareOut(ctx.ui, ctx.archive ? text.replace(/^Herodle #(\d+)/, 'Herodle #$1 (arhiv)') : text);
 }
 

@@ -154,5 +154,25 @@ export function heroCard(h, byId) {
       ${row('Domovanje', h.home)}
       ${row('Nemesis', nem)}
       ${h.actors.length ? row('V filmu', h.actors.slice(0, 3).join(', ')) : ''}
-    </div></article>`;
+    </div>
+    <div class="hd-card__more" data-more="${esc(h.id)}"></div></article>`;
+}
+
+/**
+ * Kartice lika dopolni s paleto kostuma (trakovi) in zanimivimi dejstvi iz hints.js.
+ * hints.js se naloži dinamično (šele, ko je kartica prikazana = po rešitvi/predaji).
+ * @param {ParentNode} root
+ */
+export async function enrichCards(root) {
+  const els = [...root.querySelectorAll('[data-more]:not([data-done])')];
+  if (!els.length) return;
+  els.forEach(el => el.setAttribute('data-done', '1'));
+  let HINTS;
+  try { ({ HINTS } = await import('./hints.js')); } catch { return; }
+  for (const el of els) {
+    const x = HINTS[el.dataset.more];
+    if (!x) continue;
+    el.innerHTML = `<div class="hd-card__pal" role="img" aria-label="Barve kostuma">${x.palette.map((c, i) => `<i style="--c:${c};--f:${i === 0 ? 3 : 1}"></i>`).join('')}</div>
+      <ul class="hd-card__facts">${x.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>`;
+  }
 }

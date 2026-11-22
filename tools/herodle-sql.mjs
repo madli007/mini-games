@@ -1,10 +1,13 @@
 // Herodle: iz games/herodle/heroes.js + logic.js ustvari
 //   supabase/games/herodle-heroes.sql      — upsert atributov v public.herodle_heroes (poženi za herodle.sql)
 //   tests/fixtures/herodle-compare.json    — ~200 parov likov z rezultati primerjave iz logic.js
+//   supabase/games/herodle-hints.sql       — upsert namigov (Emoji/Kostum/Dosje) iz hints.js v public.herodle_hints
+//                                            (2. faza; poženi PO herodle-heroes.sql)
 // Uporaba: node tools/herodle-sql.mjs   (vsakič, ko dodaš ali spremeniš like)
 // Test »herodle: SQL in fikstura sta sveža« preveri, da se datoteki ujemata s podatki.
 import { HEROES } from '../games/herodle/heroes.js';
-import { compare, attrKey } from '../games/herodle/logic.js';
+import { compare, attrKey, colorName } from '../games/herodle/logic.js';
+import { HINTS } from '../games/herodle/hints.js';
 import { rng } from '../shared/util.js';
 
 const q = s => `'${String(s).replace(/'/g, "''")}'`;
@@ -25,6 +28,24 @@ on conflict (id) do update set universe = excluded.universe, teams = excluded.te
 
 -- dopolni razpored za nove like (manjkajoči dnevi; pretekli ostanejo)
 select private.herodle_fill((now() at time zone 'Europe/Ljubljana')::date, 400);
+`;
+}
+
+/** SQL namigov (dominant = colorName(palette[0]), izračunano tu, ne ročno). */
+export function hintsSql(heroes = HEROES, hints = HINTS) {
+  const rows = heroes.map(h => {
+    const x = hints[h.id];
+    return `  (${q(h.id)}, ${arr(x.emoji)}, ${arr(x.palette)}, ${x.symbol == null ? 'null' : q(x.symbol)}, ${q(colorName(x.palette[0]))}, ${arr(x.dossier)})`;
+  });
+  return `-- =====================================================================
+--  HERODLE — namigi za načine Emoji, Kostum, Dosje (GENERIRANO, ne urejaj ročno)
+--  Ustvari: node tools/herodle-sql.mjs  ·  Poženi PO herodle.sql in herodle-heroes.sql.
+--  ${heroes.length} likov. Tabela ni berljiva za anon/authenticated (namige vrača herodle_check/herodle_hint).
+-- =====================================================================
+insert into public.herodle_hints (hero_id, emoji, palette, symbol, dominant, dossier) values
+${rows.join(',\n')}
+on conflict (hero_id) do update set emoji = excluded.emoji, palette = excluded.palette, symbol = excluded.symbol,
+  dominant = excluded.dominant, dossier = excluded.dossier;
 `;
 }
 
@@ -70,5 +91,6 @@ if (typeof process !== 'undefined' && /herodle-sql\.mjs$/.test(process.argv?.[1]
   await writeFile(new URL('supabase/games/herodle-heroes.sql', root), heroesSql());
   await mkdir(new URL('tests/fixtures/', root), { recursive: true });
   await writeFile(new URL('tests/fixtures/herodle-compare.json', root), fixtureJson());
-  console.log(`herodle-heroes.sql: ${HEROES.length} likov · herodle-compare.json: ${fixturePairs().length} parov`);
+  await writeFile(new URL('supabase/games/herodle-hints.sql', root), hintsSql());
+  console.log(`herodle-heroes.sql: ${HEROES.length} likov · herodle-compare.json: ${fixturePairs().length} parov · herodle-hints.sql: ${Object.keys(HINTS).length} likov`);
 }

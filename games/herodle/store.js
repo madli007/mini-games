@@ -47,3 +47,53 @@ export function markSolvedDay(date) {
   S.save(K('solved-days'), list.slice(-400));
   return true;
 }
+
+/* ---------------------------------------------------------------- 2. faza
+   herodle:<obseg>:a:<način>:<datum>      stanje ARHIVSKE uganke (ne šteje za statistiko, niz, lestvico)
+   herodle:<obseg>:archive-solved         ['<način>:<datum>', …] rešene arhivske uganke (dosežek Arhivar)
+   herodle:<obseg>:perfect-days           datumi doseženega popolnega dne (nagrada le enkrat)
+   ------------------------------------------------------------------ */
+
+export function loadArchive(mode, date) {
+  const g = S.load(K(`a:${mode}:${date}`), null);
+  if (!g || !Array.isArray(g.guesses)) return freshGame();
+  return { ...freshGame(), ...g, bonus: { ...freshGame().bonus, ...(g.bonus || {}) } };
+}
+export function saveArchive(mode, date, g) { S.save(K(`a:${mode}:${date}`), g); }
+
+export function archiveSolved() { return S.load(K('archive-solved'), []) || []; }
+/** Zabeleži rešeno arhivsko uganko. Vrne skupno število rešenih. */
+export function markArchiveSolved(mode, date) {
+  const list = archiveSolved();
+  const k = `${mode}:${date}`;
+  if (!list.includes(k)) { list.push(k); S.save(K('archive-solved'), list.slice(-1000)); }
+  return list.length;
+}
+
+export function perfectDays() { return S.load(K('perfect-days'), []) || []; }
+/** Zabeleži popolni dan. Vrne true samo prvič za ta datum. */
+export function markPerfect(date) {
+  const list = perfectDays();
+  if (list.includes(date)) return false;
+  list.push(date);
+  S.save(K('perfect-days'), list.slice(-400));
+  return true;
+}
+
+/** Ali je dnevna uganka končana (rešena, predana ali izgubljena). */
+export function isDailyDone(mode, date) { const g = loadGame(mode, date); return !!(g.solved || g.gaveUp || g.lost); }
+
+/**
+ * Pogled shrambe za ARHIV z enakim vmesnikom kot ta modul (za načine):
+ * loadGame vrne dnevno stanje, če je dan že končan kot dnevna uganka (samo pogled),
+ * sicer arhivsko; saveGame piše le arhivsko; statistika in niz se ne spreminjata.
+ */
+export function archiveView() {
+  return {
+    getSettings, setSettings: () => getSettings(), freshGame,
+    loadGame: (m, d) => (isDailyDone(m, d) ? { ...loadGame(m, d), fromDaily: true } : loadArchive(m, d)),
+    saveGame: (m, d, g) => { if (!g.fromDaily) saveArchive(m, d, g); },
+    statsDays, recordDay: (m) => statsDays(m), solvedDays, markSolvedDay: () => false,
+    isDailyDone, archive: true,
+  };
+}

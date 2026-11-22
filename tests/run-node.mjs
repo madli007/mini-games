@@ -14,8 +14,9 @@ const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => JSON.parse(aw
 
 const herodleFixture = JSON.parse(await readFile(new URL('tests/fixtures/herodle-compare.json', root), 'utf8'));
 const herodleHeroesSql = await readFile(new URL('supabase/games/herodle-heroes.sql', root), 'utf8');
+const herodleHintsSql = await readFile(new URL('supabase/games/herodle-hints.sql', root), 'utf8');
 
 const t0 = Date.now();
-const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql });
+const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql });
 console.log(`(${((Date.now() - t0) / 1000).toFixed(1)} s)`);
 process.exit(fails ? 1 : 0);

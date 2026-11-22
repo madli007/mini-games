@@ -254,6 +254,7 @@ function mixedCycle(ids, mcuIds, dcIds, cycle) {
  * @returns {string} id lika
  */
 export function offlineHeroId(mode, date, heroes) {
+  if (HINT_MODE_IDS.includes(mode)) return offlineHintHeroId(mode, date, heroes);
   const ids = poolHeroes(mode, heroes).map(h => h.id).sort();
   const idx = daysBetween(ORIGIN, date);
   if (idx < 0) throw new Error('date_too_early');
@@ -564,4 +565,308 @@ export function textOn(hex) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#111' : '#fff';
+}
+
+/* ==================================================================== */
+/*  2. FAZA — načini Emoji, Kostum, Dosje, arhiv, popolni dan            */
+/*  (Klasika zgoraj je nespremenjena.)                                   */
+/* ==================================================================== */
+
+/** Načini z namigi. Vsak ima svoj lik dneva iz bazena Mešano, svoj niz in lestvico. */
+export const HINT_MODES = [
+  { id: 'emoji', label: 'Emoji', icon: '😶‍🌫️' },
+  { id: 'kostum', label: 'Kostum', icon: '🎨' },
+  { id: 'dosje', label: 'Dosje', icon: '🗂️' },
+];
+export const HINT_MODE_IDS = HINT_MODES.map(m => m.id);
+/** Vsi dnevni id-ji (seed lestvice, statistika, SQL `check (mode in …)`). */
+export const ALL_MODE_IDS = [...POOL_IDS, ...HINT_MODE_IDS];
+export const isHintMode = m => HINT_MODE_IDS.includes(m);
+export const modeLabel = m => HINT_MODES.find(x => x.id === m)?.label || `Klasika (${poolLabel(m)})`;
+export const modeIcon = m => HINT_MODES.find(x => x.id === m)?.icon || '🧩';
+
+export const EMOJI_COUNT = 5;
+export const DOSSIER_COUNT = 6;
+/** Kostum: po toliko napačnih se pokaže prevladujoča barva / simbol. */
+export const KOSTUM_DOMINANT_AT = 3;
+export const KOSTUM_SYMBOL_AT = 5;
+
+/* ---------------------------------------------------------------- barve */
+
+/** Osnovna imena barv (namig pri Kostumu). */
+export const COLOR_NAMES = ['rdeča', 'modra', 'zelena', 'rumena', 'črna', 'bela', 'siva', 'vijolična', 'oranžna', 'rjava', 'roza', 'zlata'];
+
+function hsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  if (!d) return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return { h, s, l };
+}
+
+/**
+ * Hex → slovensko ime ene od 12 osnovnih barv (izračun, ne ročno).
+ * @param {string} hex '#rrggbb'
+ */
+export function colorName(hex) {
+  const { h, s, l } = hsl(hex);
+  if (l < 0.2) return 'črna';
+  if (l > 0.88) return 'bela';
+  if (s < 0.22) return h <= 50 && s >= 0.12 && l < 0.6 ? 'rjava' : l > 0.8 ? 'bela' : 'siva';
+  if (h < 12 || h >= 345) return l > 0.75 ? 'roza' : 'rdeča';
+  if (h < 36) return l < 0.4 ? 'rjava' : 'oranžna';
+  if (h < 48) return l < 0.35 ? 'rjava' : 'zlata';
+  if (h < 70) return 'rumena';
+  if (h < 170) return 'zelena';
+  if (h < 255) return 'modra';
+  if (h < 300) return 'vijolična';
+  return 'roza';
+}
+
+/* ---------------------------------------------------------------- podatki namigov */
+
+const toks = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/đ/g, 'd').replace(/ø/g, 'o').split(/[^a-z0-9]+/).filter(Boolean);
+// beseda besedila ustreza besedi imena: kratke točno, daljše tudi s sklonsko končnico
+const tokMatch = (nt, tt) => (nt.length <= 3 ? tt === nt : nt.length === 4 ? tt.startsWith(nt) : tt.startsWith(nt.slice(0, -1)));
+
+/**
+ * Ali besedilo vsebuje ime, alias ali alter ego lika (brez šumnikov in velikih črk,
+ * upošteva sklanjanje). Iz alter ega se preveri tudi vsaka beseda z vsaj 4 črkami.
+ * @returns {string|null} najdeno ime ali null
+ */
+export function leaksName(text, hero) {
+  const t = toks(text);
+  const names = [hero.name, ...hero.aliases, ...(hero.alterEgo ? [hero.alterEgo, ...toks(hero.alterEgo).filter(w => w.length >= 4)] : [])];
+  for (const n of names) {
+    const nt = toks(n);
+    if (!nt.length) continue;
+    for (let i = 0; i + nt.length <= t.length; i++) {
+      if (nt.every((w, k) => tokMatch(w, t[i + k]))) return n;
+    }
+  }
+  return null;
+}
+
+/**
+ * Napake v namigih lika (prazno = v redu).
+ * @param {any} x vnos iz hints.js
+ * @param {any} hero lik iz heroes.js
+ */
+export function validateHints(x, hero) {
+  const err = [];
+  if (!x) return ['manjkajo namigi'];
+  if (!Array.isArray(x.emoji) || x.emoji.length !== EMOJI_COUNT || x.emoji.some(e => !e || /[a-z0-9]/i.test(e) || /[\u{1F1E6}-\u{1F1FF}]/u.test(e))) err.push('emoji');   // brez zastav (Windows jih izriše kot črke)
+  else if (new Set(x.emoji).size !== EMOJI_COUNT) err.push('emoji se ponavljajo');
+  if (!Array.isArray(x.palette) || x.palette.length < 3 || x.palette.length > 5 || x.palette.some(c => !/^#[0-9a-f]{6}$/i.test(c))) err.push('palette');
+  else if (x.palette[0].toLowerCase() !== hero.color.toLowerCase()) err.push('palette[0] ≠ color');
+  if (x.symbol !== null && (typeof x.symbol !== 'string' || !x.symbol.trim() || x.symbol.trim().split(/\s+/).length > 2)) err.push('symbol');
+  if (!Array.isArray(x.dossier) || x.dossier.length !== DOSSIER_COUNT || x.dossier.some(d => typeof d !== 'string' || d.length < 5 || d.length > 110)) err.push('dossier');
+  if (!Array.isArray(x.facts) || x.facts.length < 2 || x.facts.length > 3 || x.facts.some(f => typeof f !== 'string' || f.length < 5)) err.push('facts');
+  if (!Array.isArray(x.unsure) || x.unsure.some(u => !/^(dossier\.[0-5]|facts\.[0-2]|emoji|palette|symbol)$/.test(u))) err.push('unsure');
+  for (const [i, d] of (x.dossier || []).entries()) {
+    const n = leaksName(d, hero);
+    if (n) err.push(`dosje ${i + 1} vsebuje »${n}«`);
+  }
+  if (x.symbol && leaksName(x.symbol, hero)) err.push('simbol vsebuje ime');
+  return err;
+}
+
+/* ---------------------------------------------------------------- stopnje namigov */
+
+/**
+ * Koliko namigov sme igralec videti glede na število napačnih poskusov.
+ * ISTA pravila kot private.herodle_hints_for v SQL.
+ */
+export function hintStage(mode, wrong) {
+  const w = Math.max(0, wrong | 0);
+  if (mode === 'emoji') return { emoji: Math.min(EMOJI_COUNT, 1 + w) };
+  if (mode === 'kostum') return { palette: true, dominant: w >= KOSTUM_DOMINANT_AT, symbol: w >= KOSTUM_SYMBOL_AT };
+  if (mode === 'dosje') return { dossier: Math.min(DOSSIER_COUNT, 1 + w) };
+  throw new Error('invalid_mode');
+}
+
+/**
+ * Vidni namigi (enaka oblika kot odgovor RPC herodle_hint / herodle_check).
+ * @param {string} mode
+ * @param {any} entry vnos iz hints.js
+ * @param {number} wrong
+ * @param {any} hero lik (za univerzum, če nima simbola)
+ */
+export function visibleHints(mode, entry, wrong, hero) {
+  const st = hintStage(mode, wrong);
+  if (mode === 'emoji') return { emoji: entry.emoji.slice(0, st.emoji) };
+  if (mode === 'dosje') return { dossier: entry.dossier.slice(0, st.dossier) };
+  const out = { palette: entry.palette.slice() };
+  if (st.dominant) out.dominant = colorName(entry.palette[0]);
+  if (st.symbol) out.symbol = entry.symbol ? { kind: 'symbol', text: entry.symbol } : { kind: 'universe', text: hero.universe };
+  return out;
+}
+
+/** Ali je Dosje izgubljen (vsi namigi porabljeni). */
+export const dossierLost = wrong => wrong >= DOSSIER_COUNT;
+
+/**
+ * En poskus v načinu z namigi (čista logika; offline adapter in arhiv).
+ * @param {string} mode
+ * @param {{wrong:number, solved:boolean}} prog
+ * @returns {{solved:boolean, wrong:number, lost:boolean}}
+ */
+export function stepGuess(mode, prog, guessId, targetId) {
+  const wrong = prog?.wrong | 0;
+  if (prog?.solved) return { solved: true, wrong, lost: false };
+  if (mode === 'dosje' && dossierLost(wrong)) throw Object.assign(new Error('Dosje je že zaprt.'), { code: 'finished' });
+  if (guessId === targetId) return { solved: true, wrong, lost: false };
+  const w = wrong + 1;
+  return { solved: false, wrong: w, lost: mode === 'dosje' && dossierLost(w) };
+}
+
+/* ---------------------------------------------------------------- offline razpored */
+
+const hintMemo = new Map();
+/**
+ * Lik dneva za način z namigi (offline): cikel brez ponovitev, ki se izogne
+ * liku, ki je isti dan v Klasiki (vsi bazeni) ali v prejšnjem načinu z namigi.
+ */
+function offlineHintHeroId(mode, date, heroes) {
+  const ids = heroes.map(h => h.id).sort();
+  const n = ids.length;
+  const idx = daysBetween(ORIGIN, date);
+  if (idx < 0) throw new Error('date_too_early');
+  const cycle = Math.floor(idx / n);
+  return hintCycle(mode, ids, heroes, cycle)[idx - cycle * n];
+}
+
+function hintCycle(mode, ids, heroes, cycle) {
+  const key = `h|${mode}|${ids.length}|${cycle}`;
+  if (hintMemo.has(key)) return hintMemo.get(key);
+  const n = ids.length;
+  const rest = basePerm(mode, ids, cycle).slice();
+  const prevLast = cycle > 0 ? hintCycle(mode, ids, heroes, cycle - 1)[n - 1] : null;
+  const before = HINT_MODE_IDS.slice(0, HINT_MODE_IDS.indexOf(mode));
+  const out = [];
+  for (let pos = 0; pos < n; pos++) {
+    const d = addDays(ORIGIN, cycle * n + pos);
+    const taboo = new Set([...POOL_IDS, ...before].map(m => offlineHeroId(m, d, heroes)));
+    if (pos === 0 && prevLast) taboo.add(prevLast);
+    let i = rest.findIndex(id => !taboo.has(id));
+    if (i < 0) i = 0;
+    out.push(rest.splice(i, 1)[0]);
+  }
+  hintMemo.set(key, out);
+  return out;
+}
+
+/* ---------------------------------------------------------------- deljenje */
+
+/**
+ * Deljenje načina z namigi (BREZ imena lika).
+ *   Herodle #142 · 😶‍🌫️ Emoji 3/5
+ *   Herodle #142 · 🎨 Kostum 4 💡
+ *   Herodle #142 · 🗂️ Dosje 4/6 🟥🟥🟥🟩
+ * @param {{date:string, mode:string, attempts:number, solved:boolean, gaveUp?:boolean, lost?:boolean, archive?:boolean}} g
+ */
+export function hintShareText(g) {
+  return `Herodle #${puzzleNumber(g.date)}${g.archive ? ' (arhiv)' : ''} · ${hintShareLine(g)}`;
+}
+
+/** Ena vrstica rezultata (brez glave). attempts = vsi poskusi (napačni + pravilni). */
+export function hintShareLine({ mode, attempts, solved, gaveUp = false }) {
+  const n = attempts | 0;
+  const done = solved && !gaveUp;
+  if (mode === 'emoji') {
+    const s = !done ? `X/${EMOJI_COUNT}` : n <= EMOJI_COUNT ? `${n}/${EMOJI_COUNT}` : `${EMOJI_COUNT}/${EMOJI_COUNT} +${n - EMOJI_COUNT}`;
+    return `😶‍🌫️ Emoji ${s}`;
+  }
+  if (mode === 'kostum') {
+    const wrong = done ? n - 1 : n;
+    const bulbs = '💡'.repeat((wrong >= KOSTUM_DOMINANT_AT ? 1 : 0) + (wrong >= KOSTUM_SYMBOL_AT ? 1 : 0));
+    return `🎨 Kostum ${done ? n : 'X'}${bulbs ? ' ' + bulbs : ''}`;
+  }
+  if (mode === 'dosje') {
+    const wrong = done ? n - 1 : n;
+    const sq = '🟥'.repeat(Math.min(DOSSIER_COUNT, wrong)) + (done ? '🟩' : '');
+    return `🗂️ Dosje ${done ? n : 'X'}/${DOSSIER_COUNT}${sq ? ' ' + sq : ''}`;
+  }
+  throw new Error('invalid_mode');
+}
+
+export const PERFECT_LINE = '🏆 Popolni dan';
+
+/**
+ * Popolni dan = isti dan (ne arhiv) rešeni Klasika (kateri koli bazen) + Emoji + Kostum + Dosje.
+ * @param {Record<string, {solved?:boolean, gaveUp?:boolean}>} byMode stanje dneva po načinih
+ */
+export function isPerfectDay(byMode) {
+  const ok = m => !!byMode[m]?.solved && !byMode[m]?.gaveUp;
+  return POOL_IDS.some(ok) && HINT_MODE_IDS.every(ok);
+}
+
+/**
+ * En blok za vse danes rešene/predane načine: Klasika z mrežo, ostali v eni vrstici.
+ * @param {{date:string, classic:any[], hint:any[], perfect?:boolean}} o
+ *   classic: argumenti za shareText (brez date), hint: argumenti za hintShareLine
+ */
+export function shareAllText({ date, classic = [], hint = [], perfect = false }) {
+  const lines = [];
+  for (const c of classic) lines.push(shareText({ ...c, date }));
+  if (hint.length) {
+    const line = hint.map(hintShareLine).join(' · ');
+    lines.push(lines.length ? line : `Herodle #${puzzleNumber(date)} · ${line}`);
+  }
+  if (!lines.length) return '';
+  if (perfect) lines.push(PERFECT_LINE);
+  return lines.join('\n');
+}
+
+/* ---------------------------------------------------------------- XP, arhiv, komentarji */
+
+export const XP_PERFECT = 20;
+export const XP_ARCHIVE = 5;
+/** XP za rešen dnevni način z namigi: 15 (+10 v največ 3 poskusih). Predaja/poraz 0. */
+export function xpForHint({ solved, attempts }) {
+  if (!solved) return 0;
+  return 15 + (attempts <= 3 ? 10 : 0);
+}
+
+export const ARCHIVE_DAYS = 30;
+/** Dnevi arhiva: zadnjih 30 dni pred danes (najnovejši prvi), ne pred EPOCH. */
+export function archiveDates(today, epoch = EPOCH) {
+  const out = [];
+  for (let i = 1; i <= ARCHIVE_DAYS; i++) {
+    const d = addDays(today, -i);
+    if (d < epoch) break;
+    out.push(d);
+  }
+  return out;
+}
+
+/** Datum za prikaz: '14. 11. 2026'. */
+export function fmtDate(date) {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${d}. ${m}. ${y}`;
+}
+
+export const HINT_COMMENTS = {
+  first: ['Na prvo žogo! Kdo ti je izdal?', 'En sam namig in že razkrinkan. Respekt.', 'Prvi poskus. Brez besed.'],
+  solved: ['POW! Ujet!', 'Razkrinkan!', 'BAM! Točno ta.', 'Uganjeno – plašč ti pristoji.'],
+  wrong: ['Ne ta. Nov namig je na mizi.', 'Mimo! Poglej še enkrat.', 'Hladno … a sled se kaže.', 'Ne, ne in ne. Naslednji namig!'],
+  last: ['Samo še en poskus. Brez pritiska …', 'Zadnji namig. Zdaj ali nikoli.'],
+  lost: ['Dosje je zaprt. Lik je pobegnil.', 'Tokrat je bil hitrejši od tebe.'],
+};
+
+/** Kategorija komentarja za način z namigi. */
+export function hintCommentKind(mode, wrong, solved, lost = false) {
+  if (solved) return wrong === 0 ? 'first' : 'solved';
+  if (lost) return 'lost';
+  if (mode === 'dosje' && wrong === DOSSIER_COUNT - 1) return 'last';
+  return 'wrong';
+}
+export function hintComment(mode, wrong, solved, lost = false, rand = Math.random) {
+  const list = HINT_COMMENTS[hintCommentKind(mode, wrong, solved, lost)];
+  return list[Math.floor(rand() * list.length) % list.length];
 }

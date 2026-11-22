@@ -551,7 +551,7 @@ Prompt: `prompts/07-krogla-rusilec.md`. Stanje: **končano** (22. 11. 2026).
 
 # Herodle (`games/herodle/`)
 
-Prompt: `prompts/09-herodle.md` (1. od treh faz). Stanje: **1. faza končana** (22. 11. 2026). Naslednji:
+Prompt: `prompts/09-herodle.md` (1. od treh faz). Stanje: **1. faza končana** (22. 11. 2026), **2. faza končana** (23. 11. 2026, spodaj). Naslednji:
 `prompts/14-herodle-nacini.md` (Emoji, Kostum, Dosje, arhiv), `prompts/15-herodle-dvoboj.md`.
 
 ## Načrt
@@ -666,3 +666,78 @@ Ta polja se ne uporabljajo v bonus vprašanjih; po preverjanju jih odstrani iz `
 - `trigon`: home = "Azarath"
 - `lobo`: actors = ["Jason Momoa"], firstFilm = 2026
 Ostali podatki so iz spomina in niso bili preverjeni z zunanjimi viri; najbolj tvegani so `home` (kje »živi«) in `firstFilm`.
+
+## 2. faza — Emoji, Kostum, Dosje, arhiv, popolni dan (`prompts/14-herodle-nacini.md`)
+
+### Načrt
+- [x] `hints.js` — vseh 180 likov: 5 emojijev, paleta 3–5 (palette[0] = color), simbol ali null, 6 namigov dosjeja,
+      2–3 dejstva; pisano v serijah (Avengers/kozmos/zlobci/FF+ulica/pajek/X-Men/DC liga/Titani/Gotham/DC zlobci);
+      21 dvomljivih dejstev v `unsure` (seznam spodaj)
+- [x] `logic.js` (dodano, Klasika nespremenjena): `colorName` (hex → 12 slovenskih imen), `leaksName`, `validateHints`,
+      `hintStage`/`visibleHints`, `stepGuess`, offline razpored načinov (cikel brez ponovitev, brez trkov z ostalimi
+      načini isti dan), deljenje (`hintShareText`, `shareAllText`), `isPerfectDay`, XP, `archiveDates`, komentator
+- [x] `modes/hintmode.js` (skupno ogrodje) + `emoji.js` (pop), `kostum.js` (trakovi + krog, 💡 po 3 / 🔰 po 5),
+      `dosje.js` (papir, odtis, zatemnjeni namigi, poraz po 6)
+- [x] `daily.js`: `hints(mode, date)`, `check` za nove načine (online RPC / offline `shared/storage.js`, `hints.js`
+      dinamično); `store.js`: arhivsko stanje, `archiveView()`, popolni dnevi, rešene arhivske uganke
+- [x] Kartica »Dosje razkrit« (vsi načini): paleta kot trakovi + dejstva (MutationObserver v `main.js`, `hints.js` šele takrat)
+- [x] Zavihki (4), »Naslednji način →« (tudi v Klasiki), statistika in lestvica za vse načine, pomoč
+- [x] Arhiv 📅 (ikona v glavi): koledar 30 dni × 6 ugank, rešeno/predano/ni rešeno/neodigrano, lokalna igra, samo
+      pogled za dneve, rešene kot dnevne; XP 5, `reportGame({ daily: false })`, `herodle:archive`, Arhivar
+- [x] Popolni dan (animacija, +20 XP, dosežek), »Deli vse današnje«, 5 novih dosežkov, 4 nove naloge
+- [x] Supabase: `herodle_hints`, `herodle_progress`, `herodle_hint`, razširjeni `herodle_check`/`herodle_fill`/guard/
+      constrainti; `herodle-hints.sql` iz `tools/herodle-sql.mjs`; pognano kot migracije `herodle_faza2`,
+      `herodle_hints_data_1`, `herodle_hints_data_2`
+- [x] Testi `tests/herodle2.js` (14 novih; skupaj 136/136), testi 1. faze nespremenjeni
+
+### Dnevnik
+- **Zastave v emojijih** (🇪🇬, 🇷🇺 …) Windows izriše kot črke (»EG«) → zamenjane (🪆, 🍁, 🔺 …), test to prepoveduje.
+- **Detektor imen** (`leaksName`): besede z »sklonsko« primerjavo (5+ črk brez zadnje črke, 4 črke kot predpona, krajše
+  točno) + vsaka beseda alter ega (≥ 4 črke). Ujel je npr. »princesa« ↔ Diana Prince, »električar« ↔ Elektro,
+  »pokol« ↔ Carnage, »tarča« ↔ Bullseye (simbol) — vse prepisano.
+- **Barve:** `#f9a825` (Wasp, Hercules, Odin, Doctor Fate) je »zlata« (meja oranžna/zlata pri odtenku 36°).
+- **Razpored:** `herodle_fill` ima nove načine na koncu seznama, izogne se liku istega dne v katerem koli načinu;
+  obstoječe vrstice Klasike so ostale enake (md5 razporeda 3 bazenov pred in po migraciji enak). Novi načini so
+  napolnjeni od 23. 11. 2026; 22. 11. se dopolni ob prvem `herodle_reveal` (deterministično).
+- **Kostum** ima namesto rotacijske »pop« animacije razpiranje (prejšnja je povzročila vodoravni drsnik).
+- **Dosje** nima »Predam se« (po 6 namigih se konča sam), Emoji in Kostum ga imata.
+- **Nasvet za 3. fazo:** `isDone` je del vmesnika načinov (za »Naslednji način →«).
+
+### Preverjeno
+- `node tests/run-node.mjs`: 136/136 (20 testov 1. faze nespremenjenih, 14 novih); `tests.html` v brskalniku.
+- Offline (`?offline=1`): Emoji (2 napačna → 3 emojiji, rešen), Kostum (osvežitev sredi igre — namigi ostanejo;
+  💡 po 3, simbol »brez simbola · DC« po 5, rešen v 6), Dosje (osvežitev po 2 napačnih, rešen v 3), Klasika v 1 →
+  🏆 popolni dan (toast, +20 XP, dosežek); `?date=2026-11-24` Dosje izgubljen po 6 (»Dosje je zaprt«); arhiv:
+  Klasika in Emoji 22. 11. rešena → `stats:*` in `solved-days` nespremenjeni (niz ne šteje arhiva), Emoji mojster se
+  v arhivu ne odklene; dan 23. 11. v arhivu samo pogled.
+- Supabase (testna profila HdTest2/HdTest3): pred rešitvijo ni zahtevka za `hints.js` (Network/Performance), po rešitvi
+  da; `herodle_hint` po osvežitvi pri 2 napačnih vrne točno 3 namige dosjeja; `herodle_hints` → 42501, `herodle_daily`
+  → permission denied, `herodle_progress`: lastna vrstica berljiva, tuja ni (drugi profil vidi `[]`), insert/update
+  zavrnjena; Emoji rešen prek RPC; Klasika vrača le barve (isti razpored kot pred fazo); `herodle_hints_for` (SQL) se
+  ujema z `visibleHints` (JS); md5 vseh 180 namigov v bazi = md5 iz `hints.js`.
+- Advisors: security — nova le INFO »RLS brez pravil« za `herodle_hints` (namenoma) in projektni WARN o anonimni
+  prijavi (tudi `herodle_progress`, pravilo je le `user_id = auth.uid()`); performance — nič novega.
+- Testna profila in njune vrstice izbrisani (auth.users + profiles + kaskada: progress, scores); razpored in namigi ostanejo.
+- Telefon 375×812: Emoji, Kostum, Dosje, arhiv (popravljen preširok koledar) brez vodoravnega drsenja; namizje 800 px:
+  vsi trije načini, končna kartica s paleto in dejstvi, arhiv. Konzola brez napak (igra + dashboard).
+
+### Ni bilo preverjeno
+- Online predaja (`herodle_reveal` z `give_up` za nove načine) in online poraz v Dosjeju — logika je ista kot offline in v SQL.
+- Online arhiv (danes je v bazi samo 22. 11.; prikazan je koledar, igranje online arhiva ne).
+- »Deli vse današnje« in deljenje novih načinov v odložišče — le testi besedila, ne `navigator.share` na telefonu.
+- Animacija popolnega dne ob `prefers-reduced-motion` in na pravem telefonu; prehod čez polnoč sredi igre.
+- Dosežek Arhivar (10 ugank) in naloge v hubu (dogodki se pošiljajo, celoten tek naloge ni bil odigran).
+
+### Ročno preverjanje (2. faza, `hints.js` → `unsure`)
+Ta dejstva so na kartici lika; po preverjanju odstrani oznako iz `unsure` ali popravi besedilo:
+- `wasp` facts[0] »Ekipi Avengers je dala ime.« · `wong` facts[0] · `us-agent` facts[0] (MCU 2021)
+- `red-guardian` dossier[5] »… s srpom in kladivom« · `agatha-harkness` facts[1] (zajec Senor Scratchy)
+- `yondu` facts[1] (kovinski zobje) · `kang` facts[1] (rodbina Richards) · `zemo` facts[1] (oče zlobnež)
+- `baron-mordo` facts[1] (Transilvanija) · `sersi` facts[0] (Kirka v Odiseji) · `mister-fantastic` facts[1] (sin)
+- `galactus` facts[1] (MCU 2025) · `iron-fist` facts[1] (K'un-Lun) · `psylocke` facts[1] (film 2006)
+- `sabretooth` facts[1] (rojstni dan) · `ghost-rider` facts[1] (Zarathos) · `supergirl` facts[1] (film 2026)
+- `etrigan` facts[1] (rime) · `scarecrow` facts[1] (ptice) · `brainiac` facts[1] (potomec) · `reverse-flash` facts[1]
+Vsi emojiji, dosjeji in dejstva so pisani iz spomina (ne iz zunanjih virov); najbolj tvegana so dejstva o filmih.
+
+### Kaj mora uporabnik narediti v Supabaseu
+Nič — migracije so pognane. Za novo okolje: `supabase/games/herodle.sql` → `herodle-heroes.sql` → `herodle-hints.sql`.

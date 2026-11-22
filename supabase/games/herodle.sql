@@ -1,15 +1,19 @@
 -- =====================================================================
 --  HERODLE — lik dneva na strežniku (proti goljufanju)
 --  Idempotentno: lahko se požene večkrat. Zahteva supabase/schema.sql (profiles, shema private).
---  Vrstni red: 1) ta datoteka  2) herodle-heroes.sql (generira tools/herodle-sql.mjs; napolni razpored)
+--  Vrstni red: 1) ta datoteka  2) herodle-heroes.sql  3) herodle-hints.sql (obe generira tools/herodle-sql.mjs)
 --
 --  herodle_heroes          atributi likov za primerjavo (javni podatki; berejo prijavljeni)
 --  private.herodle_secret  naključna sol, ustvarjena V BAZI (nikoli v repoju, je ne vrne noben RPC)
 --  herodle_daily           razpored (datum, način → lik); za anon/authenticated NI berljiv
 --  herodle_giveups         predaje (vsak bere in piše le svoje)
+--  herodle_hints           namigi za Emoji/Kostum/Dosje (2. faza); za anon/authenticated NI berljiva
+--  herodle_progress        napačni poskusi v načinih z namigi (vsak bere svoje, piše SAMO RPC)
 --
 --  RPC (security definer v private, security invoker ovojnice v public):
---    herodle_check(p_mode, p_date, p_hero_id)        → { solved, result } (id lika le, ko je rešen)
+--    herodle_check(p_mode, p_date, p_hero_id)        → { solved, result } (id lika le, ko je rešen);
+--                                                      za emoji/kostum/dosje { solved, wrong, hints, lost? } in poveča wrong
+--    herodle_hint(p_mode, p_date)                    → namigi, ki jih igralec glede na wrong sme videti
 --    herodle_reveal(p_mode, p_date, p_give_up)       → { hero_id } za pretekle dni; za danes le s p_give_up
 --    herodle_compare(p_a, p_b)                       → primerjava dveh poljubnih likov (razvojni; ista funkcija
 --                                                      kot herodle_check, lika dneva ne razkrije)
@@ -51,10 +55,14 @@ insert into private.herodle_secret (id, salt)
 -- ---------------------------------------------------------------- razpored
 create table if not exists public.herodle_daily (
   date     date not null,
-  mode     text not null check (mode in ('klasika', 'klasika-mcu', 'klasika-dc')),
+  mode     text not null check (mode in ('klasika', 'klasika-mcu', 'klasika-dc', 'emoji', 'kostum', 'dosje')),
   hero_id  text not null references public.herodle_heroes(id),
   primary key (date, mode)
 );
+-- 2. faza: novi načini (za obstoječo tabelo)
+alter table public.herodle_daily drop constraint if exists herodle_daily_mode_check;
+alter table public.herodle_daily add constraint herodle_daily_mode_check
+  check (mode in ('klasika', 'klasika-mcu', 'klasika-dc', 'emoji', 'kostum', 'dosje'));
 create index if not exists herodle_daily_mode_date on public.herodle_daily (mode, date);
 create index if not exists herodle_daily_hero on public.herodle_daily (hero_id);
 alter table public.herodle_daily enable row level security;
@@ -65,10 +73,13 @@ revoke all on table public.herodle_daily from public, anon, authenticated;
 create table if not exists public.herodle_giveups (
   user_id     uuid not null default auth.uid() references public.profiles(id) on delete cascade,
   date        date not null,
-  mode        text not null check (mode in ('klasika', 'klasika-mcu', 'klasika-dc')),
+  mode        text not null check (mode in ('klasika', 'klasika-mcu', 'klasika-dc', 'emoji', 'kostum', 'dosje')),
   created_at  timestamptz not null default now(),
   primary key (user_id, date, mode)
 );
+alter table public.herodle_giveups drop constraint if exists herodle_giveups_mode_check;
+alter table public.herodle_giveups add constraint herodle_giveups_mode_check
+  check (mode in ('klasika', 'klasika-mcu', 'klasika-dc', 'emoji', 'kostum', 'dosje'));
 alter table public.herodle_giveups enable row level security;
 drop policy if exists herodle_giveups_select on public.herodle_giveups;
 create policy herodle_giveups_select on public.herodle_giveups for select to authenticated using (user_id = (select auth.uid()));
@@ -76,6 +87,35 @@ drop policy if exists herodle_giveups_insert on public.herodle_giveups;
 create policy herodle_giveups_insert on public.herodle_giveups for insert to authenticated with check (user_id = (select auth.uid()));
 revoke all on table public.herodle_giveups from anon, authenticated;
 grant select, insert (date, mode) on table public.herodle_giveups to authenticated;
+
+-- ---------------------------------------------------------------- namigi (2. faza)
+create table if not exists public.herodle_hints (
+  hero_id   text primary key references public.herodle_heroes(id) on delete cascade,
+  emoji     text[] not null check (cardinality(emoji) = 5),
+  palette   text[] not null check (cardinality(palette) between 3 and 5),
+  symbol    text,
+  dominant  text not null,
+  dossier   text[] not null check (cardinality(dossier) = 6)
+);
+alter table public.herodle_hints enable row level security;
+-- brez pravil: namige berejo SAMO security definer funkcije (glede na število napačnih poskusov)
+revoke all on table public.herodle_hints from public, anon, authenticated;
+
+-- ---------------------------------------------------------------- napredek v načinih z namigi
+create table if not exists public.herodle_progress (
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  date        date not null,
+  mode        text not null check (mode in ('emoji', 'kostum', 'dosje')),
+  wrong       int not null default 0 check (wrong between 0 and 1000),
+  solved      boolean not null default false,
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, date, mode)
+);
+alter table public.herodle_progress enable row level security;
+drop policy if exists herodle_progress_select on public.herodle_progress;
+create policy herodle_progress_select on public.herodle_progress for select to authenticated using (user_id = (select auth.uid()));
+revoke all on table public.herodle_progress from public, anon, authenticated;
+grant select on table public.herodle_progress to authenticated;   -- pisanje samo prek herodle_check
 
 -- ---------------------------------------------------------------- pomožne funkcije (private)
 create or replace function private.herodle_today()
@@ -91,6 +131,9 @@ returns boolean language sql immutable set search_path = '' as $$
     when 'klasika' then true
     when 'klasika-mcu' then coalesce(p_in_mcu, false)
     when 'klasika-dc' then p_universe = 'DC'
+    when 'emoji' then true
+    when 'kostum' then true
+    when 'dosje' then true
     else false end;
 $$;
 
@@ -121,7 +164,8 @@ $$;
 -- Napolni razpored: SAMO manjkajoči dnevi (pretekli se nikoli ne spremenijo, tudi ko dodaš like).
 -- Za vsak dan in način izbere lik iz bazena po vrstnem redu md5(salt || mode || date || id) izmed likov,
 -- ki se v tem načinu niso pojavili v zadnjih min(velikost bazena − 1, 120) dneh. Mešani bazen se
--- (če gre) izogne liku, ki je isti dan v Samo MCU / Samo DC.
+-- (če gre) izogne liku, ki je isti dan v Samo MCU / Samo DC; načini z namigi (2. faza) pa liku, ki je
+-- isti dan v katerem koli prej izbranem načinu. Vrstni red načinov je del razporeda — ne spreminjaj ga.
 create or replace function private.herodle_fill(p_from date, p_days int)
 returns int language plpgsql security definer set search_path = '' as $$
 declare
@@ -137,7 +181,7 @@ begin
   select x.salt into s from private.herodle_secret x where x.id = 1;
   if s is null then raise exception 'no_secret'; end if;
   for d in select g::date from generate_series(p_from, p_from + (p_days - 1), interval '1 day') g loop
-    foreach m in array array['klasika-mcu', 'klasika-dc', 'klasika'] loop
+    foreach m in array array['klasika-mcu', 'klasika-dc', 'klasika', 'emoji', 'kostum', 'dosje'] loop
       perform 1 from public.herodle_daily x where x.date = d and x.mode = m;
       if found then continue; end if;
       select count(*) into n from public.herodle_heroes h where private.herodle_in_pool(m, h.universe, h.in_mcu);
@@ -146,7 +190,7 @@ begin
       select h.id into pick from public.herodle_heroes h
         where private.herodle_in_pool(m, h.universe, h.in_mcu)
           and h.id not in (select x.hero_id from public.herodle_daily x where x.mode = m and x.date >= d - win and x.date < d)
-          and (m <> 'klasika' or h.id not in (select x.hero_id from public.herodle_daily x where x.date = d and x.mode <> 'klasika'))
+          and (m in ('klasika-mcu', 'klasika-dc') or h.id not in (select x.hero_id from public.herodle_daily x where x.date = d and x.mode <> m))
         order by md5(s || m || d::text || h.id)
         limit 1;
       if pick is null then
@@ -186,24 +230,70 @@ create or replace function private.herodle_guard(p_mode text, p_date date)
 returns void language plpgsql stable set search_path = '' as $$
 begin
   if auth.uid() is null then raise exception 'not_authenticated'; end if;
-  if p_mode is null or p_mode not in ('klasika', 'klasika-mcu', 'klasika-dc') then raise exception 'invalid_mode'; end if;
+  if p_mode is null or p_mode not in ('klasika', 'klasika-mcu', 'klasika-dc', 'emoji', 'kostum', 'dosje') then raise exception 'invalid_mode'; end if;
   if p_date is null or p_date < date '2026-11-22' then raise exception 'invalid_date'; end if;
   if p_date > private.herodle_today() then raise exception 'future_date'; end if;
 end $$;
 revoke all on function private.herodle_guard(text, date) from public, anon, authenticated;
 
+-- Vidni namigi za lik glede na število napačnih poskusov. ISTA pravila kot logic.hintStage/visibleHints:
+--   emoji: prvih min(5, 1 + wrong) · dosje: prvih min(6, 1 + wrong)
+--   kostum: paleta vedno; prevladujoča barva pri wrong ≥ 3; simbol (ali univerzum) pri wrong ≥ 5
+create or replace function private.herodle_hints_for(p_mode text, p_hero text, p_wrong int)
+returns jsonb language sql stable set search_path = '' as $$
+  select case p_mode
+    when 'emoji' then jsonb_build_object('emoji', to_jsonb(x.emoji[1:least(5, 1 + greatest(p_wrong, 0))]))
+    when 'dosje' then jsonb_build_object('dossier', to_jsonb(x.dossier[1:least(6, 1 + greatest(p_wrong, 0))]))
+    when 'kostum' then jsonb_strip_nulls(jsonb_build_object(
+      'palette', to_jsonb(x.palette),
+      'dominant', case when p_wrong >= 3 then x.dominant end,
+      'symbol', case when p_wrong >= 5 then
+        case when x.symbol is not null then jsonb_build_object('kind', 'symbol', 'text', x.symbol)
+             else jsonb_build_object('kind', 'universe', 'text', h.universe) end end))
+  end
+  from public.herodle_hints x join public.herodle_heroes h on h.id = x.hero_id
+  where x.hero_id = p_hero;
+$$;
+revoke all on function private.herodle_hints_for(text, text, int) from public, anon, authenticated;
+
 -- ---------------------------------------------------------------- RPC: poskus
 create or replace function private.herodle_check(p_mode text, p_date date, p_hero_id text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
-  g  public.herodle_heroes;
-  t  public.herodle_heroes;
+  g    public.herodle_heroes;
+  t    public.herodle_heroes;
+  pr   public.herodle_progress;
+  w    int;
+  res  jsonb;
 begin
   perform private.herodle_guard(p_mode, p_date);
   select * into g from public.herodle_heroes h where h.id = p_hero_id;
   if not found then raise exception 'unknown_hero'; end if;
   if not private.herodle_in_pool(p_mode, g.universe, g.in_mcu) then raise exception 'not_in_pool'; end if;
   select * into t from public.herodle_heroes h where h.id = private.herodle_target(p_mode, p_date);
+  -- načini z namigi: strežnik šteje napačne poskuse in vrne samo dovoljene namige
+  if p_mode in ('emoji', 'kostum', 'dosje') then
+    perform 1 from public.profiles p where p.id = auth.uid();
+    if not found then raise exception 'no_profile'; end if;
+    insert into public.herodle_progress (user_id, date, mode) values (auth.uid(), p_date, p_mode) on conflict do nothing;
+    select * into pr from public.herodle_progress x
+      where x.user_id = auth.uid() and x.date = p_date and x.mode = p_mode for update;
+    if pr.solved then
+      return jsonb_build_object('solved', true, 'hero_id', t.id, 'wrong', pr.wrong);
+    end if;
+    if p_mode = 'dosje' and pr.wrong >= 6 then raise exception 'finished'; end if;
+    if g.id = t.id then
+      update public.herodle_progress x set solved = true, updated_at = now()
+        where x.user_id = auth.uid() and x.date = p_date and x.mode = p_mode;
+      return jsonb_build_object('solved', true, 'hero_id', t.id, 'wrong', pr.wrong);
+    end if;
+    w := pr.wrong + 1;
+    update public.herodle_progress x set wrong = w, updated_at = now()
+      where x.user_id = auth.uid() and x.date = p_date and x.mode = p_mode;
+    res := jsonb_build_object('solved', false, 'wrong', w, 'hints', private.herodle_hints_for(p_mode, t.id, w));
+    if p_mode = 'dosje' and w >= 6 then res := res || jsonb_build_object('lost', true, 'hero_id', t.id); end if;
+    return res;
+  end if;
   if g.id = t.id then
     return jsonb_build_object('solved', true, 'hero_id', t.id, 'result', private.herodle_cmp(g, t));
   end if;
@@ -242,6 +332,38 @@ returns jsonb language sql security invoker set search_path = '' as $$
 $$;
 revoke all on function public.herodle_reveal(text, date, boolean) from public, anon;
 grant execute on function public.herodle_reveal(text, date, boolean) to authenticated;
+
+-- ---------------------------------------------------------------- RPC: namigi (osvežitev strani)
+create or replace function private.herodle_hint(p_mode text, p_date date)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  tid   text;
+  w     int := 0;
+  sol   boolean := false;
+  lost  boolean;
+  res   jsonb;
+begin
+  perform private.herodle_guard(p_mode, p_date);
+  if p_mode not in ('emoji', 'kostum', 'dosje') then raise exception 'invalid_mode'; end if;
+  tid := private.herodle_target(p_mode, p_date);
+  select x.wrong, x.solved into w, sol from public.herodle_progress x
+    where x.user_id = auth.uid() and x.date = p_date and x.mode = p_mode;
+  w := coalesce(w, 0);
+  sol := coalesce(sol, false);
+  lost := p_mode = 'dosje' and w >= 6 and not sol;
+  res := jsonb_build_object('wrong', w, 'solved', sol, 'lost', lost, 'hints', private.herodle_hints_for(p_mode, tid, w));
+  if sol or lost then res := res || jsonb_build_object('hero_id', tid); end if;
+  return res;
+end $$;
+revoke all on function private.herodle_hint(text, date) from public, anon;
+grant execute on function private.herodle_hint(text, date) to authenticated;
+
+create or replace function public.herodle_hint(p_mode text, p_date date)
+returns jsonb language sql security invoker set search_path = '' as $$
+  select private.herodle_hint(p_mode, p_date);
+$$;
+revoke all on function public.herodle_hint(text, date) from public, anon;
+grant execute on function public.herodle_hint(text, date) to authenticated;
 
 -- ---------------------------------------------------------------- razvojni RPC: primerjava dveh likov
 revoke all on function private.herodle_cmp(public.herodle_heroes, public.herodle_heroes) from public, anon;
