@@ -352,7 +352,8 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
     - Zelo družabno, saj zabava tudi tiste, ki niso spretni.
     - **Solo »Dirkalni dan«:** 5 dirk proti 3–7 botom stavnikom z osebnostmi (tudi oni sunkajo), dnevni seed za
       vse enak. Prompt za 1. del: `prompts/16-frnikole.md` (ob koncu napiše še `17-frnikole-multiplayer.md` in
-      `18-frnikole-stave.md`).
+      `18-frnikole-stave.md`). **1. del je narejen** (`games/frnikole/`, 23. 11. 2026); naslednja: `prompts/17-frnikole-multiplayer.md`,
+      `prompts/18-frnikole-stave.md`.
 
 **B) Na motorju pinballa**
 
