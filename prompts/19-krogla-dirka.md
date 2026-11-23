@@ -6,7 +6,7 @@
 > Ozadje: Hrčkova krogla (`games/krogla/`) je singleplayer na čas. Rušilec (`games/rusilec/`) je party arena z
 > več kroglami (host simulira, `net.js`). Dirka frnikol (`games/frnikole/`) ima dirko več teles po progi
 > (startna mreža, vrstni red, kontrolne točke, razcepi, generator širokih prog). Ta prompt združi vse troje v
-> **dirkalni način za Hrčkovo kroglo**: 2–8 igralcev na svojih telefonih, vsak vozi svojega hrčka po široki progi,
+> **dirkalni način za Hrčkovo kroglo**: 2–8 igralcev, vsak na svoji napravi (**PC ali telefon**, poljubno mešano), vsak vozi svojega hrčka po široki progi,
 > prvi v cilju zmaga.
 >
 > **Krogla, Rušilec in Frnikole morajo ostati enaki**: njihovi testi ostanejo zeleni brez sprememb pričakovanih
@@ -21,7 +21,7 @@
   `players: { min: 1, max: 8 }`, oznake `party`, `arkada`, `spretnost`, barva npr. `#4de1ff`, ikona 🏁).
   Ali: dirka kot način v meniju Rušilca/Krogle — odloči sam, zapiši zakaj (ločena igra je bolj pregledna v hubu).
 - **Kratek opis (do 160 znakov):** »Hrčki v kroglah dirkajo po širokih zračnih progah. Ghosti ali trki, sunek po
-  želji — prvi v cilju zmaga. 2–8 igralcev na telefonih.«
+  želji — prvi v cilju zmaga. 2–8 igralcev na PC-ju ali telefonu.«
 - V meniju Krogle in Rušilca povezava »🏁 Hrčkova dirka«, v igri povezava nazaj.
 - **Rezultat:** mesto in čas; lestvica posamezne proge = najboljši čas v dirki (`scoreOrder: 'asc'`, ms), seed `dirka:<proga>`.
 
@@ -70,7 +70,9 @@
 - Route za autopilota (bote) mora imeti linije (bočni zamik), da 8 botov ne vozi po isti črti.
 
 ### Kamera, kontrole, HUD
-- Kontrole kot Krogla (`../krogla/input.js`: tipkovnica, palica, nagib) — vhod relativen na kamero. Sunek kot Rušilec.
+- **PC in telefon sta enakovredna** (v isti sobi poljubno mešano): na PC-ju tipkovnica (puščice / WASD, sunek preslednica)
+  in po želji miška, na telefonu palica ali nagib — vse iz `../krogla/input.js`, vhod relativen na kamero. Sunek kot Rušilec.
+  Na PC-ju polna 3D slika s svojo kamero (večje okno, boljša kakovost), na telefonu enako, a s kontrolami spodaj.
 - Kamera za svojo kroglo kot v Krogli (`Renderer._camera`), na TV-ju kamera, ki sledi vodilni skupini (kot `view.js`
   frnikol) ali razdeljen pogled ni potreben.
 - HUD: mesto (1./8), čas, krog, mini vrstni red, puščica do naslednje kontrolne točke, killfeed (»Ana je padla«, »Bor
@@ -116,7 +118,7 @@ dnevnik, »Ni bilo preverjeno«).
    --check` da iste rezultate kot prej.
 4. Multiplayer v **offline načinu** (`?offline=1`) v 2–3 **oknih**: oba načina (ghosti, trki), ustvari sobo, pridruži se
    s kodo in prek `?room=`, odigraj dirko do konca, odhod hosta sredi dirke, osvežitev igralca, boti, TV.
-5. Izgled na **telefonu (375×812)** in **namizju/TV**: posnemi zaslone, sam jih preglej in popravi.
+5. Izgled na **PC-ju (namizje, tipkovnica)**, **telefonu (375×812)** in TV: posnemi zaslone, sam jih preglej in popravi; v testu MP naj bo vsaj en igralec na PC-ju in en v mobilnem pogledu.
 6. V `games.json` vnos s statusom **`live`** in nalogami (test sheme uspe).
 7. Posodobi `PROGRESS.md` in napiši README igre (kontrole, načini, protokol, format prog, kako dodati progo).
 8. **Commit** na `main` z opisnim sporočilom. Ne pushaj.
