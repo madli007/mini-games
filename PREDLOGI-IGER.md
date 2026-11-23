@@ -20,6 +20,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
+| 16. Tarče (aim trainer) | 📝 | prompt 27 |
 | Vse ostale točke | ⬜ | — |
 
 ## Osnova: hub repo
@@ -201,7 +202,7 @@ kodo do 10 igralcev**, tako kot Reakcija. Vse so ★ (en prompt).
 
 **Hitrost in refleksi**
 
-16. ⬜ **Tarče (aim trainer)** ★
+16. 📝 **Tarče (aim trainer)** ★ — prompt [`27-tarce`](prompts/27-tarce.md)
     - Na zaslonu se pojavljajo krogi, ki se hitro manjšajo, ti pa jih moraš klikniti. Runda ima 30 tarč.
     - Rezultat je povprečni čas na tarčo, zgrešeni kliki pa dodajo kazen.
     - Twist: rdečih tarč ne smeš klikniti, kar je hkrati test samokontrole.
