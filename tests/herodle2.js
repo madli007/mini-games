@@ -221,4 +221,26 @@ export function herodle2Tests(test, { eq, ok }) {
     eq(HL.hintCommentKind('kostum', 2, false), 'wrong');
     ok(typeof HL.hintComment('emoji', 1, false) === 'string');
   });
+
+  test('herodle2: sinhronizacija — združevanje stanja z druge naprave', () => {
+    const fresh = store.freshGame();
+    const done = { ...store.freshGame(), guesses: [{ id: 'batman' }, { id: 'hulk' }], solved: true, heroId: 'hulk', reported: true };
+    // nova naprava: lokalno prazno, strežnik ima rešeno → rešeno
+    eq(store.mergeValue('g:klasika:2026-11-23', fresh, done).solved, true);
+    eq(store.mergeValue('g:klasika:2026-11-23', null, done).guesses.length, 2);
+    // več napredka zmaga, reported se ohrani (nagrada le enkrat)
+    const partial = { ...store.freshGame(), guesses: [{ id: 'thor' }, { id: 'loki' }, { id: 'odin' }], reported: false };
+    const m = store.mergeValue('g:klasika:2026-11-23', partial, done);
+    eq(m.solved, true); eq(m.reported, true);
+    // namigi: wrong šteje kot napredek
+    eq(store.mergeValue('g:emoji:2026-11-23', { wrong: 1 }, { wrong: 3 }).wrong, 3);
+    // bonus: bolj napredni bonus, reported OR
+    const b1 = { ...done, bonus: { answers: [1, 2, 3], done: true, reported: false } };
+    const b2 = { ...done, bonus: { answers: [], done: false, reported: true } };
+    const mb = store.mergeValue('g:klasika:2026-11-23', b2, b1);
+    eq(mb.bonus.done, true); eq(mb.bonus.reported, true);
+    // statistika: unija po datumih, seznami: unija
+    eq(Object.keys(store.mergeValue('stats:klasika', { '2026-11-22': {} }, { '2026-11-23': {} })).length, 2);
+    eq(store.mergeValue('solved-days', ['2026-11-22'], ['2026-11-21', '2026-11-22']), ['2026-11-21', '2026-11-22']);
+  });
 }

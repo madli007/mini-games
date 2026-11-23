@@ -741,3 +741,9 @@ Vsi emojiji, dosjeji in dejstva so pisani iz spomina (ne iz zunanjih virov); naj
 
 ### Kaj mora uporabnik narediti v Supabaseu
 Nič — migracije so pognane. Za novo okolje: `supabase/games/herodle.sql` → `herodle-heroes.sql` → `herodle-hints.sql`.
+
+## Popravki (23. 11. 2026)
+
+- [x] Prijava v obstoječ profil že v oknu »Kdo igra?« (prej je bilo treba ustvariti lažen profil)
+- [x] Herodle: stanje dneva, statistika in arhiv se sinhronizirajo med napravami (tabela `herodle_state`,
+      `store.attachCloud/pull/flush`, združevanje `mergeValue`; migracija `herodle_state_sync` pognana, advisors brez novih opozoril)

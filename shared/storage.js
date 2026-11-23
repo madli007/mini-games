@@ -73,5 +73,16 @@ export function update(key, fn, fallback) {
   return next;
 }
 
+/** Ključi (brez predpone), ki se začnejo z `prefix` (samo localStorage). */
+export function keys(prefix = '') {
+  const out = new Set();
+  try {
+    const s = area('local');
+    if (s) for (let i = 0; i < s.length; i++) { const k = s.key(i); if (k?.startsWith(PREFIX + prefix)) out.add(k.slice(PREFIX.length)); }
+  } catch { /* ignore */ }
+  for (const k of memory.local.keys()) if (k.startsWith(PREFIX + prefix)) out.add(k.slice(PREFIX.length));
+  return [...out];
+}
+
 /** Polni ključ (s predpono) — za primerjavo v `storage` dogodkih. */
 export const fullKey = key => PREFIX + key;

@@ -430,6 +430,18 @@ function watchMidnight() {
   }, 20000);
 }
 
+/** Ob vrnitvi v zavihek prenesi stanje z drugih naprav; če se je spremenil današnji dan, ponovno izriši. */
+function watchCloud() {
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'hidden') { store.flush(); return; }
+    let changed = [];
+    try { changed = await store.pull(); } catch { return; }
+    if (!changed.some(k => /^g:/.test(k) && k.endsWith(':' + date))) return;
+    if (archive || !current) { renderTabs(); refreshSide(); return; }
+    mountMode(current);
+  });
+}
+
 /** Kartice »Dosje razkrit« dobijo paleto in dejstva (hints.js se naloži šele takrat). */
 function watchCards() {
   const run = () => { if (document.querySelector('[data-more]:not([data-done])')) enrichCards(document); };
@@ -442,6 +454,12 @@ async function main() {
   ui.header({ title: 'Herodle' });
   daily.init(hub, HEROES);
   store.setScope(`${hub.mode === 'supabase' ? 'sb' : 'off'}-${hub.userId || 'anon'}`);
+  if (hub.mode === 'supabase' && hub.backend?.client) {
+    store.attachCloud(hub.backend.client, hub.userId);
+    // stanje z drugih naprav; počasno omrežje ne sme blokirati igre
+    await Promise.race([store.pull().catch(e => console.warn('[herodle]', e)), new Promise(r => setTimeout(r, 4000))]);
+    watchCloud();
+  }
   date = daily.today();
   if (daily.isSimulated()) $('#simBanner').innerHTML = `<div class="hd-sim">🧪 Simuliran datum: <b>${esc(date)}</b> (offline, ?date=)</div>`;
   applySettings();

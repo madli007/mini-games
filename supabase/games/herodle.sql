@@ -117,6 +117,27 @@ create policy herodle_progress_select on public.herodle_progress for select to a
 revoke all on table public.herodle_progress from public, anon, authenticated;
 grant select on table public.herodle_progress to authenticated;   -- pisanje samo prek herodle_check
 
+-- ---------------------------------------------------------------- sinhronizacija stanja med napravami
+-- Ključi kot v games/herodle/store.js (brez obsega): g:<način>:<datum>, a:<način>:<datum>, stats:<način>,
+-- solved-days, archive-solved, perfect-days. »Na časten način« kot lestvice; vsak bere in piše le svoje.
+create table if not exists public.herodle_state (
+  user_id     uuid not null default auth.uid() references public.profiles(id) on delete cascade,
+  key         text not null check (key ~ '^[a-z0-9:_-]{1,60}$'),
+  value       jsonb not null check (pg_column_size(value) < 32000),
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, key)
+);
+alter table public.herodle_state enable row level security;
+drop policy if exists herodle_state_select on public.herodle_state;
+create policy herodle_state_select on public.herodle_state for select to authenticated using (user_id = (select auth.uid()));
+drop policy if exists herodle_state_insert on public.herodle_state;
+create policy herodle_state_insert on public.herodle_state for insert to authenticated with check (user_id = (select auth.uid()));
+drop policy if exists herodle_state_update on public.herodle_state;
+create policy herodle_state_update on public.herodle_state for update to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+revoke all on table public.herodle_state from public, anon, authenticated;
+grant select, insert, update on table public.herodle_state to authenticated;
+
 -- ---------------------------------------------------------------- pomožne funkcije (private)
 create or replace function private.herodle_today()
 returns date language sql stable set search_path = '' as $$
