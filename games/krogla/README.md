@@ -8,7 +8,7 @@ Navdih je Hamsterball (Raptisoft, 2004), imena, proge, grafika in zvok pa so na�
 | Naprava | Upravljanje |
 |---|---|
 | Tipkovnica | puščice ali **WASD** |
-| Miška | krogla se kotali proti kazalcu (dlje je kazalec od krogle, hitreje gre; mrtva cona okoli krogle) |
+| Miška | (vklop: Nastavitve → »Tipkovnica in miška«; privzeto izklopljena) krogla se kotali proti kazalcu (dlje je kazalec od krogle, hitreje gre; mrtva cona okoli krogle) |
 | Telefon | **virtualna palica** levo spodaj (privzeto) ali **nagib telefona** (Nastavitve → »Vklopi nagib«, na iOS ob tapu vpraša za dovoljenje; »Kalibriraj« = trenutni položaj je ravno) |
 | `Esc` / `P` / ⏸ | pavza (igra se sama ustavi, ko zavihek ni viden) |
 | `R` / ↺ | Na čas: začni znova · turnir in dnevni izziv: na zadnjo kontrolno točko (−2 s) |
@@ -44,7 +44,7 @@ Razvojni parameter `?bot=1`: proge vozi autopilot skozi pravo zanko igre (za pre
 **Videz krogle** je parameter (`DEFAULT_SKIN` v `render.js`: `glass`, `opacity`, `rim`, `rider` = `'hamster'` ali emoji, `fur`, `trail`; nova polja `tint` (barva globine stekla), `roughness` (0–0,3), `pattern` (`none|stripes|dots|stars|hex`)).
 Igra ga prebere iz `localStorage` (`krogla:skin`). Fizika je za vse skine enaka.
 
-**Kakovost** (`QUALITY`): Ultra (GTAO, SMAA, globinska ostrina, prava transmisija stekla, 16 lupin krzna, senčna mapa 4096), Visoka (2048, brez AO), Srednja (FXAA, bloom, lažno Fresnel steklo, 6 lupin), Nizka (brez post-processinga, strojni MSAA, kontaktna senca, 3 lupine). Samodejna izbira (`detectQuality`) po zaslonu na dotik, jedrih in GPU; ob FPS < 45 se kakovost samodejno zniža. Ob izgubi WebGL konteksta igra preklopi na Nizko. Nastavitve: kakovost, post-processing, globinska ostrina, tresenje kamere.
+**Kakovost** (`QUALITY`): Ultra (GTAO, SMAA, globinska ostrina, prava transmisija stekla, 16 lupin krzna, senčna mapa 4096), Visoka (2048, brez AO), Srednja (FXAA, bloom, lažno Fresnel steklo, 6 lupin), Nizka (brez post-processinga, strojni MSAA, kontaktna senca, 3 lupine). Samodejna izbira (`detectQuality`) po zaslonu na dotik, jedrih in GPU; ob FPS < 45 se kakovost samodejno zniža. Ob izgubi WebGL konteksta igra preklopi na Nizko. Ob prvem obisku meni pokaže izbirnik kakovosti in 3D ozadje menija se zažene šele po izbiri; kakovost je tudi v glavnem meniju (»Grafika«). Nastavitve: kakovost, ozadje menija (animirano/statično/izklopljeno), post-processing, globinska ostrina, tresenje kamere.
 Razvojni parametri: `?lvl=N` (takoj odpri progo), `?q=ultra|high|medium|low`, `?dev=1` (`window.__kr` za meritve).
 
 ## Format proge (`levels/NN-ime.json`)

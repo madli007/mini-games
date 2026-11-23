@@ -33,8 +33,11 @@ const DEV_Q = QS.get('q');
 /* ------------------------------------------------------------ nastavitve */
 
 const settings = Object.assign({
-  control: 'auto', touch: 'stick', sfx: true, music: true, camRotate: true, quality: 'auto', fps: false, post: true, dof: true, shakeCam: true,
+  control: 'keys', touch: 'stick', sfx: true, music: true, camRotate: true, quality: 'auto', fps: false, post: true, dof: true, shakeCam: true,
+  menuBg: 'anim', qPicked: false, v: 2,
 }, S.load('krogla:settings', {}));
+// v2: privzeto samo tipkovnica (prej je miška sama prevzela vožnjo); kdor je kakovost že ročno izbral, izbirnika ne vidi
+if (settings.v !== 2) { settings.control = 'keys'; settings.qPicked = settings.quality !== 'auto'; settings.v = 2; }
 const saveSettings = () => S.save('krogla:settings', settings);
 const skin = Object.assign({}, DEFAULT_SKIN, S.load('krogla:skin', {}));
 
@@ -135,7 +138,39 @@ function showMenu(view = 'main', arg) {
   else if (view === 'shared') m.innerHTML = '<div id="sharedBox"><div class="mg-empty"><span class="mg-spin"></span> Odpiram progo …</div></div>';
   bindMenu(view, arg);
   window.scrollTo({ top: 0 });
+  syncMenuShow();
+}
+
+/** 3D ozadje menija se zažene šele, ko igralec izbere kakovost; spoštuje nastavitev »Ozadje menija«. */
+function syncMenuShow() {
+  if (!settings.qPicked || settings.menuBg === 'off') { if (menuShow) stopMenuShow(); return; }
   if (!menuShow) startMenuShow();
+  else menuShow.rendered = 0;   // statično ozadje: nariši znova (npr. po menjavi kakovosti)
+}
+
+function qualityOptions(cur) {
+  const opt = (v, label) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${label}</option>`;
+  return opt('auto', 'Samodejno (' + QUALITY[autoQuality()].name.toLowerCase() + ')') + QUALITY_ORDER.map(q => opt(q, QUALITY[q].name)).join('');
+}
+
+function setQuality(q) {
+  settings.quality = q; settings.qPicked = true; saveSettings();
+  if (renderer) renderer.setQuality(initialQuality());
+  syncMenuShow();
+}
+
+function qualityPickHtml() {
+  const rec = autoQuality();
+  const desc = { ultra: 'vsi učinki, močna grafična kartica', high: 'sence in bloom', medium: 'prenosniki in integrirana grafika', low: 'počasni računalniki in telefoni' };
+  return `<div class="mg-card mg-card--glow mg-stack kr-qpick">
+    <h2 class="mg-title" style="margin:0">Izberi kakovost grafike</h2>
+    <p class="mg-muted mg-small" style="margin:0">3D grafika se zažene šele po izbiri. Kasneje jo spremeniš v meniju (»Grafika«) ali v Nastavitvah.</p>
+    <div class="kr-row">
+      <button class="mg-btn mg-btn--primary" data-act="qpick" data-q="auto">Samodejno (${QUALITY[rec].name.toLowerCase()})</button>
+      ${QUALITY_ORDER.map(q => `<button class="mg-btn mg-btn--ghost" data-act="qpick" data-q="${q}" title="${desc[q] || ''}">${QUALITY[q].name}</button>`).join('')}
+    </div>
+    <p class="mg-small mg-muted" style="margin:0">Če se igra zatika, izberi <b>Nizko</b> — ozadje menija je takrat statično.</p>
+  </div>`;
 }
 
 function nextMidnight() { return util.dayStart(new Date(Date.now() + 864e5)); }
@@ -158,6 +193,7 @@ function mainHtml() {
   const names = d.pick.levels.map(id => LEVELS.find(L => L.id === id)?.name).join(' · ');
   return `
   <div class="mg-stack">
+    ${settings.qPicked ? '' : qualityPickHtml()}
     <div class="mg-card mg-card--glow kr-hero">
       <div class="kr-hero__icon" aria-hidden="true">🐹</div>
       <div class="mg-stack" style="gap:6px">
@@ -167,7 +203,9 @@ function mainHtml() {
         <div class="kr-row"><button class="mg-btn mg-btn--ghost mg-btn--small" data-act="help">Kako igrati</button>
           <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="settings">⚙️ Nastavitve</button>
           <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="boards">🏆 Lestvice</button>
-          <a class="mg-btn mg-btn--pink mg-btn--small" href="${hub.link('games/rusilec/')}">💥 Rušilec (party)</a></div>
+          <a class="mg-btn mg-btn--pink mg-btn--small" href="${hub.link('games/rusilec/')}">💥 Rušilec (party)</a>
+          <label class="kr-row" style="gap:6px"><span class="mg-small mg-muted">Grafika</span>
+            <select class="mg-select" id="mQ" aria-label="Kakovost grafike">${qualityOptions(settings.quality)}</select></label></div>
       </div>
     </div>
     <div class="kr-cards">
@@ -264,7 +302,7 @@ function settingsHtml() {
   <div class="mg-card mg-stack" style="max-width:560px">
     <h2 class="mg-title" style="margin:0">Nastavitve</h2>
     <label class="mg-field"><span class="mg-label">Kontrole na računalniku</span>
-      <select class="mg-select" id="sControl">${opt('auto', settings.control, 'Tipke in miška')}${opt('keys', settings.control, 'Samo tipke')}</select></label>
+      <select class="mg-select" id="sControl">${opt('keys', settings.control, 'Tipkovnica (puščice / WASD)')}${opt('auto', settings.control, 'Tipkovnica in miška (krogla sledi kazalcu)')}</select></label>
     <label class="mg-field"><span class="mg-label">Kontrole na telefonu</span>
       <select class="mg-select" id="sTouch">${opt('stick', settings.touch, 'Virtualna palica')}${opt('tilt', settings.touch, 'Nagib telefona')}</select></label>
     <div class="kr-row"><button class="mg-btn mg-btn--cyan mg-btn--small" id="sTiltOn">Vklopi nagib</button>
@@ -274,7 +312,9 @@ function settingsHtml() {
     <label class="mg-check"><input type="checkbox" id="sMusic" ${settings.music ? 'checked' : ''}> Glasba</label>
     <label class="mg-check"><input type="checkbox" id="sCam" ${settings.camRotate ? 'checked' : ''}> Kamera se rahlo zasuka v smeri gibanja</label>
     <label class="mg-field"><span class="mg-label">Kakovost</span>
-      <select class="mg-select" id="sQ">${opt('auto', settings.quality, 'Samodejno (' + QUALITY[autoQuality()].name.toLowerCase() + ')')}${QUALITY_ORDER.map(q => opt(q, settings.quality, QUALITY[q].name)).join('')}</select></label>
+      <select class="mg-select" id="sQ">${qualityOptions(settings.quality)}</select></label>
+    <label class="mg-field"><span class="mg-label">Ozadje menija</span>
+      <select class="mg-select" id="sMenuBg">${opt('anim', settings.menuBg, 'Animirano (3D prelet)')}${opt('still', settings.menuBg, 'Statično (ena slika)')}${opt('off', settings.menuBg, 'Izklopljeno')}</select></label>
     <label class="mg-check"><input type="checkbox" id="sPost" ${settings.post ? 'checked' : ''}> Post-processing (bloom, barvna korekcija, glajenje robov)</label>
     <label class="mg-check"><input type="checkbox" id="sDof" ${settings.dof ? 'checked' : ''}> Globinska ostrina ozadja (ultra/visoka)</label>
     <label class="mg-check"><input type="checkbox" id="sShake" ${settings.shakeCam ? 'checked' : ''}> Tresenje kamere ob udarcih</label>
@@ -292,6 +332,7 @@ function bindMenu(view, arg) {
       if (act === 'menu') showMenu('main');
       else if (act === 'help') help();
       else if (act === 'settings') showMenu('settings');
+      else if (act === 'qpick') { setQuality(b.dataset.q); showMenu('main'); }
       else if (act === 'boards') showMenu('boards');
       else if (act === 'trial') showMenu('trial');
       else if (act === 'tourney') startTourney(b.dataset.diff, false);
@@ -340,6 +381,7 @@ function bindMenu(view, arg) {
     }
   };
   if (view === 'main') {
+    $('#mQ').onchange = e => { setQuality(e.target.value); if (!$('.kr-qpick')) return; showMenu('main'); };
     boards.push(ui.leaderboard($('#boardMain'), {
       title: 'Turnir (Normalna)', format: R.fmtPts, order: 'desc',
       tabs: [{ label: 'Danes', seed: R.boardSeed.tourney('normalna'), period: 'today' }, { label: 'Teden', seed: R.boardSeed.tourney('normalna'), period: 'week' }, { label: 'Vseh časov', seed: R.boardSeed.tourney('normalna') }],
@@ -387,7 +429,8 @@ function bindMenu(view, arg) {
     $('#sSfx').onchange = e => { settings.sfx = e.target.checked; audio.setSfx(settings.sfx); saveSettings(); };
     $('#sMusic').onchange = e => { settings.music = e.target.checked; audio.setMusic(settings.music); saveSettings(); };
     $('#sCam').onchange = e => { settings.camRotate = e.target.checked; saveSettings(); };
-    $('#sQ').onchange = e => { settings.quality = e.target.value; saveSettings(); if (renderer) renderer.setQuality(initialQuality()); };
+    $('#sQ').onchange = e => setQuality(e.target.value);
+    $('#sMenuBg').onchange = e => { settings.menuBg = e.target.value; saveSettings(); syncMenuShow(); };
     $('#sFps').onchange = e => { settings.fps = e.target.checked; saveSettings(); };
     $('#sPost').onchange = e => { settings.post = e.target.checked; saveSettings(); renderer?.setOptions({ post: settings.post }); };
     $('#sDof').onchange = e => { settings.dof = e.target.checked; saveSettings(); renderer?.setOptions({ dof: settings.dof }); };
@@ -669,7 +712,7 @@ function help() {
       <p><b>Ura:</b> na začetku vsake proge dobiš nekaj sekund. Kar ostane, se prenese naprej. Ko ura pride na 0, je konec.
         ⏱️ ure prinesejo +3 s, ⭐ zvezdice (5 na progo) prinesejo točke.</p>
       <p><b>Padec čez rob</b> te vrne na zadnjo 🚩 kontrolno točko (zastavica se obarva, ko se je dotakneš). Ura medtem teče.</p>
-      <p><b>Kontrole:</b> puščice ali WASD; miška: krogla se kotali proti kazalcu (dlje je kazalec, hitreje gre).
+      <p><b>Kontrole:</b> puščice ali WASD; miška (vklopi v Nastavitvah): krogla se kotali proti kazalcu (dlje je kazalec, hitreje gre).
         Telefon: palica levo spodaj ali nagib (Nastavitve). <span class="mg-kbd">R</span> = na kontrolno točko (−2 s) oz. v načinu Na čas začni znova.
         <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> = pavza.</p>
       <p><b>Nevarnosti:</b> padajoče ploščice se zatresejo, preden padejo; kladiva se dvignejo in zasvetijo rdeče; magneti utripajo pred vklopom;
@@ -769,7 +812,7 @@ function stopMenuShow() {
 function menuFrame(dt) {
   const m = menuShow, w = m.world;
   // nizka kakovost ali zmanjšano gibanje: statično ozadje (ena sličica)
-  const still = renderer.qualityKey === 'low' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = settings.menuBg === 'still' || renderer.qualityKey === 'low' || matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (still && m.rendered > 2) return;
   if (!still) {
     m.acc += dt;
