@@ -458,6 +458,59 @@ igra potem vse to dobi skoraj zastonj.
 **Za začetek:** najprej **skoki** (postavijo okvir), nato **kolesarska dirka** (najbolj družabna) ali **biatlon**
 (najbolj podoben skokom).
 
+### Klasike s twistom (Motherload, Plants vs Zombies, Worms, Prehistorik)
+
+Žanri znanih iger, a z **lastnim imenom, grafiko, nivoji in pravili**, ne kopija. Vse štiri se ujemajo z obstoječo
+arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `logic.js` s testi, offline način,
+`hub.reportGame` po vsaki igri.
+
+57. **Rudar: boksitni rudnik (v stilu Motherloada)** ★★ — razširitev točke 35
+    - **Igra:** z vrtalnikom kopaš navzdol, paziš na **gorivo**, **trup** in **prostor za tovor**. Rudo pelješ na
+      površje in jo prodaš, z denarjem nadgrajuješ sveder, motor, rezervoar, trup, tovorni prostor in hladilnik.
+      Globlje je več toplote, žepi plina, lava in trde skale. Na površju so postaja za gorivo, servis in odkup.
+    - **Alu povezava:** glavna ruda je **boksit**, odkupuje ga topilnica; redkejše rude in fosili prinesejo bonus.
+    - **Svet:** mreža ploščic iz `hub.dailySeed` → **dnevni rudnik**, enak za vse. Lestvica: največ denarja v
+      15 minutah ali najgloblje doseženo. Deterministična logika (kopanje, gorivo, odkup) je preprosta za teste.
+    - **Kontrole:** tipke ali smerni gumbi na zaslonu (dobro deluje na telefonu).
+    - **Multiplayer (2. prompt):** 2–4 igralci v istem rudniku v realnem času; pošilja se le izkopane ploščice in
+      položaji (`room.send`), zelo lahko za omrežje. Tekma: kdo prvi zasluži X.
+    - **Predlog za začetek:** najlažja od štirih in dobra za dnevni izziv.
+58. **Alu obramba (v stilu Plants vs Zombies, tematika aluminijaste tovarne)** ★★
+    - **Igra:** mreža 5 vrst × 9 stolpcev, z leve braniš tovarno pred valovi **»rjavcev«** (rja, korozija,
+      umazanija, oksidi). Kar pride do konca vrste, ustavi proizvodnjo.
+    - **Vir energije** namesto sonca: **ingoti iz elektrolizne celice** (proizvodni stroj, ki ga postaviš).
+    - **Stroji:** stiskalnica (strelja profile), valjarna (zid), ekstruder (prebojni strel skozi vrsto),
+      hladilni ventilator (upočasni), kad z anodno oksidacijo (bomba na območje), viličar (enkratni »kosilnik« vrste).
+    - **Sovražniki:** navadni rjavec, rjavec z vedrom (oklep), hitri prašni vrtinec, oksidni velikan, ki razbija
+      stroje, letečo listje/umazanija, ki preleti zid.
+    - **Logika:** simulacija s fiksnim korakom v `logic.js` (valovi, streli, trki) → testi; **dnevni izziv** je dnevni
+      nabor valov iz seeda. Tap na mrežo je idealen za telefon.
+    - **Multiplayer:** co-op (vsak ima svoje vrste) ali **versus** (en igralec pošilja rjavce, drugi brani, kot pri
+      Lane wars). Pošiljajo se samo ukazi, zato je sinhronizacija lahka.
+    - **Opomba:** tematika aluminijaste tovarne je v redu; za Impolovo ime in logotip v javni igri je bolje dobiti
+      dovoljenje (pinball ga že uporablja v `assets/logos/impol.png`). Ne podvaja točke 4 (Obramba gradu je metanje
+      stickmanov z miško, tu gre za mrežo in postavljanje strojev).
+59. **Topovi na terenu (v stilu Worms)** ★★–★★★ — razširitev točke 5 (`topovi` v `games.json`)
+    - **Teren:** uničljiv, kot bitna maska na canvasu (eksplozija izreže krog), voda na dnu, veter na krog.
+    - **Ekipe** po 2–4 enote, potezno do 10 igralcev; na vrsti premikanje, skok, ciljanje (kot in moč), strel.
+    - **Orožja:** bazuka, granata s časovnikom, kasetna granata, letalski napad, dinamit, vrv, teleport, baseball kij;
+      med krogi nakup orožij.
+    - **Multiplayer:** `room.setState` / `room.pushMove`. Ključno: **deterministična simulacija strela** (fiksen
+      korak), pošlje se samo vnos (kot, moč, orožje, časovnik), vsi odjemalci izračunajo isti izid. Plus **hot-seat**
+      na eni napravi in boti za solo.
+    - **Tveganje:** veliko orožij in AI botov → 2 prompta (1: teren, fizika, osnovna orožja, potezni multiplayer;
+      2: več orožij, boti, trgovina, predmeti v hubu).
+60. **Jamar (platformer v stilu Prehistorika)** ★★★
+    - **Igra:** platformer s strani. Jamski človek s kijem nabira hrano (točke), premaga dinozavre in živali, na koncu
+      nivoja mora imeti dovolj hrane, da odpre izhod. Skrivne sobe, bonus predmeti, šefi na koncu sklopa.
+    - **Nivoji:** JSON v `games/jamar/levels/` (kot proge v Krogli), sklopi: gozd, jame, ledena doba, vulkan.
+    - **Hub:** ghost najboljšega časa (vzorec `ghost.js` iz Krogle), dnevni nivo, dirka z ghosti v živo prek `room.send`.
+    - **Tveganje:** občutek skakanja (pospešek, »coyote time«, buffer skoka) in kontrole na dotik na telefonu; za
+      več nivojev potreben urejevalnik → 2–3 prompti (1: gibanje, sovražniki, 6 nivojev, ghost; 2: urejevalnik,
+      še nivoji, šefi; 3: dirka v živo).
+
+**Vrstni red teh štirih:** Rudar → Alu obramba → Topovi → Jamar.
+
 ## Predlagan vrstni red
 
 1. **Hub + `shared/`** (prijava, profil, lestvica, lobby z room kodo)
