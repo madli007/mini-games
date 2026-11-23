@@ -242,6 +242,12 @@ export const ui = {
               <button type="button" class="mg-btn mg-btn--cyan mg-btn--small" id="mgLink">Poveži</button>
               <button type="button" class="mg-btn mg-btn--ghost mg-btn--small" id="mgLogin" title="Prijava v že shranjen profil">Prijava</button></div>
             <div class="mg-small" id="mgEmailMsg"></div></div></details>` : ''}
+        ${canEmail && !cur ? `<details class="mg-small"><summary class="mg-muted" style="cursor:pointer">Že imaš profil? Prijavi se z emailom</summary>
+          <div class="mg-stack" style="margin-top:8px">
+            <p class="mg-muted" style="margin:0">Vpiši email, s katerim si shranil profil. Dobiš povezavo za prijavo — novega vzdevka ne potrebuješ.</p>
+            <div class="mg-row"><input id="mgEmail" class="mg-input" type="email" autocomplete="email" placeholder="ime@primer.si" style="flex:1;min-width:180px">
+              <button type="button" class="mg-btn mg-btn--cyan mg-btn--small" id="mgLogin">Prijava</button></div>
+            <div class="mg-small" id="mgEmailMsg"></div></div></details>` : ''}
       </div>`;
     return ui.modal({
       title: cur ? 'Tvoj profil' : 'Kdo igra?',
