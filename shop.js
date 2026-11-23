@@ -100,7 +100,7 @@ function renderHero() {
     <div class="shop-hero__stats">
       <div class="shop-hero__coins" aria-label="Kovanci">🪙 <b>${ui.coins(hub.coins)}</b></div>
       <div class="mg-small mg-muted">Nivo ${st.level || 1} · niz ${st.streak || 0} · v lasti ${ownedCount}/${paid}</div>
-      <div class="mg-small mg-muted">Kovance služiš z igranjem, nalogami, nivoji in dosežki (največ ${E.COINS.PER_DAY} na dan). <a href="${esc(hub.link(''))}">Naloge →</a></div>
+      <div class="mg-small mg-muted">Kovance služiš z igranjem, nalogami, nivoji in dosežki (z igranjem največ ${E.COINS.PLAY_PER_DAY} na dan, naloge so izvzete). <a href="${esc(hub.link(''))}">Naloge →</a></div>
     </div>`;
 }
 

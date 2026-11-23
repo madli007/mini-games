@@ -11,6 +11,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JS } from './config.js';
 import { LocalBackend, codedError } from './adapters/local.js';
 import { Room } from './room.js';
 import * as U from './util.js';
+import * as S from './storage.js';
 import * as E from './economy.js';
 import * as Q from './quests.js';
 import * as K from './cosmetics.js';
@@ -328,7 +329,8 @@ export const hub = {
    * @param {{won?:boolean, players?:number, score?:number|null, daily?:boolean, game?:string}} [r]
    *   won: zmaga (šteje le pri players ≥ 2) · players: število igralcev · score: rezultat (za naloge)
    *   daily: odigran dnevni izziv
-   * @returns {Promise<{coins:number, granted:number, streak:number, streak_bonus:number}|null>}
+   * @returns {Promise<{coins:number, granted:number, streak:number, streak_bonus:number, capped:boolean}|null>}
+   *   capped: nagrado za igro je ustavila dnevna meja igranja
    */
   async reportGame({ won = false, players = 1, score = null, daily = false, game = hub.gameId } = {}) {
     if (!hub.profile || !game) return null;
@@ -339,6 +341,10 @@ export const hub = {
       if (res.streak_bonus > 0) ui.toast(`Niz ${U.plural(res.streak, 'dan', 'dneva', 'dnevi', 'dni')}: +${res.streak_bonus} 🪙`, { icon: '🔥', duration: 3000 });
       const g = (res.game || 0) + (res.win || 0);
       if (g > 0) ui.toast(`+${g} 🪙`, { icon: '🪙', duration: 1800 });
+      if (res.capped && S.load('coin-cap-day') !== U.dailySeed()) {
+        S.save('coin-cap-day', U.dailySeed());
+        ui.toast(`Dosežena dnevna meja kovancev za igranje (${E.COINS.PLAY_PER_DAY}). Naloge še vedno prinašajo kovance.`, { icon: 'ℹ️', duration: 5000 });
+      }
     } catch (e) {
       console.warn('reportGame:', e.message);
     }
@@ -360,7 +366,7 @@ export const hub = {
   },
 
   /**
-   * Bonus kovanci iz igre (največ 100 na klic, skozi dnevno mejo 250).
+   * Bonus kovanci iz igre (največ 100 na klic, skozi dnevno mejo igranja 120).
    * @returns {Promise<{coins:number, granted:number}>}
    */
   async awardCoins(amount, reason = '', ref = null) {

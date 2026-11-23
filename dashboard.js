@@ -119,7 +119,6 @@ function setupQuests() {
     try {
       const r = await hub.claimQuest(b.dataset.claim);
       ui.toast(`+${r.granted} 🪙${r.bonus ? ` (vključno z bonusom +${r.bonus})` : ''}`, { icon: '🪙' });
-      if (r.granted < r.reward + r.bonus) ui.toast('Dosežena dnevna meja kovancev (250).', { icon: 'ℹ️' });
     } catch (ex) {
       ui.toast(ex.message || 'Napaka', { icon: '⚠️' });
     }

@@ -117,6 +117,9 @@ Simulacija 30 dni (`tests/economy-sim.js`, test »ekonomija: simulacija«):
 - **maksimalen** (60 iger, vse zmage, vse naloge): vsak dan točno 250 → legendarni **najprej 14. dan**.
 - Vseh 94 predmetov stane 47.780 🪙 → tudi pri maksimumu več kot 6 mesecev.
 
+> **Posodobljeno 23. 11. 2026:** meja 250 za vse vire je zamenjana z **mejo igranja 120**; naloge niso več pod mejo
+> (glej »Popravki (23. 11. 2026)« spodaj).
+
 ## Dnevnik (trgovina)
 
 - **Napaka v obstoječi `schema.sql`:** ovojnice v `public` so imele `as $` / `$;` namesto `$$` (datoteke se ni dalo
@@ -747,3 +750,9 @@ Nič — migracije so pognane. Za novo okolje: `supabase/games/herodle.sql` → 
 - [x] Prijava v obstoječ profil že v oknu »Kdo igra?« (prej je bilo treba ustvariti lažen profil)
 - [x] Herodle: stanje dneva, statistika in arhiv se sinhronizirajo med napravami (tabela `herodle_state`,
       `store.attachCloud/pull/flush`, združevanje `mergeValue`; migracija `herodle_state_sync` pognana, advisors brez novih opozoril)
+- [x] Ekonomija: naloge niso več pod dnevno mejo kovancev. Prej je bila meja 250 za vse vire skupaj, zato je
+      prevzem tedenske naloge na aktiven dan del nagrade »pojedel«. Zdaj je **meja igranja 120** (igre, zmage, niz,
+      nivoji, dosežki, `award_coins`), naloge (15/25/40, +25, 100/150) pa se izplačajo v celoti in se v mejo ne štejejo
+      (`COINS.PLAY_PER_DAY`, `isCapped`, `private.grant_coins`). `report_game` vrne `capped`, hub enkrat na dan pokaže
+      »Dosežena dnevna meja kovancev za igranje«. Simulacija: tipičen ~144 🪙/dan (prej ~132), legendarni 25. dan;
+      maksimalen ~267/dan, legendarni še vedno **najprej 14. dan**.

@@ -22,13 +22,22 @@ export const COINS = {
   ACHIEVEMENT: 15,
   /** največ na en klic award_coins (bonusi iger) */
   PER_CALL: 100,
-  /** dnevna zgornja meja zaslužka (vsi viri skupaj) */
-  PER_DAY: 250,
+  /** dnevna zgornja meja zaslužka z igranjem (igre, zmage, niz, nivoji, dosežki, bonusi iger).
+   *  Nagrade nalog (in bonus za vse 3 dnevne) ne štejejo vanjo — omejene so že z enim prevzemom na nalogo. */
+  PLAY_PER_DAY: 120,
   /** popust dnevne ponudbe */
   OFFER_DISCOUNT: 0.25,
   /** število predmetov v dnevni ponudbi */
   OFFER_SIZE: 4,
 };
+
+/** Razlogi v dnevniku, ki niso pod dnevno mejo (in se vanjo ne štejejo). */
+export const UNCAPPED_REASONS = ['quest', 'quest_bonus'];
+
+/** Ali vir (razlog v dnevniku) šteje v dnevno mejo? */
+export function isCapped(reason) {
+  return !UNCAPPED_REASONS.includes(reason);
+}
 
 /** Nagrada za dosežen nivo. */
 export function levelReward(level) {
@@ -60,15 +69,15 @@ export function addDays(day, n) {
 }
 
 /**
- * Koliko se dejansko podeli glede na dnevno mejo.
+ * Koliko se dejansko podeli glede na dnevno mejo igranja (za vire, ki štejejo vanjo).
  * @param {number} amount zahtevano
- * @param {number} earnedToday že zasluženo danes
+ * @param {number} earnedToday danes že zasluženo z viri pod mejo
  * @param {number} [perCall] omejitev na klic (Infinity = brez)
  */
 export function grantableCoins(amount, earnedToday, perCall = Infinity) {
   const a = Math.floor(amount || 0);
   if (a <= 0) return 0;
-  return Math.max(0, Math.min(a, perCall, COINS.PER_DAY - earnedToday));
+  return Math.max(0, Math.min(a, perCall, COINS.PLAY_PER_DAY - earnedToday));
 }
 
 /** Cena s popustom dnevne ponudbe (celo število, enako kot v SQL: price * 3 / 4). */

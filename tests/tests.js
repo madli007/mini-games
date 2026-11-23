@@ -545,8 +545,9 @@ test('ekonomija: niz dni, dnevna meja, popust', () => {
   eq(E.nextStreak('2026-11-20', '2026-11-20', 4), { streak: 4, first: false });
   eq(E.nextStreak('2026-12-31', '2027-01-01', 2).streak, 3);
   eq([1, 2, 7, 30].map(E.streakBonus), [5, 10, 35, 35]);
-  eq(E.grantableCoins(100, 200), 50);
-  eq(E.grantableCoins(100, 250), 0);
+  eq(E.grantableCoins(100, E.COINS.PLAY_PER_DAY - 50), 50);
+  eq(E.grantableCoins(100, E.COINS.PLAY_PER_DAY), 0);
+  ok(E.isCapped('game') && E.isCapped('bonus:x') && E.isCapped('level') && !E.isCapped('quest') && !E.isCapped('quest_bonus'));
   eq(E.grantableCoins(500, 0, E.COINS.PER_CALL), 100);
   eq([2, 10, 25].map(E.levelReward), [10, 50, 100]);
   eq(E.offerPrice(250), 187);
@@ -565,12 +566,14 @@ test('ekonomija: simulacija 30 dni (tipičen in zelo aktiven igralec)', () => {
   ok(dLeg >= 21 && dLeg <= 35, `najcenejši legendarni po ${dLeg} dneh (cilj 21–35)`);
   ok(SIM.dayToAfford(typ.total, dearLeg) == null || SIM.dayToAfford(typ.total, dearLeg) >= 28, 'najdražji legendarni ne prej kot v 4 tednih');
   // maksimalen: dnevna meja drži, legendarno ne prej kot v 14 dneh
-  ok(max.daily.every(d => d <= E.COINS.PER_DAY), 'preseženа dnevna meja');
+  ok(max.capped.every(d => d <= E.COINS.PLAY_PER_DAY), 'presežena dnevna meja igranja');
+  // naloge niso pod mejo: maksimalen igralec dobi vse nagrade nalog
+  ok(max.byReason.quest === 30 * (E.COINS.QUEST.e + E.COINS.QUEST.m + E.COINS.QUEST.h) + 5 * (E.COINS.QUEST.w1 + E.COINS.QUEST.w2), 'izgubljene nagrade nalog');
   ok(SIM.dayToAfford(max.total, cheapLeg) >= 14, 'legendarno prej kot v 14 dneh');
   // nihče ne more v enem dnevu »pokupiti vsega«
   const all = K.CATALOG.reduce((a, i) => a + i.price, 0);
-  ok(E.COINS.PER_DAY * 30 < all, 'v 30 dneh pri maksimumu se ne da kupiti vsega');
-  return `tipičen ${avg.toFixed(0)} 🪙/dan, legendarno ${dLeg}. dan; maksimalen ${E.COINS.PER_DAY}/dan, legendarno ${SIM.dayToAfford(max.total, cheapLeg)}. dan`;
+  ok(max.total.at(-1) * 2 < all, 'v 60 dneh pri maksimumu se ne da kupiti vsega');
+  return `tipičen ${avg.toFixed(0)} 🪙/dan, legendarno ${dLeg}. dan; maksimalen ${(max.total.at(-1) / 30).toFixed(0)}/dan, legendarno ${SIM.dayToAfford(max.total, cheapLeg)}. dan`;
 });
 
 /* ------------------------------------------------------- katalog */
@@ -638,17 +641,22 @@ test('lokalno: reportGame (igra, zmaga, niz) in dnevna meja', async () => {
   const r2 = await a.reportGame({ game: 'reakcija', won: true, players: 1 });
   eq([r2.game, r2.win, r2.streak_bonus], [E.COINS.GAME, 0, 0]);
   await throwsCode(() => a.reportGame({ game: '<x>' }), 'invalid');
-  for (let i = 0; i < 40; i++) await a.reportGame({ game: 'reakcija', won: true, players: 2 });
+  eq(r1.capped, false);
+  let last = null;
+  for (let i = 0; i < 40; i++) last = await a.reportGame({ game: 'reakcija', won: true, players: 2 });
   const p = await a.getProfile();
-  ok(p.coins <= E.COINS.PER_DAY, 'presežena dnevna meja: ' + p.coins);
+  eq(p.coins, E.COINS.PLAY_PER_DAY);                  // 5 + 20×4 + 10×8 = 165 > meja
   eq(a._earnedToday(), p.coins);
-  const led = a._ledger();
-  eq([led.filter(l => l.reason === 'game').length, led.filter(l => l.reason === 'win').length], [E.COINS.GAMES_PER_DAY, E.COINS.WINS_PER_DAY]);
-  eq(p.coins, 5 + E.COINS.GAMES_PER_DAY * E.COINS.GAME + E.COINS.WINS_PER_DAY * E.COINS.WIN);
-  eq((await a.awardCoins(500)).granted, Math.min(E.COINS.PER_CALL, E.COINS.PER_DAY - p.coins));
-  for (let i = 0; i < 5; i++) await a.awardCoins(100);
-  eq((await a.getProfile()).coins, E.COINS.PER_DAY);
+  eq(last.capped, true);
   eq((await a.awardCoins(100)).granted, 0);
+  // števec iger ustavi nagrado brez meje → ni "capped"
+  clearLocal();
+  const [b] = await users('c1b');
+  for (let i = 0; i < E.COINS.GAMES_PER_DAY; i++) await b.reportGame({ game: 'reakcija' });
+  const rb = await b.reportGame({ game: 'reakcija' });
+  eq([rb.game, rb.capped], [0, false]);
+  const coinsB = (await b.getProfile()).coins;
+  eq((await b.awardCoins(500)).granted, Math.min(E.COINS.PER_CALL, E.COINS.PLAY_PER_DAY - coinsB));
 });
 test('lokalno: nakup (premalo, zaklenjeno, uspeh, že v lasti, popust)', async () => {
   clearLocal();
@@ -699,9 +707,14 @@ test('lokalno: naloge (napredek, prevzem enkrat, bonus, poteklo)', async () => {
   await a.claimQuest(d, 'm.play-5');
   const c3 = await a.claimQuest(d, 'h.win-1');
   eq(c3.bonus, E.COINS.ALL_DAILY_BONUS);
+  // naloge niso pod dnevno mejo: tudi po doseženi meji igranja dobiš celo nagrado
+  for (let i = 0; i < 40; i++) await a.reportGame({ game: 'reakcija', won: true, players: 2 });
+  eq(a._earnedToday(), E.COINS.PLAY_PER_DAY);
+  const before = (await a.getProfile()).coins;
   const cw = await a.claimQuest(w, 'w2.w-play-25');
-  ok(cw.granted <= cw.reward, 'tedenska');
-  ok((await a.getProfile()).coins <= E.COINS.PER_DAY, 'dnevna meja');
+  eq([cw.granted, cw.reward], [E.COINS.QUEST.w2, E.COINS.QUEST.w2]);
+  eq((await a.getProfile()).coins, before + E.COINS.QUEST.w2);
+  eq(a._earnedToday(), E.COINS.PLAY_PER_DAY);         // naloge se ne štejejo v mejo
   const rows = await a.getQuestProgress([d]);
   eq(rows.filter(r => r.claimed_at).length, 3);
 });

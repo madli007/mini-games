@@ -136,7 +136,9 @@ await hub.awardCoins(20, 'bonus');            // bonus iz igre: ≤100 na klic, 
 hub.coins                                     // trenutno stanje (tudi hub.profile.coins)
 ```
 Kovanci: igra 4 (20/dan), zmaga v MP +8 (10/dan), naloge e15 · m25 · h40 · tedenski 100/150, vse 3 dnevne +25,
-nov nivo 5 × nivo (≤100), dosežek 15, niz dni 5 × dan (≤35, ob prvi igri dneva). **Dnevna meja 250** (strežnik).
+nov nivo 5 × nivo (≤100), dosežek 15, niz dni 5 × dan (≤35, ob prvi igri dneva). **Dnevna meja igranja 120** (strežnik;
+naloge in bonus za vse 3 dnevne niso pod mejo in se vanjo ne štejejo). Ko meja ustavi nagrado za igro, vrne
+`reportGame` `capped: true` in hub enkrat na dan pokaže obvestilo.
 Številke: `shared/economy.js` (`COINS`) — iste so v `schema.sql` in `adapters/local.js`.
 
 ```js
@@ -316,5 +318,5 @@ ui.esc(text);                                         // escape za HTML
   multiplayer preizkusiš sam v dveh ali treh zavihkih;
 - `?igralec=2` (v obeh načinih) vsili ločeno identiteto — uporabno za testiranje s Supabase.
 
-Omejitve XP (500/klic, 5000/dan), kovancev (dnevna meja 250, števci iger in zmag, en prevzem na nalogo),
+Omejitve XP (500/klic, 5000/dan), kovancev (dnevna meja igranja 120, naloge izvzete, števci iger in zmag, en prevzem na nalogo),
 pravila nakupa/opreme in pravila sob (polna, začeta, prevzem hosta) so v obeh adapterjih enaka (testi).

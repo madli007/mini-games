@@ -3,7 +3,7 @@
    Pravila so ista kot v adapters/local.js in supabase/schema.sql.
    ===================================================================== */
 
-import { COINS, gameRewards, grantableCoins, levelReward, nextStreak, addDays } from '../shared/economy.js';
+import { COINS, gameRewards, grantableCoins, isCapped, levelReward, nextStreak, addDays } from '../shared/economy.js';
 import { level, rng } from '../shared/util.js';
 
 /** Profili igralcev. Verjetnosti so na dan. */
@@ -30,13 +30,14 @@ export const PLAYERS = {
 export function simulate(p, { days = 30, start = '2026-11-23', seed = 'sim' } = {}) {
   const r = rng(seed);
   let coins = 0, xp = 0, streak = 0, lastDay = null;
-  const daily = [], total = [], byReason = {};
+  const daily = [], total = [], byReason = {}, dailyCapped = [];
   for (let i = 0; i < days; i++) {
     const day = addDays(start, i);
     const dow = i % 7;                    // start je ponedeljek
-    let earned = 0;
+    let earned = 0, capped = 0;
     const give = (amount, reason, perCall) => {
-      const g = grantableCoins(amount, earned, perCall);
+      const g = isCapped(reason) ? grantableCoins(amount, capped, perCall) : amount;
+      if (isCapped(reason)) capped += g;
       earned += g; coins += g;
       byReason[reason] = (byReason[reason] || 0) + g;
     };
@@ -57,16 +58,17 @@ export function simulate(p, { days = 30, start = '2026-11-23', seed = 'sim' } = 
       }
       let claimed = 0;
       for (const s of ['e', 'm', 'h']) if (r() < p.quest[s]) { give(COINS.QUEST[s], 'quest'); claimed++; }
-      if (claimed === 3) give(COINS.ALL_DAILY_BONUS, 'bonus');
+      if (claimed === 3) give(COINS.ALL_DAILY_BONUS, 'quest_bonus');
       // tedenske: prevzem 5. dan tedna (petek) oz. takoj pri max
       const wDay = p.skipDayOfWeek === -1 ? 0 : 4;
-      if (dow === wDay) for (const s of ['w1', 'w2']) if (r() < p.weekly[s]) give(COINS.QUEST[s], 'weekly');
+      if (dow === wDay) for (const s of ['w1', 'w2']) if (r() < p.weekly[s]) give(COINS.QUEST[s], 'quest');
       if (i < p.achievementsFirstDays) give(COINS.ACHIEVEMENT, 'ach');
     }
     daily.push(earned);
+    dailyCapped.push(capped);
     total.push(coins);
   }
-  return { daily, total, byReason };
+  return { daily, total, byReason, capped: dailyCapped };
 }
 
 /** Prvi dan (1 = prvi), ko skupni zaslužek doseže ceno (ali null). */

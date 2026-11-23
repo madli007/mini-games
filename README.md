@@ -75,7 +75,7 @@ GitHub Pages je statičen, zato je publishable/anon ključ javen. Vsa zaščita 
   500 XP na klic in 5000 XP na dan (po Europe/Ljubljana);
 - sobe ustvarjaš in se jim pridružiš prek RPC (`create_room`, `join_room`: polna soba, že začeta igra);
   sobo ureja samo host; `room_state` in `moves` pišejo le člani sobe;
-- **kovanci, nakupi, oprema in naloge** gredo samo prek RPC z omejitvami (dnevna meja 250, en prevzem na
+- **kovanci, nakupi, oprema in naloge** gredo samo prek RPC z omejitvami (dnevna meja igranja 120, en prevzem na
   nalogo, cene in pogoji na strežniku);
 - `security definer` funkcije so v neizpostavljeni shemi `private`. Supabase advisors: performance le
   »unused index« (INFO), security le »Anonymous Access Policies« (namerno — vsi igralci so anonimni
@@ -153,7 +153,8 @@ Najmanjša igra:
 - **Kovanci (🪙)** se služijo z igranjem (vsaka igra kliče `hub.reportGame`): odigrana igra 4 (20 iger na dan),
   zmaga v multiplayerju +8 (10 na dan), dnevne naloge 15/25/40 + 25 za vse tri, tedenski nalogi 100/150,
   nov nivo 5 × nivo (največ 100), prvi odklep dosežka 15, niz zaporednih dni 5 × dan (največ 35).
-  **Dnevna meja: 250 kovancev** (vsi viri skupaj). Uglasitev in simulacija 30 dni: `PROGRESS.md`, `tests/economy-sim.js`.
+  **Dnevna meja igranja: 120 kovancev** (igre, zmage, niz, nivoji, dosežki, bonusi iger); **naloge niso pod mejo**
+  (omejene so z enim prevzemom na nalogo). Uglasitev in simulacija 30 dni: `PROGRESS.md`, `tests/economy-sim.js`.
 - **Naloge**: 3 dnevne (lahka, srednja, težka) in 2 tedenski, za vse igralce isti dan enake (generator
   `shared/quests.js` iz dnevnega seeda in iger `live`). Napredek beleži klient (»na časten način«),
   nagrado prevzameš na dashboardu (RPC `claim_quest`, enkrat na nalogo).

@@ -559,7 +559,7 @@ grant execute on function public.push_move(text, jsonb) to authenticated;
 --  Številke so iste kot v shared/economy.js (COINS) in adapters/local.js:
 --    igra 4 (20/dan) · zmaga v MP 8 (10/dan) · naloge e15 m25 h40 w1 100 w2 150
 --    vse 3 dnevne +25 · nivo 5×nivo (≤100) · dosežek 15 · niz 5×dan (≤35)
---    dnevna meja 250 · award_coins ≤100 na klic · dnevna ponudba −25 %
+--    dnevna meja igranja 120 (naloge niso pod mejo) · award_coins ≤100 na klic · dnevna ponudba −25 %
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -855,9 +855,15 @@ begin
   if p_amount is null or p_amount <= 0 then return 0; end if;
   perform 1 from public.profiles p where p.id = p_uid for update;
   if not found then return 0; end if;
-  select coalesce(sum(l.amount), 0) into used
-    from public.coin_ledger l where l.user_id = p_uid and l.day = d and l.amount > 0;
-  g := least(p_amount, coalesce(p_per_call, p_amount), greatest(0, 250 - used));
+  if p_reason in ('quest', 'quest_bonus') then
+    -- nagrade nalog niso pod dnevno mejo (omejene so z enim prevzemom na nalogo)
+    g := p_amount;
+  else
+    select coalesce(sum(l.amount), 0) into used
+      from public.coin_ledger l where l.user_id = p_uid and l.day = d and l.amount > 0
+       and l.reason not in ('quest', 'quest_bonus');
+    g := least(p_amount, coalesce(p_per_call, p_amount), greatest(0, 120 - used));
+  end if;
   if g > 0 then
     insert into public.coin_ledger (user_id, day, amount, reason, ref) values (p_uid, d, g, left(p_reason, 40), left(p_ref, 80));
     update public.profiles p set coins = p.coins + g where p.id = p_uid;
@@ -963,7 +969,8 @@ begin
   return json_build_object(
     'coins', (select p.coins from public.profiles p where p.id = uid),
     'granted', g_game + g_win + g_st, 'game', g_game, 'win', g_win,
-    'streak', st, 'streak_bonus', g_st, 'first', first);
+    'streak', st, 'streak_bonus', g_st, 'first', first,
+    'capped', games < 20 and g_game = 0);
 end $$;
 revoke all on function private.report_game(text, boolean, int) from public, anon;
 grant execute on function private.report_game(text, boolean, int) to authenticated;

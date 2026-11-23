@@ -12,7 +12,7 @@ import * as S from '../storage.js';
 import {
   uuid, dailySeed, grantableXp, bestPerUser, makeRoomCode, normalizeRoomCode, level as levelOf,
 } from '../util.js';
-import { COINS, grantableCoins, levelReward, nextStreak, gameRewards, offerPrice } from '../economy.js';
+import { COINS, grantableCoins, isCapped, levelReward, nextStreak, gameRewards, offerPrice } from '../economy.js';
 import { item as catalogItem, checkUnlock, isFree, dailyOffer, SLOTS } from '../cosmetics.js';
 import { PERIOD_RE, QUEST_ID_RE, dayPeriod, weekPeriod } from '../quests.js';
 
@@ -151,10 +151,10 @@ export class LocalBackend {
 
   _ledger(uid = this.userId) { return S.load('db:ledger', {})[uid] || []; }
 
-  /** Zasluženo danes (pozitivni vnosi). */
+  /** Danes zasluženo z viri pod dnevno mejo (pozitivni vnosi brez nalog). */
   _earnedToday(uid = this.userId) {
     const d = dailySeed();
-    return this._ledger(uid).filter(l => l.day === d && l.amount > 0).reduce((a, l) => a + l.amount, 0);
+    return this._ledger(uid).filter(l => l.day === d && l.amount > 0 && isCapped(l.reason)).reduce((a, l) => a + l.amount, 0);
   }
 
   _log(amount, reason, ref = null) {
@@ -166,12 +166,12 @@ export class LocalBackend {
     }, {});
   }
 
-  /** Podeli kovance skozi dnevno mejo. Vrne podeljeno. */
+  /** Podeli kovance (skozi dnevno mejo, če vir šteje vanjo). Vrne podeljeno. */
   _grant(amount, reason, ref = null, perCall = Infinity) {
     const all = this._profiles();
     const p = all[this.userId];
     if (!p) return 0;
-    const g = grantableCoins(amount, this._earnedToday(), perCall);
+    const g = isCapped(reason) ? grantableCoins(amount, this._earnedToday(), perCall) : Math.max(0, Math.floor(amount || 0));
     if (g > 0) {
       this._log(g, reason, ref);
       p.coins = (p.coins || 0) + g;
@@ -210,6 +210,7 @@ export class LocalBackend {
     return {
       coins: (await this.getProfile()).coins, granted: gSt + gGame + gWin, game: gGame, win: gWin,
       streak: st.streak, streak_bonus: gSt, first: st.first,
+      capped: rw.game > 0 && gGame === 0,
     };
   }
 
