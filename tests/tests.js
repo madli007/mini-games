@@ -27,6 +27,7 @@ import * as KD from '../games/krogla/editor/drafts.js';
 import { rusilecTests } from './rusilec.js';
 import { herodleTests } from './herodle.js';
 import { herodle2Tests } from './herodle2.js';
+import { frnikoleTests } from './frnikole.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1482,6 +1483,8 @@ rusilecTests(test, { eq, ok });
 herodleTests(test, { eq, ok });
 /* ------------------------------------------------------- Herodle 2. faza (tests/herodle2.js) */
 herodle2Tests(test, { eq, ok });
+/* ------------------------------------------------------- Dirka frnikol (tests/frnikole.js) */
+frnikoleTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

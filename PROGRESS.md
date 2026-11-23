@@ -756,3 +756,65 @@ Nič — migracije so pognane. Za novo okolje: `supabase/games/herodle.sql` → 
       (`COINS.PLAY_PER_DAY`, `isCapped`, `private.grant_coins`). `report_game` vrne `capped`, hub enkrat na dan pokaže
       »Dosežena dnevna meja kovancev za igranje«. Simulacija: tipičen ~144 🪙/dan (prej ~132), legendarni 25. dan;
       maksimalen ~267/dan, legendarni še vedno **najprej 14. dan**.
+
+# Dirka frnikol (`games/frnikole/`)
+
+Prompt: `prompts/16-frnikole.md` (1. del: solo Dirkalni dan proti botom). Stanje: **končano** (23. 11. 2026).
+Naslednja prompta: `prompts/17-frnikole-multiplayer.md`, `prompts/18-frnikole-stave.md`.
+
+## Načrt
+
+- [x] `race.js` — čista deterministična simulacija (telesa krogle + `collideAll` Rušilca), krmiljenje po poti, forma
+      (pogon, oprijem, masa), sunki (3, ohlajanje 1,5 s, pomoč / bočni), padci in kontrolne točke, razcepi, cilj, foto finiš
+- [x] `track.js` (format = proga krogle + `path`, `widths`, `splits`, `cps`, `grid`, `finish`, `target`), validator, poti
+- [x] `odds.js` — kvote iz 30 tihih simulacij (zmaga, stopničke, 2 dvoboja), po kosih brez zamrznitve UI
+- [x] `bets.js` — stave, izplačila, posojilo, končni rezultat · `bots.js` — 5 osebnosti, 14 imen, stave in sunki iz seeda
+- [x] `day.js` — 16 frnikol, forma, dnevni načrt 5 dirk iz seeda · `texts.js` — 52 variant komentatorja
+- [x] 3 proge z generatorjem `tools/frnikole-tracks.mjs` (želvica, ASCII izpis, preverjanje s tihimi simulacijami)
+- [x] `view.js` (podrazred `Renderer`: frnikole, imena, kamera vodilni/moja/pregled, učinki), `sound.js` (podrazred `Audio`)
+- [x] `game.js`: meni, dnevni izziv (prvi poskus šteje), prosta igra (3–7 botov), stavnica, dirka v živo, obračun, konec dneva
+- [x] Hub: `submitScore`, `reportGame`, `awardXp`, 6 dosežkov, 4 naloge, `reportEvent` (`frnikole:kvota|tocke|stava`)
+- [x] `games.json` (live), povezave v meniju Krogle in Rušilca, 13 testov (`tests/frnikole.js`), README
+
+## Dnevnik
+
+- **Fizika frnikole:** frnikola nima vhoda igralca, a ima »pogon« (vhod `stepBody` ≈ 0,5 proti točki 2 m naprej po
+  svoji poti + bočni zamik linije iz seeda). Brez tega bi frnikole na ravnih delih obstale (trenje tal 1,6/s). Oprijem je
+  dodatna sila, ki duši bočno hitrost glede na smer proge. Razlike forme so majhne (pogon ±3,4 %), izid je odprt.
+- **Hitrost:** ena tiha dirka (8 frnikol, ~28 s) traja ~12 ms v Node, 30 simulacij za kvote ~0,4 s v brskalniku → Web
+  Worker ni bil potreben; kvote se računajo po kosih (3 simulacije, nato `setTimeout 0`).
+- **Razcepi:** prvi poskus je imel čelni notranji zid stranske poti — frnikole so se zaletele in obstale/padle. Popravljeno:
+  pred razcepom se ciljna širina zoži (frnikole se zberejo), notranji zid se začne šele v 2. vrstici. Frnikola, ki pade na
+  tvegani poti, naslednjič izbere stransko (sicer bi v Kuhinji pri žlici padala v nedogled).
+- **Valjarna:** stranska pot razcepa je segala v sosednji odsek (luknje v ograji) → odsek S podaljšan za 5 vrstic.
+- Preverjanje generatorja (`node tools/frnikole-tracks.mjs -v`, 80 simulacij z nevtralno + 80 z naključno formo):
+  - `01-kamnolom`: 104 m, zmagovalec 28,0 s (26,1–29,8), padcev 1,4/dirko · (a) vsi v cilju ✓ · (b) največ 23 % (barva), 24 % (start) ✓ · (c) 20–40 s ✓
+  - `02-kuhinja`: 83 m, zmagovalec 25,8 s (24,3–28,9), padcev 0,7/dirko · (a) ✓ · (b) 19 % / 27 % ✓ · (c) ✓
+  - `03-valjarna`: 102 m, zmagovalec 25,3 s (23,8–26,6), padcev 0,3/dirko · (a) ✓ · (b) 19 % / 23 % ✓ · (c) ✓
+  - Startna mesta spredaj desno so v Kamnolomu malo boljša (prvi zavoj je desni) — v mejah, a vidno v statistiki.
+- **Kamera pri nizkem FPS:** vzmet kamere je imela korak omejen na 0,05 s na sličico → v počasnem (skritem) zavihku je
+  kamera zaostajala. Zdaj podkoraki do 0,3 s. Simulacija dela do 90 korakov na sličico (dt ≤ 0,25 s).
+
+## Preverjeno
+
+- `node tests/run-node.mjs` in `tests.html`: 150/150 (vsi obstoječi testi Krogle in Rušilca nespremenjeni).
+- V brskalniku (`?offline=1`): cel **dnevni** Dirkalni dan (5 dirk, stave na zmago/stopničke/dvoboj, sunek) → rezultat na
+  dnevni lestvici, meni pokaže »Danes: … točk · trening«; cela **prosta igra** s 7 boti (5 dirk, stave, bočni sunki) do
+  `ui.results`; `?fast=1&auto&track=1|2|3` — cel dan na vsaki progi brez izrisa.
+- Konzola brez napak v igri, Krogli, Rušilcu in na dashboardu; povezavi »🔮 Dirka frnikol« v Krogli in Rušilcu.
+- Telefon 375×812 (stavnica v dveh stolpcih, plavajoč »Na start«, dirka z 8 barvnimi gumbi in velikima gumboma sunka,
+  komentator v 2 vrsticah) in namizje (stavnica, dirka, pregled proge, obračun, končni zaslon).
+
+## Ni bilo preverjeno
+
+- Dirka v realnem času pri polnih 60 FPS: zavihek brskalnika med testiranjem ni bil viden (≈ 1,5 FPS), zato je bil potek
+  dirke večinoma preskočen z `__fr.skip()`; kamera, zvok in počasni posnetek pred ciljem so preverjeni le delno.
+- Zvok (WebAudio) ni bil poslušan. Samodejno nižanje kakovosti je preverjeno le v skritem zavihku (spusti se na Nizko).
+- Dosežki `saboter`, `milijonar`, `brez-sunka`, `foto` in naloge v hubu niso bili odklenjeni v brskalniku (pogoji so v kodi).
+- Supabase način (lestvica, `reportGame`, naloge) — le offline adapter.
+
+## Ni bilo narejeno
+
+- Kratek posnetek cilja po dirki (replay) — namesto njega je počasni posnetek tik pred ciljem, ko je tesno.
+- Premične ploščice (`movers`) in ventilatorji na progah niso uporabljeni (generator nima pomožne funkcije zanje).
+- Shranjevanje napol odigranega dne ob osvežitvi strani (poskus dneva je porabljen ob začetku).

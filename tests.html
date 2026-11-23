@@ -28,6 +28,8 @@
     const kroglaLevels = await Promise.all(kIdx.levels.map(async f => (await fetch('games/krogla/levels/' + f, { cache: 'no-cache' })).json()));
     const rIdx = await (await fetch('games/rusilec/arenas/index.json', { cache: 'no-cache' })).json();
     const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => (await fetch('games/rusilec/arenas/' + f, { cache: 'no-cache' })).json()));
+    const fIdx = await (await fetch('games/frnikole/tracks/index.json', { cache: 'no-cache' })).json();
+    const frnikoleTracks = await Promise.all(fIdx.tracks.map(async f => (await fetch('games/frnikole/tracks/' + f, { cache: 'no-cache' })).json()));
     const herodleFixture = await (await fetch('tests/fixtures/herodle-compare.json', { cache: 'no-cache' })).json();
     const herodleHeroesSql = await (await fetch('supabase/games/herodle-heroes.sql', { cache: 'no-cache' })).text();
     const herodleHintsSql = await (await fetch('supabase/games/herodle-hints.sql', { cache: 'no-cache' })).text();
@@ -37,7 +39,7 @@
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

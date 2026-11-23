@@ -12,11 +12,14 @@ const kroglaLevels = await Promise.all(kIdx.levels.map(async f => JSON.parse(awa
 const rIdx = JSON.parse(await readFile(new URL('games/rusilec/arenas/index.json', root), 'utf8'));
 const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => JSON.parse(await readFile(new URL('games/rusilec/arenas/' + f, root), 'utf8'))));
 
+const fIdx = JSON.parse(await readFile(new URL('games/frnikole/tracks/index.json', root), 'utf8'));
+const frnikoleTracks = await Promise.all(fIdx.tracks.map(async f => JSON.parse(await readFile(new URL('games/frnikole/tracks/' + f, root), 'utf8'))));
+
 const herodleFixture = JSON.parse(await readFile(new URL('tests/fixtures/herodle-compare.json', root), 'utf8'));
 const herodleHeroesSql = await readFile(new URL('supabase/games/herodle-heroes.sql', root), 'utf8');
 const herodleHintsSql = await readFile(new URL('supabase/games/herodle-hints.sql', root), 'utf8');
 
 const t0 = Date.now();
-const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql });
+const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks });
 console.log(`(${((Date.now() - t0) / 1000).toFixed(1)} s)`);
 process.exit(fails ? 1 : 0);

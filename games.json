@@ -147,6 +147,26 @@
     ]
   },
   {
+    "id": "frnikole",
+    "name": "Dirka frnikol",
+    "description": "Frnikole drvijo po progi, ti staviš in jih z gumbi sunkov porineš. Pet dirk na dan proti botom, kdo bo imel največ točk?",
+    "icon": "🔮",
+    "path": "games/frnikole/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["daily", "stave", "fizika"],
+    "status": "live",
+    "scoreOrder": "desc",
+    "scoreUnit": "točk",
+    "color": "#b388ff",
+    "quests": [
+      { "id": "play", "tier": "e", "text": "Odigraj Dirkalni dan v Dirki frnikol", "event": "play:frnikole", "target": 1 },
+      { "id": "kvota-5", "tier": "m", "text": "Zadeni stavo s kvoto vsaj 5 v Dirki frnikol", "event": "frnikole:kvota", "target": 1, "cmp": "gte", "goal": 5 },
+      { "id": "tocke-3000", "tier": "h", "text": "Končaj Dirkalni dan z vsaj 3000 točkami", "event": "frnikole:tocke", "target": 1, "cmp": "gte", "goal": 3000 },
+      { "id": "w-stave-15", "tier": "w", "text": "Zadeni 15 stav v Dirki frnikol ta teden", "event": "frnikole:stava", "target": 15 }
+    ]
+  },
+  {
     "id": "bomba-arena",
     "name": "Bomba arena",
     "description": "Postavljaj bombe, ruši zidove, poberi powerupe in ostani zadnji na areni.",

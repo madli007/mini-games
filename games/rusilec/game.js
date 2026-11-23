@@ -173,7 +173,7 @@ function showMenu() {
         <button class="mg-btn mg-btn--ghost" id="btnPractice" type="button">🤖 Vadba z boti</button>
       </div>
       <p class="mg-small mg-muted">Za party: odpri sobo na TV-ju ali prenosniku in v lobbyju izberi <b>📺 Samo zaslon (TV)</b>, ostali se pridružijo s telefoni prek QR kode.
-        Vadba z boti ne šteje za zmage. <a href="${esc(hub.link('games/krogla/'))}">🐹 Hrčkova krogla (singleplayer)</a></p>
+        Vadba z boti ne šteje za zmage. <a href="${esc(hub.link('games/krogla/'))}">🐹 Hrčkova krogla (singleplayer)</a> · <a href="${esc(hub.link('games/frnikole/'))}">🔮 Dirka frnikol</a></p>
     </section>
     <section class="mg-card mg-stack">
       <h2 class="mg-title" style="margin:0">Arene</h2>

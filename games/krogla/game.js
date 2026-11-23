@@ -204,6 +204,7 @@ function mainHtml() {
           <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="settings">⚙️ Nastavitve</button>
           <button class="mg-btn mg-btn--ghost mg-btn--small" data-act="boards">🏆 Lestvice</button>
           <a class="mg-btn mg-btn--pink mg-btn--small" href="${hub.link('games/rusilec/')}">💥 Rušilec (party)</a>
+          <a class="mg-btn mg-btn--ghost mg-btn--small" href="${hub.link('games/frnikole/')}">🔮 Dirka frnikol</a>
           <label class="kr-row" style="gap:6px"><span class="mg-small mg-muted">Grafika</span>
             <select class="mg-select" id="mQ" aria-label="Kakovost grafike">${qualityOptions(settings.quality)}</select></label></div>
       </div>

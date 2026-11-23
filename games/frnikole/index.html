@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Dirka frnikol — stavi na frnikole, ki drvijo po dolgi progi, in jih med dirko poriniš s sunki. Pet dirk na dan proti botom.">
+<title>Dirka frnikol · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23b388ff'/%3E%3Cpath d='M3 9c3-4 7 2 10-2' stroke='%23fff' stroke-width='1.6' fill='none'/%3E%3Ccircle cx='5.5' cy='5.5' r='1.6' fill='%23fff' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+<!-- Three.js: ista pripeta verzija kot Hrčkova krogla (renderer, teren in ovire so skupni) -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="mg">
+  <main class="mg-container mg-stack fr-screen" id="menu" aria-live="polite">
+    <div class="mg-empty"><span class="mg-spin"></span> Nalagam proge …</div>
+  </main>
+
+  <section class="mg-container mg-stack fr-screen mg-hidden" id="bet" aria-label="Stavnica"></section>
+
+  <section class="fr-play fr-screen mg-hidden" id="race" aria-label="Dirka">
+    <canvas id="cv" aria-label="Proga"></canvas>
+    <div class="fr-top">
+      <span class="fr-chip" id="hRace"></span>
+      <span class="fr-chip fr-time" id="hTime"></span>
+      <span class="fr-chip fr-bankchip" id="hBank"></span>
+    </div>
+    <div class="fr-comment" id="comment" aria-live="polite"></div>
+    <div class="fr-btns">
+      <button class="fr-btn" id="btnList" type="button" aria-label="Vrstni red">📋</button>
+      <button class="fr-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+      <button class="fr-btn" id="btnExit" type="button" aria-label="Zapusti">✕</button>
+    </div>
+    <div class="fr-feed" id="feed" aria-live="polite"></div>
+    <aside class="fr-list" id="list" aria-label="Vrstni red v živo"></aside>
+    <div class="fr-bottom">
+      <div class="fr-bets" id="hBets"></div>
+      <div class="fr-cams">
+        <button class="fr-pill" id="btnCam" type="button">🎥 Vodilni</button>
+        <button class="fr-pill" id="btnMine" type="button">Moja frnikola</button>
+        <button class="fr-pill" id="btnSpeed" type="button">⏩×1</button>
+      </div>
+      <div class="fr-mbtns" id="mbtns" role="group" aria-label="Izbira frnikole"></div>
+      <div class="fr-nudge">
+        <div class="fr-sel"><small>Izbrana</small><b id="selName"></b><span id="hNudges" title="preostali sunki"></span></div>
+        <button class="fr-nbtn fr-nbtn--help" id="btnHelp" type="button">⚡ POMOČ<small>Q</small></button>
+        <button class="fr-nbtn fr-nbtn--hit" id="btnHit" type="button">💥 BOČNO<small>E</small></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mg-container mg-stack fr-screen mg-hidden" id="after" aria-label="Rezultati dirke"></section>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
