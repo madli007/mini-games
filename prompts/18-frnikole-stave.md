@@ -57,12 +57,12 @@
 - Dokumentiraj v `shared/README.md`. Ekonomska simulacija (`tests/economy-sim.js`) naj pokaže, da vložek ne podre
   ekonomije (pričakovana vrednost za igralca ≤ 0 pri naključnem stavljenju, a ni kaznovalna).
 
-### Po želji: trgovina (ali ločen prompt `19-frnikole-trgovina.md`)
+### Po želji: trgovina (ali ločen prompt `21-frnikole-trgovina.md`)
 - Kozmetika za frnikole v `shared/cosmetics.js` (nov slot, npr. `marble`: vzorec in barva »tvoje« frnikole na kartici
   in v izrisu ter `trail` — sled za frnikolo, na katero imaš največjo stavo). Katalog se mora ujemati s `shop_items` v
   `schema.sql` (`node tools/shop-sql.mjs`). Fizika je za vse enaka.
 - Urejevalnik prog (podobno kot `games/krogla/editor.html`, a za format `tracks/*.json` — ali le uvoz/izvoz JSON z
-  validatorjem `validateTrack` in preverjanjem (a)–(c) v brskalniku). Če ne gre v tem delu, napiši `19-…`.
+  validatorjem `validateTrack` in preverjanjem (a)–(c) v brskalniku). Če ne gre v tem delu, napiši `21-…`.
 
 ---
 
