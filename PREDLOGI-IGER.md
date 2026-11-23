@@ -19,6 +19,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 36. Smučarski skoki | 📝 | prompti 11–13 |
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
+| 3. Lane wars skozi dobe | 📝 | prompt 26 |
 | Vse ostale točke | ⬜ | — |
 
 ## Osnova: hub repo
@@ -55,7 +56,7 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 
 ### Stil Age of War / Miniclip
 
-3. ⬜ **Lane wars skozi dobe** ★★
+3. 📝 **Lane wars skozi dobe** ★★ — prompt [`26-lane-wars`](prompts/26-lane-wars.md)
    - Dve bazi, po stezi pošiljaš enote, z XP napreduješ iz kamene dobe v srednji vek, nato v moderno dobo in na koncu v futur.
    - Lahko igraš proti AI ali 1v1 online. Ker igralca pošiljata samo ukaze »pošlji enoto X«, se igra lepo sinhronizira.
 4. ⬜ **Obramba gradu** ★

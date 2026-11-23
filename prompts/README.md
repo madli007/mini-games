@@ -18,6 +18,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [10-minigolf](10-minigolf.md) | Hrčkov minigolf (nova igra) | veliko |
 | [11-skoki](11-skoki.md) | Smučarski skoki, 1. faza (nova igra) | veliko |
 | [22-pinball-motor](22-pinball-motor.md) | Pinball motor (osnova za Božični pinball) | veliko |
+| [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 
 ## Vsi prompti
 
@@ -48,9 +49,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 23 | [pinball-bozic-miza](23-pinball-bozic-miza.md) | Božični pinball: miza | 2/4 | ⬜ | | 22 |
 | 24 | [pinball-bozic-pravila](24-pinball-bozic-pravila.md) | Božični pinball: pravila | 3/4 | ⬜ | | 23 |
 | 25 | [pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi) | 4/4 | ⬜ | | 22 |
+| 26 | [lane-wars](26-lane-wars.md) | Lane wars skozi dobe | — | ⬜ | | 01 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 26.**
+**Naslednja prosta številka: 27.**
 
 ## Pravila (da se ne izgubimo)
 
