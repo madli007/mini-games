@@ -21,6 +21,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
+| 18. Ustavi uro | 📝 | prompt 28 |
 | Vse ostale točke | ⬜ | — |
 
 ## Osnova: hub repo
@@ -210,7 +211,7 @@ kodo do 10 igralcev**, tako kot Reakcija. Vse so ★ (en prompt).
     - Napis »RDEČA« je obarvan modro, ti pa moraš čim hitreje tapniti pravo barvo.
     - Runda traja 30 sekund, šteje število pravilnih odgovorov. Ob napaki se za trenutek ustaviš.
     - V družbi je zelo smešna, ker se vsi zmotijo.
-18. ⬜ **Ustavi uro** ★
+18. 📝 **Ustavi uro** ★ — prompt [`28-ustavi-uro`](prompts/28-ustavi-uro.md)
     - Štoparica teče, ti pa jo moraš ustaviti točno pri 10,00 s. V naslednjih krogih ura po 3 sekundah
       izgine in štej v glavi.
     - Rezultat je odstopanje v milisekundah.
