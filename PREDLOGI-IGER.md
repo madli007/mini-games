@@ -364,6 +364,11 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
     - **Pinball dvoboj:** vsak na svoji mizi, določeni streli pošljejo nasprotniku »napad« (nagnjena miza,
       krajši flipper, dodatna žogica).
     - Tabele `public.scores` ne spreminjaj; nove mize dobijo svoje lestvice prek huba.
+    - **Druga miza = Božični pinball »Trije dobri možje«** (Miklavž, Božiček, Dedek Mraz; dimnik z vidnim lockom,
+      ledene rampe, jelka kot glavna igrača, adventni koledar kot mystery, wizard »Polnoč«). Prompti:
+      `prompts/19-pinball-motor.md` (miza kot modul, novi elementi, merilec strelov, zlati test),
+      `20-pinball-bozic-miza.md` (postavitev, puščice, grafika, občutek), `21-pinball-bozic-pravila.md` (načini,
+      wizard, DMD, glasba), `22-pinball-vec-igralcev.md` (hot-seat in online za obe mizi).
 42. **Žebljički (strelec na kline)** ★★
     - Od zgoraj izstreliš kroglico, ta se odbija od klinov, cilj pa je podreti vse oranžne kline v omejenem številu strelov.
     - Fizika odboja je ista kot v pinballu. Nivoji so JSON, dnevni nivo je enak za vse.
