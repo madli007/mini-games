@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkova krogla — Dirka (multiplayer na širokih progah)
 
+> **Stanje:** ⬜ čaka — lahko takoj
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/19-krogla-dirka.md in ga v celoti izvedi.«**
 >

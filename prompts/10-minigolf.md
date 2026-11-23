@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkov minigolf (solo + do 10 igralcev)
 
+> **Stanje:** ⬜ čaka — lahko takoj (Krogla in Rušilec obstajata)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/10-minigolf.md in ga v celoti izvedi.«**
 >

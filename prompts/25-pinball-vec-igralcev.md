@@ -1,9 +1,11 @@
 # Prompt za AI agenta: Pinball za več igralcev (4/4 — obe mizi)
 
+> **Stanje:** ⬜ čaka — predpogoj: 22 (idealno tudi 23 in 24)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
-> **»Preberi prompts/22-pinball-vec-igralcev.md in ga v celoti izvedi.«**
+> **»Preberi prompts/25-pinball-vec-igralcev.md in ga v celoti izvedi.«**
 >
-> Predpogoj: prompt 19 (motor) je narejen; idealno tudi 20 in 21 (Božična miza). Vse spremembe so v motorju,
+> Predpogoj: prompt 22 (motor) je narejen; idealno tudi 23 in 24 (Božična miza). Vse spremembe so v motorju,
 > zato delujejo na **obeh mizah**. Ne spreminjaj tabele `scores` in repoja `D:\Git\Brainstorm\pinball`.
 
 ---

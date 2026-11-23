@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkova krogla — nova grafika (realističen, sodoben videz)
 
+> **Stanje:** ✅ narejeno — commit `efd2e3b` (21. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/05-krogla-grafika.md in ga v celoti izvedi.«**
 >

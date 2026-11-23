@@ -1,5 +1,26 @@
 # Predlogi iger za skupni hub (GitHub Pages + Supabase)
 
+## Pregled stanja (posodobljeno 23. 11. 2026)
+
+**Oznake pri točkah:** ✅ narejeno · 🟡 delno narejeno · 📝 prompt napisan, čaka · ⬜ samo ideja.
+Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/README.md)**.
+
+| Igra | Stanje | Kje |
+|---|---|---|
+| Hub, trgovina, kovanci, naloge | ✅ | prompta 01, 02 |
+| Reakcija (demo) | ✅ | `games/reakcija/` |
+| Alu Pinball (kopija) | ✅ | `games/pinball/` |
+| 8. Potapljanje ladjic | ✅ | `games/ladjice/` |
+| 15. Hrčkova krogla (+ urejevalnik, proge skupnosti) | ✅ (📝 dirka, okolica) | `games/krogla/` |
+| Rušilec (party arena Krogle) | ✅ | `games/rusilec/` |
+| 19. Zaporedje | ✅ | `games/zaporedje/` |
+| Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj | `games/herodle/` |
+| 40. Dirka frnikol | 🟡 1. del ✅, 📝 2.–4. del | `games/frnikole/` |
+| 36. Smučarski skoki | 📝 | prompti 11–13 |
+| 37. Hrčkov minigolf | 📝 | prompt 10 |
+| 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
+| Vse ostale točke | ⬜ | — |
+
 ## Osnova: hub repo
 
 ```
@@ -23,26 +44,26 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 
 ### Strategije v stilu Travian / Tribal Wars
 
-1. **Plemena (persistentna strategija)** ★★★
+1. ⬜ **Plemena (persistentna strategija)** ★★★
    - Vsak ima vas na skupni mapi. Surovine se ne štejejo s timerjem, ampak se izračunajo iz časa (`proizvodnja × pretečen čas`), zato strežnik ni potreben.
    - Zgradbe se gradijo v realnem času (minute ali ure). Vojske potujejo po mapi s časom potovanja, poleg tega so tu še plemena/alianse in chat.
    - Bitke razrešuje Supabase edge function ali `pg_cron`.
    - Igra se v **sezonah** po 1–2 tedna za skupino prijateljev, ob koncu je zmagovalec sezone. To bi bila glavna igra huba.
-2. **Osvajanje heks mape (asinhrono, 2–10 igralcev)** ★★
+2. ⬜ **Osvajanje heks mape (asinhrono, 2–10 igralcev)** ★★
    - Ena poteza na dan ali takrat, ko so vsi odigrali (Risk meets Tribal Wars).
    - Precej lažje kot Plemena, a ima isti občutek osvajanja.
 
 ### Stil Age of War / Miniclip
 
-3. **Lane wars skozi dobe** ★★
+3. ⬜ **Lane wars skozi dobe** ★★
    - Dve bazi, po stezi pošiljaš enote, z XP napreduješ iz kamene dobe v srednji vek, nato v moderno dobo in na koncu v futur.
    - Lahko igraš proti AI ali 1v1 online. Ker igralca pošiljata samo ukaze »pošlji enoto X«, se igra lepo sinhronizira.
-4. **Obramba gradu** ★
+4. ⬜ **Obramba gradu** ★
    - Stickmani napadajo, ti jih z miško vlečeš in mečeš, med valovi pa nadgrajuješ zidove in strelce. Ima skupno lestvico.
-5. **Topovi na terenu (Worms-like, do 10 igralcev)** ★★
+5. ⬜ **Topovi na terenu (Worms-like, do 10 igralcev)** ★★
    - Igralci so na vrsti po potezah, teren je uničljiv, nastaviš kot in moč strela, po vmesnih krogih kupuješ orožja.
    - Ker je potezna, je odlična za Supabase in brez težav prenese 10 igralcev.
-6. **Motorist (fizikalni trial)** ★★★
+6. ⬜ **Motorist (fizikalni trial)** ★★★
    - **Žanr:** motoristični trial s strani: plin, zavora in nagibanje telesa po progi z ovirami (skakalnice,
      hlodi, zaboji, gugalnice, stopnice, strmine). Ime, proge in videz so naši, ne kopija nobene obstoječe igre.
    - **Fizika:** motor sta **dve kolesi in šasija z vzmetenjem**, voznik premika težišče naprej in nazaj. Plin
@@ -80,14 +101,15 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 
 ### Multiplayer arene
 
-7. **Bomba arena (bomberman varianta, 2–8 igralcev)** ★★
+7. ⬜ **Bomba arena (bomberman varianta, 2–8 igralcev)** ★★
    - Powerupi: domet, več bomb, hitrost, brcanje bomb, ščit, teleport.
    - Twisti, da ni le kopija:
      - arena se po 2 minutah krči;
      - »prekletstvo«, ki ga z dotikom predaš drugemu (obrnjene kontrole, samodejno odlaganje bomb);
      - izločeni igralci kot duhovi mečejo bombe z roba.
    - Host-authoritative, broadcast okoli 15–20 tickov na sekundo.
-8. **Potapljanje ladjic s powerupi** ★★
+8. ✅ **Potapljanje ladjic s powerupi** ★★
+    - **Stanje:** ✅ narejeno → `games/ladjice/` (prompt 04)
    - Vsak igralec izbere »kapitana« s posebno sposobnostjo:
      - **Sonar**: razkrije 3×3, ali je ladja;
      - **Torpedo**: zadene prvo ladjo v vrstici;
@@ -97,28 +119,29 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
      - **Kasetna bomba**: 4 naključna polja.
    - Mana se nabira za vsak zgrešen ali zadet strel.
    - **Battle royale način do 10 igralcev**: vsak ima manjšo mrežo, strelja na kogarkoli, zadnji preživeli zmaga. Potezno, zato je za Supabase idealno.
-9. **Celice arena (agar-style, do 10 igralcev)** ★★
+9. ⬜ **Celice arena (agar-style, do 10 igralcev)** ★★
    - Rasteš, ješ manjše igralce, se deliš. Preprosta grafika, zelo zabavno v družbi.
-10. **Top-down dirke (do 8 igralcev)** ★★
+10. ⬜ **Top-down dirke (do 8 igralcev)** ★★
     - Mikro avtomobilčki na mizi ali v kuhinji, powerupi na progi, ghost časi asinhrono.
 
 ### Party igre za do 10 ljudi
 
-11. **Riši in ugibaj** ★★
+11. ⬜ **Riši in ugibaj** ★★
     - En igralec riše, ostali ugibajo v chatu, besede so slovenske.
-12. **Kviz z room kodo (Kahoot-stil)** ★★
+12. ⬜ **Kviz z room kodo (Kahoot-stil)** ★★
     - Host pokaže vprašanja na TV-ju, ostali odgovarjajo na telefonih. Lahko imaš svoje sete vprašanj v Supabase.
-13. **Kdo je izdajalec** ★★
+13. ⬜ **Kdo je izdajalec** ★★
     - Socialna dedukcija: vsi dobijo isto besedo razen enega, opisujejo jo, nato glasujejo.
 
 ### Retro singleplayer z dnevnim izzivom (kot pinball)
 
-14. **Asteroidi, breakout, padajoči bloki, raketna obramba** ★
+14. ⬜ **Asteroidi, breakout, padajoči bloki, raketna obramba** ★
     - Ključni twist je **dnevni seed**: vsi igrajo isto različico dneva, rezultate pa primerjajo na skupni lestvici. Tako postane tudi singleplayer igra družabna.
 
 ### Spretnostne igre s fiziko
 
-15. **Hrčkova krogla (Hamsterball varianta)** ★★★
+15. ✅ **Hrčkova krogla (Hamsterball varianta)** ★★★
+    - **Stanje:** ✅ narejeno → `games/krogla/` (prompti 03, 05, 06) in Rušilec `games/rusilec/` (07); čakata 📝 `19-krogla-dirka`, `20-krogla-okras`
     - **Kako deluje original** (Hamsterball, Raptisoft, 2004): hrčka v prozorni krogli s fiziko kotališ skozi
       progo do cilja. **Življenj ni.** Imaš skupno uro: na začetku vsake proge se ji prišteje nekaj časa,
       preostanek pa se prenese v naslednjo progo, zato se hitrost na lahkih progah obrestuje na težkih.
@@ -177,47 +200,48 @@ kodo do 10 igralcev**, tako kot Reakcija. Vse so ★ (en prompt).
 
 **Hitrost in refleksi**
 
-16. **Tarče (aim trainer)** ★
+16. ⬜ **Tarče (aim trainer)** ★
     - Na zaslonu se pojavljajo krogi, ki se hitro manjšajo, ti pa jih moraš klikniti. Runda ima 30 tarč.
     - Rezultat je povprečni čas na tarčo, zgrešeni kliki pa dodajo kazen.
     - Twist: rdečih tarč ne smeš klikniti, kar je hkrati test samokontrole.
-17. **Barva ali beseda (Stroop)** ★
+17. ⬜ **Barva ali beseda (Stroop)** ★
     - Napis »RDEČA« je obarvan modro, ti pa moraš čim hitreje tapniti pravo barvo.
     - Runda traja 30 sekund, šteje število pravilnih odgovorov. Ob napaki se za trenutek ustaviš.
     - V družbi je zelo smešna, ker se vsi zmotijo.
-18. **Ustavi uro** ★
+18. ⬜ **Ustavi uro** ★
     - Štoparica teče, ti pa jo moraš ustaviti točno pri 10,00 s. V naslednjih krogih ura po 3 sekundah
       izgine in štej v glavi.
     - Rezultat je odstopanje v milisekundah.
 
 **Spomin**
 
-19. **Zaporedje (Simon)** ★
+19. ✅ **Zaporedje (Simon)** ★
+    - **Stanje:** ✅ narejeno → `games/zaporedje/` (prompt 08)
     - Štiri polja zasvetijo v zaporedju, ti pa ga ponoviš. Vsak krog doda en korak.
     - Rezultat je najdaljše zaporedje, ki si ga ponovil. Pri dnevnem izzivu vsi dobijo isto zaporedje.
-20. **Številčni spomin** ★
+20. ⬜ **Številčni spomin** ★
     - Za kratek čas se pokaže število, nato ga natipkaš. Vsak krog dobi eno števko več.
     - Varianti: številke na mreži po vrsti (šimpanzji test) ali vizualni spomin (zapomni si osvetljena polja).
-21. **Pari (memory)** ★
+21. ⬜ **Pari (memory)** ★
     - Klasično obračanje kartic, rezultat pa sta čas in število potez.
     - V multiplayerju ima vsak svojo mrežo z istim seedom in zmaga tisti, ki prvi najde vse pare.
 
 **Glava in logika**
 
-22. **Hitro računanje** ★
+22. ⬜ **Hitro računanje** ★
     - V 60 sekundah rešuješ račune, kot je 7 × 8, težavnost pa se postopoma veča.
     - Twist »Res ali ne?«: prikazan je že rešen račun (npr. 23 + 19 = 41), ti pa le tapneš ✓ ali ✗.
-23. **Višje-nižje** ★
+23. ⬜ **Višje-nižje** ★
     - Igra izbere številko od 1 do 1000, ti jo ugibaš, odgovor pa je samo »višje« ali »nižje«.
       Manj poskusov je boljše.
     - Party varianta: vsi ugibajo hkrati in vidijo ugibe drugih.
 
 **Spretnost in občutek**
 
-24. **Stolp (stacker)** ★
+24. ⬜ **Stolp (stacker)** ★
     - Blok se premika levo in desno, ti pa tapneš, da ga spustiš na stolp. Kar štrli čez rob, se odreže.
     - Rezultat je višina stolpa. Ena tipka, zelo zasvojljivo.
-25. **Na oko** ★
+25. ⬜ **Na oko** ★
     - Mešanica nalog: »nariši čim bolj okrogel krog«, »razpolovi to črto«, »koliko pik je na zaslonu?«,
       »nastavi barvo, ki se ujema s prikazano«.
     - Rezultat je natančnost v odstotkih. Vsak dan je izbor nalog drugačen.
@@ -232,44 +256,44 @@ Retro žanri s svojimi twisti, da niso kopije znanih iger. Vse imajo dnevni seed
 
 **Arkadna klasika**
 
-26. **Kača** ★
+26. ⬜ **Kača** ★
     - Twist: hrana ima različne učinke (pospeši, obrne smer, skrajša rep), zidovi pa se vsak dan premaknejo
       glede na seed.
     - **Multiplayer do 10 igralcev:** vsi so na isti mreži, kdor se zaleti v drugega, izpade. Mreža je
       diskretna, zato je sinhronizacija prek broadcasta preprosta.
-27. **Čez cesto** ★
+27. ⬜ **Čez cesto** ★
     - Žabica, kokoš ali Slovenec s kolesom prečka ceste, reke in železniške proge. Vsaka vrstica je novo polje.
     - Rezultat je število prečkanih vrstic. Vsak dan je proga ista za vse, zato je to tekma za rekord dneva.
-28. **Labirint lovljenja** ★★
+28. ⬜ **Labirint lovljenja** ★★
     - V labirintu pobiraš pike, štirje preganjalci pa imajo vsak svojo osebnost (lovi, prestreza, tava, straši).
     - Labirint je vsak dan nov, generiran iz seeda.
     - Party varianta: en igralec je lovljen, ostali (do 4) igrajo preganjalce na telefonih.
-29. **Vesoljski strelec (shmup)** ★★
+29. ⬜ **Vesoljski strelec (shmup)** ★★
     - Ladja na dnu zaslona, valovi sovražnikov v formacijah, boss vsakih 5 valov, nadgradnje orožja.
     - Dvoboj: oba igrata isti seed, med igro vidiš nasprotnikov rezultat v živo.
 
 **Retro šport in dvoboji**
 
-30. **Tenis s ploščkoma (pong)** ★★
+30. ⬜ **Tenis s ploščkoma (pong)** ★★
     - Dva na enem telefonu (vsak drži svojo polovico zaslona) ali online 1v1.
     - Powerupi: dve žogici, krajši plošček nasprotnika, ukrivljen strel.
     - Turnirski način do 8 igralcev z drevesom izločanja.
-31. **Svetlobni motorji** ★★
+31. ⬜ **Svetlobni motorji** ★★
     - Vsak igralec za sabo vleče steno, zadnji preživeli zmaga. Preprosto, a zelo napeto.
     - Do 10 igralcev na eni areni, ki se po 60 sekundah začne krčiti.
-32. **Tanki v labirintu** ★★
+32. ⬜ **Tanki v labirintu** ★★
     - Top-down tanki, krogle se odbijajo od sten. Igra se do 5 zmag.
     - Deluje tudi lokalno (dva na eni tipkovnici).
 
 **Platforme in akcija**
 
-33. **Neskončni tekač** ★
+33. ⬜ **Neskončni tekač** ★
     - Pikselni lik teče, ti samo skačeš čez ovire (ena tipka). Hitrost se počasi povečuje.
     - Ghosti prijateljev tečejo poleg tebe.
-34. **Skakalec v višino** ★
+34. ⬜ **Skakalec v višino** ★
     - Lik samodejno skače po platformah navzgor, ti ga premikaš levo-desno z nagibom telefona ali tipkami.
     - Platforme se lomijo, premikajo ali te izstrelijo. Rezultat je dosežena višina.
-35. **Rudar** ★★
+35. ⬜ **Rudar** ★★
     - Kopaš navzdol skozi pikselno zemljo, pobiraš rude in se izogibaš padajočim skalam in podzemnim pošastim.
     - Med poskusi rude prodaš za nadgradnje (svedri, gorivo, luč), zato igra deluje kot kratek roguelite.
 
@@ -285,7 +309,8 @@ dnevni lestvici takoj vidi rivalstvo.
 
 ### Šport
 
-36. **Smučarski skoki** ★★★
+36. 📝 **Smučarski skoki** ★★★
+    - **Stanje:** 📝 prompti napisani, čakajo: `11-skoki`, `12-skoki-tekma`, `13-skoki-pokal`
     - **Žanr:** 2D pogled od strani, precizen tajming in balansiranje v letu z miško. Ime, skakalnice in
       grafika so naši (ne kopija nobene obstoječe igre).
     - **Faze skoka:**
@@ -329,23 +354,25 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 
 **A) Na motorju Hrčkove krogle**
 
-37. **Hrčkov minigolf** ★★
+37. 📝 **Hrčkov minigolf** ★★
+    - **Stanje:** 📝 prompt napisan, čaka: `10-minigolf`
     - Uporablja isto fiziko krogle in isti urejevalnik prog. Namesto kotaljenja z vlečenjem nastaviš smer in moč udarca.
     - Luknje imajo mline na veter, zanke, vzmeti, premične ploščice in led, torej mehanike, ki jih Krogla že pozna.
     - **Do 10 igralcev potezno** (`room.setState`): vsi igrajo isto luknjo, ostali med udarcem gledajo replay.
       Dnevna luknja gre na skupno lestvico. Rezultat je število udarcev (manj je bolje).
     - Najboljše razmerje med vloženim delom in zabavo, ker je večina kode že napisane.
     - Prompt: `prompts/10-minigolf.md`.
-38. **Balinanje** ★★
+38. ⬜ **Balinanje** ★★
     - Slovenska gostilniška klasika v 3D: najprej vržeš balinček, nato krogle, lahko pa tudi »izbiješ« nasprotnikovo kroglo.
     - Twisti: steze s klancem, peskom ali ledom, veter po seedu, »nori« način z vzmetmi na stezi.
     - Potezno, 2–8 igralcev v ekipah. Idealno za TV in telefone.
-39. **Nagibni labirint** ★
+39. ⬜ **Nagibni labirint** ★
     - Ne kotališ krogle, ampak **nagibaš celo ploščo** (nagib telefona je v Krogli že narejen). Lesena plošča,
       luknje in kroglica.
     - Kasnejši nivoji dodajo dve kroglici hkrati, vrtljive dele in magnete. Dnevni labirint je generiran iz seeda.
     - Majhna, hitra igra, odlična za telefon.
-40. **Dirka frnikol (party za gledanje in stave)** ★★
+40. 🟡 **Dirka frnikol (party za gledanje in stave)** ★★
+    - **Stanje:** 🟡 1. del narejen → `games/frnikole/` (prompt 16); čakajo 📝 `17-frnikole-multiplayer`, `18-frnikole-stave`, `21-frnikole-kaos`
     - Na TV-ju se 8–16 frnikol spusti po dolgi progi s fiziko. Igralci pred štartom **stavijo kovance iz huba**
       (prek RPC, z omejitvijo), med dirko pa imajo 2–3 »sunke«, s katerimi zrinejo svojo ali tujo frnikolo.
     - Proge so iz urejevalnika Krogle. Slovenski komentator: »Rdeča prehiteva v zadnjem zavoju!«
@@ -357,7 +384,8 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 
 **B) Na motorju pinballa**
 
-41. **Druga miza in več igralcev v pinballu** ★★
+41. 📝 **Druga miza in več igralcev v pinballu** ★★
+    - **Stanje:** 📝 prompti napisani, čakajo: `22-pinball-motor`, `23-pinball-bozic-miza`, `24-pinball-bozic-pravila`, `25-pinball-vec-igralcev`
     - `table.js` naj postane podatkovna datoteka, da so mize JSON (kot proge v Krogli).
     - Druga miza z drugo temo, npr. **»Hrčkova tovarna«** (crossover: multiball s hrčki, krogla kot misija na DMD-ju).
     - **2–4 igralci izmenično** (igralec 1, 2, 3 … kot pri pravih avtomatih) prek room kode, drugi gledajo v živo.
@@ -366,14 +394,14 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
     - Tabele `public.scores` ne spreminjaj; nove mize dobijo svoje lestvice prek huba.
     - **Druga miza = Božični pinball »Trije dobri možje«** (Miklavž, Božiček, Dedek Mraz; dimnik z vidnim lockom,
       ledene rampe, jelka kot glavna igrača, adventni koledar kot mystery, wizard »Polnoč«). Prompti:
-      `prompts/19-pinball-motor.md` (miza kot modul, novi elementi, merilec strelov, zlati test),
-      `20-pinball-bozic-miza.md` (postavitev, puščice, grafika, občutek), `21-pinball-bozic-pravila.md` (načini,
-      wizard, DMD, glasba), `22-pinball-vec-igralcev.md` (hot-seat in online za obe mizi).
-42. **Žebljički (strelec na kline)** ★★
+      `prompts/22-pinball-motor.md` (miza kot modul, novi elementi, merilec strelov, zlati test),
+      `23-pinball-bozic-miza.md` (postavitev, puščice, grafika, občutek), `24-pinball-bozic-pravila.md` (načini,
+      wizard, DMD, glasba), `25-pinball-vec-igralcev.md` (hot-seat in online za obe mizi).
+42. ⬜ **Žebljički (strelec na kline)** ★★
     - Od zgoraj izstreliš kroglico, ta se odbija od klinov, cilj pa je podreti vse oranžne kline v omejenem številu strelov.
     - Fizika odboja je ista kot v pinballu. Nivoji so JSON, dnevni nivo je enak za vse.
     - Twisti: posebni klini (bomba, multiball, portal), premično korito na dnu za dodatno kroglico.
-43. **Verižna reakcija (fizikalna uganka)** ★★
+43. ⬜ **Verižna reakcija (fizikalna uganka)** ★★
     - Na mizo postaviš omejen nabor kosov (rampe, vzmeti, flipper, bumper, ventilator), pritisneš ▶,
       kroglica pa mora priti do cilja.
     - Uporablja dele iz pinballa. Ena uganka na dan, lestvica šteje **najmanj uporabljenih kosov** in čas.
@@ -381,25 +409,25 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 
 **C) Nove fizikalne igrače**
 
-44. **Zračni hokej** ★★
+44. ⬜ **Zračni hokej** ★★
     - 2D fizika plošček–palica. Dva igrata na enem telefonu (vsak ima svojo polovico) ali 1v1 online, host je avtoritativen.
     - Powerupi: dva ploščka, ožji gol, »magnet«. Turnir do 8 igralcev z drevesom izločanja.
-45. **Biljard s twistom** ★★
+45. ⬜ **Biljard s twistom** ★★
     - Potezno 1v1, zato je sinhronizacija enostavna. Poleg klasične mize so tu še **nore mize** z ovirami,
       portali in premičnimi luknjami.
     - Dnevni izziv: »spravi vse krogle v čim manj udarcih«.
-46. **Namizni nogomet** ★★
+46. ⬜ **Namizni nogomet** ★★
     - Vsak telefon upravlja eno ali dve palici (poteg = premik, hiter švig = strel). 2v2 realtime, TV kaže mizo.
-47. **Pikado** ★
+47. ⬜ **Pikado** ★
     - Met s potegom prsta, rahlo tresenje roke in veter. Igri 501 in »okoli ure«, potezno do 10 igralcev.
 
 **D) Razširitve Hrčkove krogle**
 
-- **Dirka dveh:** online realtime na isti progi (original ima deljen zaslon), z ghosti ostalih.
-- **Skrite ključavnice** na progah, ki odklenejo skrivne arene v Rušilcu (omenjeno v `prompts/07-krogla-rusilec.md`;
-  preveri, ali je že narejeno).
-- **Skupnostne proge:** urejevalnik shrani progo v Supabase (`krogla_*` tabela), drugi jo igrajo in ocenijo,
-  »proga tedna« gre na lestvico.
+- 📝 **Dirka dveh:** online realtime na isti progi (original ima deljen zaslon), z ghosti ostalih.
+  Prompt: `prompts/19-krogla-dirka.md` (čaka). Okolica prog: `prompts/20-krogla-okras.md` (čaka).
+- ✅ **Skrite ključavnice** na progah, ki odklenejo skrivne arene v Rušilcu (narejeno s promptom 07, `games/krogla/secrets.js`).
+- ✅ **Skupnostne proge:** urejevalnik shrani progo v Supabase (`krogla_*` tabela), drugi jo igrajo in ocenijo,
+  »proga tedna« gre na lestvico (narejeno, commit `c0011e0`).
 
 **Za začetek:** **Hrčkov minigolf** (največ ponovne uporabe in do 10 igralcev), nato **druga miza in več igralcev
 v pinballu** (pinball iz igre za enega postane družabna igra), potem **Balinanje** ali **Dirka frnikol** kot party
@@ -417,50 +445,50 @@ igra potem vse to dobi skoraj zastonj.
 
 **Zimski športi**
 
-48. **Biatlon** ★★★
+48. ⬜ **Biatlon** ★★★
     - **Tek:** ritem pritiskanja levo-desno. Prehiter ritem dvigne srčni utrip, prepočasen izgubi čas. Na klancih
       in spustih se odločaš, kdaj počivati.
     - **Strelišče:** merek niha glede na utrip in veter, zadržiš dih (tipka), a le za kratek čas. Pet tarč, za vsako
       zgrešeno kazenski krog.
     - Napetost je v odločitvi: na strelišče prehiter ali izgubljati čas za počitek.
     - **Do 10 igralcev hkrati** (skupinski štart), ostali so ghosti na progi. Prizorišče npr. izmišljena »Pokljuka«.
-49. **Veleslalom / slalom** ★★
+49. ⬜ **Veleslalom / slalom** ★★
     - Pogled od zadaj ali od zgoraj. Smučar zavija z nagibom, ti izbiraš linijo: ožji zavoj je počasnejši,
       preširok pomeni zgrešena vratca.
     - Proge so JSON (vratca, naklon, led ali južni sneg), teren in vratca se dnevno spremenijo po seedu.
     - Dva teka, seštevek časa, ghost najboljšega.
-50. **Bob in sankanje** ★★
+50. ⬜ **Bob in sankanje** ★★
     - **Štart:** ritem tipk za porivanje. **Kanal:** izbiraš linijo v zavojih (visoko ali nizko). Zaletiš se v steno
       = izguba hitrosti, previsoko v zavoju = prevrnitev.
     - Kratki teki po ~50 s, zato odlično za party z »še en poskus«.
 
 **Poletni in »slovenski« športi**
 
-51. **Kolesarska etapna dirka** ★★★
+51. ⬜ **Kolesarska etapna dirka** ★★★
     - Ni igra refleksov, ampak **taktike**: energija, zavetrje v skupini, napadi na klancih, šprint na koncu.
     - Etape so profili v JSON-u (ravnina, gorska etapa, kronometer), skupni seštevek kot »Dirka po Sloveniji«
       z majicami (rumena, pikčasta, zelena).
     - **Do 10 prijateljev v istem pelotonu**, realtime ali z odločitvami ob kontrolnih točkah, ostale kolesarje vodi AI.
     - Najbolj družabna od teh, ker vsi razumejo trenutek »zdaj napadem«.
-52. **Športno plezanje** ★★
+52. ⬜ **Športno plezanje** ★★
     - **Balvan:** kombiniraš prijeme (katera roka, kam). Moč podlakti pada, dinamični skok je tveganje s tajmingom.
     - **Težavnost:** smer na čas; počitek na dobrem oprimku obnovi moč, a vzame čas.
     - Smeri so JSON (prijemi, kakovost, razdalje), smer dneva je enaka za vse.
-53. **Kajak na divjih vodah** ★★
+53. ⬜ **Kajak na divjih vodah** ★★
     - Tok reke z valji in povratnimi tokovi, vratca zgoraj in spodaj (spodnja proti toku). Dotik vratc +2 s,
       izpuščena +50 s.
     - Prizorišče npr. izmišljen »Tacen«. Tok je lahko preprosto 2D polje sil (kot ventilatorji v Krogli).
-54. **Atletski mnogoboj (metanja)** ★★
+54. ⬜ **Atletski mnogoboj (metanja)** ★★
     - **Kladivo:** ritem vrtenja, spust ob pravem kotu. **Kopje:** zalet, odmet, kot. **Krogla:** moč in kot.
     - Vsaka disciplina traja eno minuto, skupaj **mnogoboj** s točkovno tabelo.
-55. **Koš: prosti meti in »Konj«** ★
+55. ⬜ **Koš: prosti meti in »Konj«** ★
     - Met z vlečenjem, prava parabola, odboj od obroča in table (fizika žogice iz pinballa).
     - Party igra **»Konj«**: kdor zadene, določi met, drugi ga morajo ponoviti; zgrešen met = črka K-O-N-J.
       Potezno do 10 igralcev.
 
 **Krovna ideja**
 
-56. **Zimske in poletne igre** ★★ (ko obstajajo vsaj 3–4 športi)
+56. ⬜ **Zimske in poletne igre** ★★ (ko obstajajo vsaj 3–4 športi)
     - Vikend dogodek za prijatelje: več disciplin zapored (skoki, biatlon, bob, slalom …) in skupna **tabela medalj**.
     - Sezona se poveže z dosežki in nagradami v trgovini (dresi, zastave).
 
@@ -473,7 +501,7 @@ igra potem vse to dobi skoraj zastonj.
 arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `logic.js` s testi, offline način,
 `hub.reportGame` po vsaki igri.
 
-57. **Rudar: boksitni rudnik (v stilu Motherloada)** ★★ — razširitev točke 35
+57. ⬜ **Rudar: boksitni rudnik (v stilu Motherloada)** ★★ — razširitev točke 35
     - **Igra:** z vrtalnikom kopaš navzdol, paziš na **gorivo**, **trup** in **prostor za tovor**. Rudo pelješ na
       površje in jo prodaš, z denarjem nadgrajuješ sveder, motor, rezervoar, trup, tovorni prostor in hladilnik.
       Globlje je več toplote, žepi plina, lava in trde skale. Na površju so postaja za gorivo, servis in odkup.
@@ -484,7 +512,7 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
     - **Multiplayer (2. prompt):** 2–4 igralci v istem rudniku v realnem času; pošilja se le izkopane ploščice in
       položaji (`room.send`), zelo lahko za omrežje. Tekma: kdo prvi zasluži X.
     - **Predlog za začetek:** najlažja od štirih in dobra za dnevni izziv.
-58. **Alu obramba (v stilu Plants vs Zombies, tematika aluminijaste tovarne)** ★★
+58. ⬜ **Alu obramba (v stilu Plants vs Zombies, tematika aluminijaste tovarne)** ★★
     - **Igra:** mreža 5 vrst × 9 stolpcev, z leve braniš tovarno pred valovi **»rjavcev«** (rja, korozija,
       umazanija, oksidi). Kar pride do konca vrste, ustavi proizvodnjo.
     - **Vir energije** namesto sonca: **ingoti iz elektrolizne celice** (proizvodni stroj, ki ga postaviš).
@@ -499,7 +527,7 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
     - **Opomba:** tematika aluminijaste tovarne je v redu; za Impolovo ime in logotip v javni igri je bolje dobiti
       dovoljenje (pinball ga že uporablja v `assets/logos/impol.png`). Ne podvaja točke 4 (Obramba gradu je metanje
       stickmanov z miško, tu gre za mrežo in postavljanje strojev).
-59. **Topovi na terenu (v stilu Worms)** ★★–★★★ — razširitev točke 5 (`topovi` v `games.json`)
+59. ⬜ **Topovi na terenu (v stilu Worms)** ★★–★★★ — razširitev točke 5 (`topovi` v `games.json`)
     - **Teren:** uničljiv, kot bitna maska na canvasu (eksplozija izreže krog), voda na dnu, veter na krog.
     - **Ekipe** po 2–4 enote, potezno do 10 igralcev; na vrsti premikanje, skok, ciljanje (kot in moč), strel.
     - **Orožja:** bazuka, granata s časovnikom, kasetna granata, letalski napad, dinamit, vrv, teleport, baseball kij;
@@ -509,7 +537,7 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
       na eni napravi in boti za solo.
     - **Tveganje:** veliko orožij in AI botov → 2 prompta (1: teren, fizika, osnovna orožja, potezni multiplayer;
       2: več orožij, boti, trgovina, predmeti v hubu).
-60. **Jamar (platformer v stilu Prehistorika)** ★★★
+60. ⬜ **Jamar (platformer v stilu Prehistorika)** ★★★
     - **Igra:** platformer s strani. Jamski človek s kijem nabira hrano (točke), premaga dinozavre in živali, na koncu
       nivoja mora imeti dovolj hrane, da odpre izhod. Skrivne sobe, bonus predmeti, šefi na koncu sklopa.
     - **Nivoji:** JSON v `games/jamar/levels/` (kot proge v Krogli), sklopi: gozd, jame, ledena doba, vulkan.
@@ -520,19 +548,18 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
 
 **Vrstni red teh štirih:** Rudar → Alu obramba → Topovi → Jamar.
 
-## Predlagan vrstni red
+## Predlagan vrstni red (posodobljeno 23. 11. 2026)
 
-1. **Hub + `shared/`** (prijava, profil, lestvica, lobby z room kodo)
-2. **Ladjice s powerupi**: potezne, najlažje za testirati multiplayer
-3. **Bomba arena**: prvi realtime multiplayer
-4. **Lane wars skozi dobe**
-5. **Topovi na terenu**: dobra igra za večje družbe
-6. **Plemena**: glavna sezonska igra, ko je infrastruktura že preizkušena
+Hub, Ladjice, Krogla, Rušilec, Zaporedje, Herodle (1–2) in Dirka frnikol (1. del) so narejeni. Naprej:
 
-Hrčkova krogla je singleplayer z lestvico, zato se lahko vrine kadarkoli (npr. po Ladjicah). Razširitev
-trgovine s predmeti za igre je smiselna, ko obstajata vsaj krogla in pinball.
+1. **Prompti, ki že čakajo** (vrstni red in predpogoji v [`prompts/README.md`](prompts/README.md)): nadaljevanja
+   Frnikol, Herodle dvoboj, Krogla dirka in okolica, Minigolf, Skoki, Božični pinball.
+2. **Majhne igre ★** (16–34), ko je malo porabe: npr. Stolp, Tarče, Kača.
+3. **Party igre** (11–13) za večjo družbo: Kdo je izdajalec, Kviz.
+4. **Večje nove igre:** Rudar (57) → Alu obramba (58) → Topovi (59) → Bomba arena (7) → Plemena (1).
 
-## Naslednji korak
+## Kako dodati novo igro ali prompt
 
-- Napisati **prompt template** za posamezno igro (struktura, pravila za `shared/`, RLS, register v `games.json`).
-- Napisati prompt za sam hub.
+- Predloga: `prompts/TEMPLATE-igra.md`. Številko vzemi iz [`prompts/README.md`](prompts/README.md) (naslednja prosta)
+  in prompt takoj vpiši v kazalo, da se številke ne podvajajo.
+- Ko je prompt izveden: stanje na vrhu prompta → ✅, vrstica v `prompts/README.md`, oznaka pri točki tukaj.

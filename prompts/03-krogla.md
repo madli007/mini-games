@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkova krogla (singleplayer)
 
+> **Stanje:** ✅ narejeno — commit `fb545a6` (21. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/03-krogla.md in ga v celoti izvedi.«**
 >

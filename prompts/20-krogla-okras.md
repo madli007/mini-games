@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkova krogla — okolica prog (okraski, podlaga, kulise)
 
+> **Stanje:** ⬜ čaka — lahko takoj
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/20-krogla-okras.md in ga v celoti izvedi.«**
 >

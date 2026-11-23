@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Herodle — 3. faza (dvoboj 2–10 igralcev, TV pogled)
 
+> **Stanje:** ⬜ čaka — lahko takoj (predpogoj 14 je narejen)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/15-herodle-dvoboj.md in ga v celoti izvedi.«**
 >

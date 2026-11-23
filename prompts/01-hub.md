@@ -1,5 +1,7 @@
 # Prompt za AI agenta: MINI GAMES hub (dashboard + skupna infrastruktura)
 
+> **Stanje:** ✅ narejeno — commit `a98ca8f` (20. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/01-hub.md in ga v celoti izvedi.«**
 

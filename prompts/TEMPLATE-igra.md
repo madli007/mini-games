@@ -1,6 +1,7 @@
 # Prompt za novo igro v MINI GAMES hubu (predloga)
 
-> Kopiraj to datoteko v `prompts/NN-<id>.md`, izpolni del **»Igra«** in v novi seji
+> Kopiraj to datoteko v `prompts/NN-<id>.md` (NN = naslednja prosta številka iz `prompts/README.md`; prompt takoj vpiši
+> v kazalo in pod naslov dodaj `> **Stanje:** ⬜ čaka`), izpolni del **»Igra«** in v novi seji
 > (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši:
 > **»Preberi prompts/NN-<id>.md in ga v celoti izvedi.«**
 
@@ -67,7 +68,8 @@ dnevnik, »Ni bilo preverjeno«).
    s kodo in prek `?room=`, odigraj do konca, odhod hosta sredi igre, osvežitev strani igralca.
 5. Izgled na **telefonu (375×812)** in **namizju**: posnemi zaslone, sam jih preglej in popravi, kar je neurejeno.
 6. V `games.json` spremeni vnos igre iz `soon` v **`live`** (in preveri, da test sheme uspe).
-7. Posodobi `PROGRESS.md` (kaj je narejeno, kaj ni bilo preverjeno).
+7. Posodobi `PROGRESS.md` (kaj je narejeno, kaj ni bilo preverjeno) in **stanje prompta**: vrstica na vrhu prompta → ✅ s commitom,
+   vrstica v `prompts/README.md`, oznaka pri točki v `PREDLOGI-IGER.md`.
 8. **Commit** na `main` z opisnim sporočilom. Ne pushaj.
 
 V končnem odgovoru kratko povzemi: kaj je narejeno, kako igrati, kaj (če kaj) moram narediti v Supabaseu

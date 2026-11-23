@@ -1,5 +1,7 @@
 # Prompt: Zaporedje (spominska igra)
 
+> **Stanje:** ✅ narejeno — commit `7b642e5` (21. 11. 2026)
+
 > V novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši:
 > **»Preberi prompts/08-zaporedje.md in ga v celoti izvedi.«**
 >

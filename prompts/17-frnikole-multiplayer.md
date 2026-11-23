@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Dirka frnikol (2. del: multiplayer v živo, do 10 igralcev)
 
+> **Stanje:** ⬜ čaka — lahko takoj (predpogoj 16 je narejen)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/17-frnikole-multiplayer.md in ga v celoti izvedi.«**
 >

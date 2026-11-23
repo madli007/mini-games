@@ -1,5 +1,7 @@
 # Prompt: Potapljanje ladjic s powerupi
 
+> **Stanje:** ✅ narejeno — commit `188c354` (20. 11. 2026)
+
 > V novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši:
 > **»Preberi prompts/04-ladjice.md in ga v celoti izvedi.«**
 

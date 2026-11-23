@@ -1,5 +1,7 @@
 # Prompt za AI agenta: kovanci, dnevne naloge, trgovina in kozmetika
 
+> **Stanje:** ✅ narejeno — commit `57f0e50` (20. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/02-trgovina.md in ga v celoti izvedi.«**
 

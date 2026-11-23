@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Smučarski skoki — 1. faza (fizika, kontrole, 3 skakalnice, točkovanje, trening z ghostom)
 
+> **Stanje:** ⬜ čaka — lahko takoj (1. od 3 faz)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/11-skoki.md in ga v celoti izvedi.«**
 >

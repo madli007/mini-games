@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Dirka frnikol (1. del: solo »Dirkalni dan« proti botom)
 
+> **Stanje:** ✅ narejeno — commit `59eb0ba` (23. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/16-frnikole.md in ga v celoti izvedi.«**
 >

@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Rušilec (party arena za Hrčkovo kroglo, 2–8 igralcev)
 
+> **Stanje:** ✅ narejeno — commit `089b11b` (22. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/07-krogla-rusilec.md in ga v celoti izvedi.«**
 >

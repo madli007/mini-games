@@ -14,6 +14,7 @@ supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/<id>.sql                   lastne tabele posamezne igre (če jih potrebuje)
 tests/, tests.html                        testi brez build koraka (tudi simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga za schema.sql
+prompts/README.md                         kazalo promptov (stanje, vrstni red, naslednja prosta številka)
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 PROGRESS.md                               dnevnik dela
 ```
@@ -65,6 +66,11 @@ PROGRESS.md                               dnevnik dela
 - `?offline=1` vsili offline način, `?igralec=2` ločeno identiteto (test z več igralci na Supabase).
 - Brskalnik upočasni časovnike v zavihkih v ozadju (po nekaj minutah na enkrat na minuto), zato lahko
   igralec v dolgo skritem zavihku »izgine« iz presence. Za daljše teste uporabi ločena okna.
+
+## Prompti
+- Kazalo in stanje vseh promptov: `prompts/README.md`. **Nov prompt:** vzemi naslednjo prosto številko iz kazala, ga takoj
+  vpiši (⬜) in na vrh prompta dodaj vrstico `> **Stanje:** …`. **Po izvedbi prompta:** stanje na vrhu prompta → ✅ s commitom,
+  vrstica v kazalu in oznaka pri točki v `PREDLOGI-IGER.md`. Imen datotek promptov ne spreminjaj.
 
 ## Git
 - Veja `main`. Commit z opisnim sporočilom v slovenščini. **Ne pushaj**, razen če uporabnik izrecno reče.

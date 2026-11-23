@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Hrčkova krogla — urejevalnik prog (level editor)
 
+> **Stanje:** ✅ narejeno — commita `95f2f95` in `c0011e0` (proge skupnosti) (22. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/06-krogla-urejevalnik.md in ga v celoti izvedi.«**
 >

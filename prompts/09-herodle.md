@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Herodle — 1. faza (podatki, logika, Klasika, bonus, statistika, Supabase)
 
+> **Stanje:** ✅ narejeno — commit `7928da7` (22. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/09-herodle.md in ga v celoti izvedi.«**
 >

@@ -1,11 +1,13 @@
 # Prompt za AI agenta: Pinball motor (1/4 — miza kot modul, osnova za Božični pinball)
 
+> **Stanje:** ⬜ čaka — lahko takoj (1. od 4 pinball promptov)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
-> **»Preberi prompts/19-pinball-motor.md in ga v celoti izvedi.«**
+> **»Preberi prompts/22-pinball-motor.md in ga v celoti izvedi.«**
 >
 > Ozadje: `PREDLOGI-IGER.md` → »41. Druga miza in več igralcev v pinballu«. Serija promptov:
-> **19 motor** (ta) → **20 Božična miza** (postavitev, streli, grafika, občutek) → **21 Božična pravila** (načini, multiballi,
-> wizard, DMD, glasba) → **22 več igralcev** (izmenično na obeh mizah).
+> **22 motor** (ta) → **23 Božična miza** (postavitev, streli, grafika, občutek) → **24 Božična pravila** (načini, multiballi,
+> wizard, DMD, glasba) → **25 več igralcev** (izmenično na obeh mizah).
 >
 > Ta prompt **ne naredi nove mize**. Pripravi motor, da je druga miza samo nova mapa s podatki, pravili in grafiko,
 > doda manjkajoče elemente, ki jih ima vsaka moderna miza, in orodja za uglaševanje občutka.
@@ -76,7 +78,7 @@ Druga miza bo potrebovala elemente, ki jih Alu nima. Dodaj jih v motor kot podat
 - **Merilec strelov** (`tools/pinball-shots.mjs` + `?debug=shots`): z vsakega flipperja (žogica pride iz inlana ali je v
   cradle) preleti čas udarca v korakih po 1 ms in zapiše, kateri strel žogica zadene, **širino okna** v ms (kako
   lahek je strel), **kam se žogica vrne** (feed: levi/desni flipper, pop bumperji, outlane, drain) in hitrost.
-  Izpis je **mapa strelov** (tabela), ki jo prompt 20 uporabi za uglaševanje geometrije. Na Alu mizi ga poženi in
+  Izpis je **mapa strelov** (tabela), ki jo prompt 23 uporabi za uglaševanje geometrije. Na Alu mizi ga poženi in
   rezultat zapiši v `games/pinball/README.md` (razdelek »Mapa strelov«).
 - **Bot** iz testov naj postane modul, ki ga lahko uporabi katera koli miza (ime mize kot parameter), in poročilo
   statistike: povprečno trajanje igre in žogice, delež izgubljenih žogic v outlanih / po sredini, število strelov
@@ -90,11 +92,11 @@ Druga miza bo potrebovala elemente, ki jih Alu nima. Dodaj jih v motor kot podat
   svojo mizo (tako kot Rušilec uvaža Kroglo). Zapiši kratek primer v `games/pinball/README.md`.
 
 ## Ni del te naloge
-Božična miza (prompt 20 in 21), več igralcev (prompt 22), sprememba tabele `scores`, spremembe repoja `pinball`.
+Božična miza (prompt 23 in 24), več igralcev (prompt 25), sprememba tabele `scores`, spremembe repoja `pinball`.
 
 ## Prioritete, če zmanjkuje časa
 1. Zlati test. 2. Ločitev motor / Alu miza z zelenim zlatim testom. 3. `?debug=1` in merilec strelov.
-4. Novi elementi in testna miza. Kar ostane, zapiši v `PROGRESS.md` in na začetek `prompts/20-pinball-bozic-miza.md`.
+4. Novi elementi in testna miza. Kar ostane, zapiši v `PROGRESS.md` in na začetek `prompts/23-pinball-bozic-miza.md`.
 
 ---
 
@@ -118,7 +120,7 @@ dnevnik, »Ni bilo preverjeno«).
 6. **Commit** na `main` z opisnim sporočilom v slovenščini. Ne pushaj.
 
 ### Na koncu
-Popravi `prompts/20-pinball-bozic-miza.md`, da se ujema z dejanskimi imeni modulov, vmesnikom pravil in elementi
+Popravi `prompts/23-pinball-bozic-miza.md`, da se ujema z dejanskimi imeni modulov, vmesnikom pravil in elementi
 (npr. kako se v podatkih opiše rampa, VUK, igrača). Na vrh dodaj, kar iz tega prompta ni bilo narejeno.
 
 V končnem odgovoru kratko povzemi: kaj je narejeno, kaj je pokazal zlati test, mapa strelov Alu mize,

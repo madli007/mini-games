@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Smučarski skoki — 3. faza (svetovni pokal, kariera, trgovina, športni okvir)
 
+> **Stanje:** ⬜ čaka — predpogoj: 12
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/13-skoki-pokal.md in ga v celoti izvedi.«**
 >

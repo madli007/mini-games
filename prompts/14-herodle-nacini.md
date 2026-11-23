@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Herodle — 2. faza (Emoji, Kostum, Dosje, arhiv, popolni dan)
 
+> **Stanje:** ✅ narejeno — commit `e3f8d5a` (23. 11. 2026)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/14-herodle-nacini.md in ga v celoti izvedi.«**
 >

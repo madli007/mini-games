@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Dirka frnikol (3. del: stave s kovanci huba + trgovina)
 
+> **Stanje:** ⬜ čaka — najbolje po 17
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/18-frnikole-stave.md in ga v celoti izvedi.«**
 >

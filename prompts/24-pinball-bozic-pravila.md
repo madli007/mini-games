@@ -1,10 +1,12 @@
 # Prompt za AI agenta: Božični pinball (3/4 — pravila, načini, wizard, DMD, glasba)
 
+> **Stanje:** ⬜ čaka — predpogoj: 23
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
-> **»Preberi prompts/21-pinball-bozic-pravila.md in ga v celoti izvedi.«**
+> **»Preberi prompts/24-pinball-bozic-pravila.md in ga v celoti izvedi.«**
 >
-> Predpogoj: prompta 19 (motor) in 20 (miza) sta narejena. Preberi `games/bozicni-pinball/README.md` (mapa strelov,
-> legenda vstavkov) in sekcijo »Božični pinball« v `PROGRESS.md`. Nedokončano iz prompta 20 naredi najprej.
+> Predpogoj: prompta 22 (motor) in 23 (miza) sta narejena. Preberi `games/bozicni-pinball/README.md` (mapa strelov,
+> legenda vstavkov) in sekcijo »Božični pinball« v `PROGRESS.md`. Nedokončano iz prompta 23 naredi najprej.
 >
 > Cilj: miza postane **»feature rich«** z globino, ki drži igralca dlje časa: jasna pot do wizarda, vsak način
 > drugačen, vse označeno s puščicami, bogat DMD in praznična glasba.
@@ -18,7 +20,7 @@ Pisma (nabiralnik) → 6 načinov (2 na vsakega dobrega moža)
   ├─ Božiček:   »Vožnja s sanmi«, »Dimnik za dimnikom«    → mini-wizard »Sveti večer«
   └─ Dedek Mraz: »Novoletna jelka«, »Ognjemet«           → mini-wizard »Novoletni sprejem«
 Vsi trije mini-wizardi → WIZARD »POLNOČ«
-Vzporedno: Darilni multiball (prompt 20), Kepanje multiball, Adventni koledar (mystery), hurry-upi, množitelj mize
+Vzporedno: Darilni multiball (prompt 23), Kepanje multiball, Adventni koledar (mystery), hurry-upi, množitelj mize
 ```
 
 ## Načini (začnejo se v nabiralniku »Pisma«, ko je pismo prižgano)

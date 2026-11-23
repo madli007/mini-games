@@ -1,14 +1,16 @@
 # Prompt za AI agenta: Božični pinball (2/4 — miza: postavitev, streli, grafika, občutek)
 
+> **Stanje:** ⬜ čaka — predpogoj: 22
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
-> **»Preberi prompts/20-pinball-bozic-miza.md in ga v celoti izvedi.«**
+> **»Preberi prompts/23-pinball-bozic-miza.md in ga v celoti izvedi.«**
 >
-> Predpogoj: prompt 19 (motor) je narejen. Preberi njegov zapis v `PROGRESS.md` in `games/pinball/README.md`
-> (struktura motorja, vmesnik pravil, opis elementov, merilec strelov, bot). Če je prompt 19 pustil nedokončano
+> Predpogoj: prompt 22 (motor) je narejen. Preberi njegov zapis v `PROGRESS.md` in `games/pinball/README.md`
+> (struktura motorja, vmesnik pravil, opis elementov, merilec strelov, bot). Če je prompt 22 pustil nedokončano
 > delo, ga naredi najprej.
 >
 > Ta prompt naredi **mizo**: geometrijo, strele, puščice, grafiko, igrače, osnovna pravila in **občutek**.
-> Globoka pravila (načini, wizard, DMD animacije, glasba) so prompt 21. Po tem promptu mora biti miza že prijetna
+> Globoka pravila (načini, wizard, DMD animacije, glasba) so prompt 24. Po tem promptu mora biti miza že prijetna
 > za igranje: lahko streljaš vse strele, imaš skill shot, lock in multiball z jackpoti, bonus X, extra ball.
 
 ---
@@ -20,7 +22,7 @@
   `games/bozicni-pinball/table/`. Igra **uvaža motor** iz `../pinball/src/engine/` (ne kopiraj kode).
 - **Kratek opis (za kartico):** »Snežna decembrska miza: Miklavž, Božiček in Dedek Mraz. Rampe, dimnik, jelka,
   darilni multiball in ognjemet ob polnoči.«
-- **Način:** `single` · **Igralci:** 1 (več igralcev: prompt 22) · **Oznake:** `pinball`, `rekordi`, `praznično`
+- **Način:** `single` · **Igralci:** 1 (več igralcev: prompt 25) · **Oznake:** `pinball`, `rekordi`, `praznično`
 - **Ikona / barva:** 🎄 · `#e63946` (ali zlata `#ffd166`)
 - **Rezultat:** točke, več je bolje. Lestvica **prek huba** (`hub.submitScore`, `ui.leaderboard`), ne v tabeli `scores`.
   Lokalni arkadni top 10 z inicialkami lahko ostane kot v Alu mizi (motor).
@@ -65,7 +67,7 @@ Od leve proti desni, v pahljači:
 - **Zgornji kanali Z·V·O·N** (4 rollover kanali na vrhu, lane change s flipperji) → **bonus X** (2× … 6×).
 - **3 pop bumperji »Snežaki«** v zgornjem levem žepu (orbit in kanali jih hranijo).
 - **Adventni venec**: **4 standup tarče** (sveče), razporejene okoli centra → prižgejo **Adventni koledar** (mystery,
-  prompt 21) v nabiralniku.
+  prompt 24) v nabiralniku.
 - **Kickback »Sankač«** v levem outlanu, **ball save »Angelček«** (vstavek »S« med flipperjema).
 - **Igrače:** **jelka** (luči po nadstropjih, zvezda na vrhu, se rahlo zavrti v načinih), **sani z jeleni**, ki se po
   žici vozijo čez vrh mize med načini, **dimnik** z dimom (delci), **darilna vreča** z vidnimi zaklenjenimi žogicami,
@@ -88,11 +90,11 @@ Od leve proti desni, v pahljači:
 - **Combo:** zaporedni veliki streli v oknu (motor); rampa → rampa → orbit … z naraščajočo vrednostjo, DMD prikaz.
 - **Extra ball** (oranžna) se prižge v nabiralniku po npr. 10 rampah.
 - Točke uravnotežene tako, da je razpon podoben Alu mizi (lestvici se lahko primerjata po občutku).
-- Načini, mystery, wizard in kepanje multiball so v promptu 21; tukaj pusti kljuke (nabiralnik naj za zdaj da
+- Načini, mystery, wizard in kepanje multiball so v promptu 24; tukaj pusti kljuke (nabiralnik naj za zdaj da
   nagrado točk in sporočilo »Pisma kmalu«).
 
 ## Občutek (najpomembnejši del — ne preskoči)
-- Z **merilcem strelov** (prompt 19) iteriraj geometrijo, dokler ne velja:
+- Z **merilcem strelov** (prompt 22) iteriraj geometrijo, dokler ne velja:
   - vsak velik strel je zadetljiv z vsaj enega flipperja z oknom **≥ 25 ms** (rampe in orbiti ≥ 35 ms z idealnega
     flipperja), center jelka namenoma ožji (15–25 ms);
   - rampe in orbiti v **≥ 85 %** zadetkov podajo žogico na predvideni flipper (flow), žogica iz inlana se umiri v cradlu;
@@ -124,7 +126,7 @@ Od leve proti desni, v pahljači:
   `hub.awardXp` (podobno kot `hubXp` v Alu mizi). Dosežki (vsaj 4): prvi multiball, super jackpot, super skill shot,
   combo ×5. Naloge v `games.json`: odigraj igro, zadeni super jackpot, doseži X točk (tedenska: 3 multiballi).
 
-## Ni del te naloge (prompt 21)
+## Ni del te naloge (prompt 24)
 Načini treh dobrih mož, mini-wizardi, wizard »Polnoč«, Kepanje multiball, Adventni koledar (mystery), hurry-upi,
 množitelj mize, DMD animacije in praznična glasba.
 
@@ -144,7 +146,7 @@ množitelj mize, DMD animacije in praznična glasba.
   le kjer se ne tepe s pinball izgledom (glavni zaslon pinballa ima svoj CSS).
 - Pravila mize brez DOM-a, testi v `games/pinball/tests/` (ali `tests/tests.js`): lock/multiball/jackpot zaporedja,
   skill shot, bonus X, extra ball, combo, bot statistika (meje zgoraj).
-- Alu miza in zlati test iz prompta 19 morata ostati zelena.
+- Alu miza in zlati test iz prompta 22 morata ostati zelena.
 
 ### Obvezna preverjanja (pred commitom)
 1. Strežnik prek `.claude/launch.json` (`mini-games`, port 8124), konzola brez napak (Božična miza, Alu miza, dashboard).
@@ -157,6 +159,6 @@ množitelj mize, DMD animacije in praznična glasba.
 6. **Commit** na `main`. Ne pushaj.
 
 ### Na koncu
-Popravi `prompts/21-pinball-bozic-pravila.md` po dejanskem stanju (imena strelov, kljuke za načine, kaj je ostalo).
+Popravi `prompts/24-pinball-bozic-pravila.md` po dejanskem stanju (imena strelov, kljuke za načine, kaj je ostalo).
 
 V končnem odgovoru kratko povzemi: kaj je narejeno, mapa strelov in bot statistika, kako igrati, kaj ni bilo preverjeno.

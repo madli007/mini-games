@@ -1,5 +1,7 @@
 # Prompt za AI agenta: Dirka frnikol — »Kaos dirka« (čista 3D fizika, brez pogona)
 
+> **Stanje:** ⬜ čaka — lahko takoj (predpogoj 16 je narejen)
+
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/21-frnikole-kaos.md in ga v celoti izvedi.«**
 >
