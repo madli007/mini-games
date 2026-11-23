@@ -350,6 +350,9 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
       (prek RPC, z omejitvijo), med dirko pa imajo 2–3 »sunke«, s katerimi zrinejo svojo ali tujo frnikolo.
     - Proge so iz urejevalnika Krogle. Slovenski komentator: »Rdeča prehiteva v zadnjem zavoju!«
     - Zelo družabno, saj zabava tudi tiste, ki niso spretni.
+    - **Solo »Dirkalni dan«:** 5 dirk proti 3–7 botom stavnikom z osebnostmi (tudi oni sunkajo), dnevni seed za
+      vse enak. Prompt za 1. del: `prompts/16-frnikole.md` (ob koncu napiše še `17-frnikole-multiplayer.md` in
+      `18-frnikole-stave.md`).
 
 **B) Na motorju pinballa**
 
