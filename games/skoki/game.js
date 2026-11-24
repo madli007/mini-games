@@ -117,7 +117,10 @@ async function loadData() {
   HILLS = [];
   for (const def of defs) {
     const errs = validateHill(def);
-    if (errs.length) { console.warn('Skakalnica ' + def.id + ':', errs); continue; }
+    // neznan parameter fizike (npr. nova skakalnica s staro, predpomnjeno kodo) le opozori — skakalnica ostane v meniju
+    const hard = errs.filter(e => !/^physics\.[a-zA-Z]+: neznan parameter/.test(e));
+    if (errs.length) console.warn('Skakalnica ' + def.id + ':', errs);
+    if (hard.length) continue;
     if (!def.group) def.group = 'trening';
     HILLS.push({ def, hill: buildHill(def) });
   }
