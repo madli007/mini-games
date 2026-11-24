@@ -109,6 +109,7 @@ export class Renderer {
     this.world = buildWorld(hill, this.q);
     this.scene.add(this.world.group);
     this.me = makeJumper(skin);
+    this.me.root.scale.setScalar(T.jumperScale || 1);   // otroška skakalnica: manjši skakalec
     this.scene.add(this.me.root);
     // mehka »senca« pod skakalcem (vedno, tudi brez senčnih map) — za občutek višine
     this.blob = new THREE.Group();
@@ -126,13 +127,13 @@ export class Renderer {
   setSkin(skin) {
     if (!this.me || !skin || (this.skin && this.skin.suit === skin.suit && this.skin.helmet === skin.helmet && String(this.skin.flag) === String(skin.flag))) return;
     this.scene.remove(this.me.root); this.me.dispose();
-    this.me = makeJumper(skin); this.scene.add(this.me.root); this.skin = skin;
+    this.me = makeJumper(skin); this.me.root.scale.setScalar(this.hill?.def.theme.jumperScale || 1); this.scene.add(this.me.root); this.skin = skin;
   }
 
   /** Število ghostov (prosojni skakalci). */
   setGhosts(n) {
     while (this.ghosts.length > n) { const g = this.ghosts.pop(); this.scene.remove(g.root); g.dispose(); }
-    while (this.ghosts.length < n) { const g = makeJumper(GHOST_SKIN, { ghost: true }); this.scene.add(g.root); this.ghosts.push(g); }
+    while (this.ghosts.length < n) { const g = makeJumper(GHOST_SKIN, { ghost: true }); g.root.scale.setScalar(this.hill?.def.theme.jumperScale || 1); this.scene.add(g.root); this.ghosts.push(g); }
   }
 
   setRecord(s) { this.world?.recordLine(s); }

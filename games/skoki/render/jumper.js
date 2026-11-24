@@ -113,8 +113,11 @@ export function makeJumper(skin = DEFAULT_SKIN, { ghost = false } = {}) {
    * @param {Object} v {x, y, pitch, phase, crouch, air, alpha, prep, landType, landT, fallen, flail, cheer, t}
    * @param {number} dt
    */
+  let inrunPitch = null;   // zadnji nagib na mizi (za gladek prehod v let)
   function pose(v, dt) {
     root.position.set(v.x, v.y, v.z || 0);
+    if (v.phase === 'inrun' || v.phase === 'gate') inrunPitch = v.pitch;
+    else if (v.phase !== 'air') inrunPitch = null;
     let target, k = 12;
     if (v.phase === 'gate') target = POSES.sit;
     else if (v.phase === 'inrun') target = lerpPose(POSES.stand, POSES.tuck, v.crouch);
@@ -145,7 +148,12 @@ export function makeJumper(skin = DEFAULT_SKIN, { ghost = false } = {}) {
     // mahanje z rokami ob nestabilnosti
     if (v.flail && v.phase === 'air' && !v.prep && !v.fallen) { flailT += dt * 14; p.arm = -110 + Math.sin(flailT) * 60; p.elbow = 30 + Math.sin(flailT * 1.3) * 20; }
 
-    root.rotation.set(0, 0, v.pitch);
+    // ob odrivu fizika postavi nagib takoj na smer leta + 55°; izris ga v prvih 0,3 s leta gladko pripelje z naklona mize,
+    // sicer se trup v enem okvirju prevesi ~1 m nazaj po skakalnici (videti je kot prezgoden odriv). Fizika je nespremenjena.
+    let rp = v.pitch;
+    if (v.phase === 'air' && inrunPitch != null && v.air >= 0 && v.air < 0.3 && !v.fallen) { const u = v.air / 0.3, e = u * u * (3 - 2 * u); rp = inrunPitch + (v.pitch - inrunPitch) * e; }
+    else if (v.phase === 'air' && v.air >= 0.3) inrunPitch = null;
+    root.rotation.set(0, 0, rp);
     // padec: kotaljenje
     if (v.fallen && v.phase !== 'air') {
       const t = Math.min(v.landT, 2.2);

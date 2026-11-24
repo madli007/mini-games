@@ -83,7 +83,11 @@
       "Zajček",
       "Prvi koraki",
       "Hop!"
-    ]
+    ],
+    "jumperScale": 0.65
   },
-  "desc": "Otroška skakalnica za šalo in prve korake. Publiko sestavljajo plišasti medvedki in zajčki."
+  "desc": "Otroška skakalnica za šalo in prve korake. Publiko sestavljajo plišasti medvedki in zajčki.",
+  "physics": {
+    "takeoffWindow": 2
+  }
 }

@@ -981,3 +981,7 @@ Stanje: **končano** (24. 11. 2026); SQL pognan v Supabase, test tekme s Supabas
 - Žirija v brskalniku (pokrita s testi; v testnih tekmah nihče ni preskočil 95 % HS).
 - Ekipna tekma: le seštevek ekip v rezultatih (vrstni red »po skupinah« ni narejen).
 - Zastave (emoji) se na Windows prikažejo kot črki (npr. »SI«) — omejitev sistemske pisave.
+
+### Popravki po igranju (24. 11. 2026)
+- **Zajček:** miza je 3 m pri 41 km/h, smuči segajo čez rob že ~0,25 s prej, pritisk tik pred tem je bil prezrt (okno odriva 0,22 s). Nov parameter skakalnice `physics.takeoffWindow` (Zajček: 2 → okna odriva ×2) in manjši, otroški skakalec (`theme.jumperScale` 0,65). Uravnoteženje Zajčka ostane v ciljih.
+- **Odriv »nazaj po skakalnici« (vse skakalnice):** fizika ob odrivu nastavi nagib na smer leta + 55°; izris je to pokazal v enem okvirju, zato se je trup prevesil ~1 m nazaj. Zdaj izris (`render/jumper.js`) v prvih 0,3 s leta nagib gladko pripelje z naklona mize. Fizika, ghosti in lestvice so nespremenjeni.

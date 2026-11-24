@@ -1097,6 +1097,8 @@ const dbgApi = {
   bestKey,
   /** Testiranje: semafor takoj zelen. */
   skipRed() { if (G.state === 'gate') G.gateT = Math.max(G.gateT, RED_TIME + 0.01); },
+  /** Testiranje: n tickov skoka (brez izrisa). */
+  step(n = 1) { for (let i = 0; i < n && G.state === 'jump'; i++) tick(); return G.J.s; },
   /** Testiranje: odigraj preostanek skoka takoj (ista pot kot zanka: tick → dogodki → konec). */
   fastForward(max = 6000) {
     let n = 0;

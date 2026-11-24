@@ -196,7 +196,7 @@ export function validateHill(def) {
   if (def.group != null && !(typeof def.group === 'string' && /^[a-z0-9-]{2,20}$/.test(def.group))) e.push('group: male črke, številke, »-« (privzeto »trening«).');
   if (def.unlock != null && !(typeof def.unlock?.hill === 'string' && ['k', 'hs'].includes(def.unlock.over))) e.push('unlock: { hill, over: "k"|"hs" }.');
   if (def.physics != null) {
-    const F = def.physics, known = ['gravity', 'airDensity', 'liftScale', 'pushScale', 'noAir', 'thermals'];
+    const F = def.physics, known = ['gravity', 'airDensity', 'liftScale', 'pushScale', 'noAir', 'thermals', 'takeoffWindow'];
     if (typeof F !== 'object') e.push('physics mora biti objekt.');
     else {
       for (const k of Object.keys(F)) if (!known.includes(k)) e.push(`physics.${k}: neznan parameter.`);
@@ -206,6 +206,7 @@ export function validateHill(def) {
       if (F.pushScale != null && !(F.pushScale >= 0.5 && F.pushScale <= 4)) e.push('physics.pushScale: 0,5–4.');
       if (F.thermals != null && !(F.thermals >= 0 && F.thermals <= 3)) e.push('physics.thermals: 0–3.');
       if (F.noAir != null && typeof F.noAir !== 'boolean') e.push('physics.noAir: true/false.');
+      if (F.takeoffWindow != null && !(F.takeoffWindow >= 1 && F.takeoffWindow <= 3)) e.push('physics.takeoffWindow: 1–3 (faktor oken odriva).');
     }
   }
   if (e.length) return e;
