@@ -27,22 +27,21 @@ export function skokiTests(test, { eq, ok }) {
     const J = PH.simulate({ hill, P: params || ctx.skokiParams, gate: gate ?? def.gates.default, wind, record, input: (s, t) => { const i = bot.input(s); rec.push(t, i); return i; } });
     return { J, def, hill, rec };
   };
-  /** Vnosi »po scenariju«: odriv z dvoklikom (drugi klik z napako err s), nagib, pristanek: prvi klik lead s pred stikom,
-   *  drugi (telemark) 0,15 s kasneje; hold = samo en klik (dve nogi); lead -1 = brez klika. */
-  const scripted = ({ err = 0, pitch = () => 18, lead = 0.28, hold = false }) => {
-    const clicks = []; let to = 0, land = -1;
+  /** Vnosi »po scenariju«: odriv z obema gumboma (z napako err s), absolutni ciljni nagib pitch(s) (pretvorjen v
+   *  popravek glede na samodejni položaj), pristanek lead s pred stikom: oba gumba (telemark) ali en (hold = dve nogi). */
+  const scripted = ({ err = 0, pitch = null, lead = 0.28, hold = false }) => {
+    let to = -1, land = -1;
     return s => {
-      const t = s.tick, btn = () => clicks.some(c => t >= c && t < c + 2) ? 1 : 0;
+      const t = s.tick, held = t0 => t0 >= 0 && t >= t0 && t < t0 + 2;
       if (s.phase === 'inrun' || (s.phase === 'air' && !s.takeoff)) {
         const rel = s.phase === 'inrun' ? -(s.d / s.v) : (t - s.edgeTick) * PH.STEP;
-        if (to === 0 && t > 12 && rel >= err - 0.15) { clicks.push(t); to = 1; }
-        else if (to === 1 && rel >= err && t - clicks[0] >= 3) { clicks.push(t); to = 2; }
-        return { btn: btn(), pitch: 18 };
+        if (to < 0 && t > 12 && rel >= err) to = t;
+        return { btn: held(to) ? 2 : 0, pitch: 0 };
       }
       const ttc = s.vn > 0.1 ? s.hag / s.vn : 9;
-      if (lead > 0 && land < 0 && s.takeoff && ttc <= lead) { land = t; clicks.push(t); }
-      else if (land >= 0 && !hold && clicks[clicks.length - 1] === land && (t - land) * PH.STEP >= 0.15) clicks.push(t);
-      return { btn: btn(), pitch: pitch(s) };
+      if (lead > 0 && land < 0 && s.takeoff && ttc <= lead) land = t;
+      const abs = pitch ? pitch(s) : null;
+      return { btn: held(land) ? (hold ? 1 : 2) : 0, pitch: abs == null || s.auto == null ? 0 : Math.max(-60, Math.min(80, abs - s.auto)) };
     };
   };
 
@@ -135,20 +134,26 @@ export function skokiTests(test, { eq, ok }) {
     ok(perfect.dist > late.dist + 3, `prepozno krajši (${perfect.dist} / ${late.dist})`);
     ok(late.takeoff.err > 0 && early.takeoff.err < 0);
   });
-  test('skoki: odriv šele z dvoklikom, telemark z dvoklikom, en klik = dve nogi', ctx => {
+  test('skoki: odriv le z obema gumboma, telemark z obema, en gumb = dve nogi, brez vnosa pred K brez padca', ctx => {
     const { def, hill } = hillOf(ctx, 'bistra');
-    // en sam klik na koncu mize: ni odriva → »padeš z mize« (samodejen šibek odriv)
+    // le en gumb na koncu mize: ni odriva → »padeš z mize« (samodejen šibek odriv)
     let clicked = -1;
     const one = PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: s => {
       if (s.phase === 'inrun' && clicked < 0 && s.d / s.v < 0.02) clicked = s.tick;
-      return { btn: clicked >= 0 && s.tick - clicked < 2 ? 1 : 0, pitch: s.gamma / D.DEG + BOT.BOT_ALPHA };
+      return { btn: clicked >= 0 && s.tick - clicked < 2 ? 1 : 0, pitch: 0 };
     } }).s;
-    ok(one.takeoff.err > ctx.skokiParams.takeoff.lateLimit, 'en klik ni odriv: ' + one.takeoff.err);
-    const good = s => s.gamma / D.DEG + BOT.BOT_ALPHA;
-    const run = o => PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01, pitch: good, ...o }) }).s;
-    eq(run({}).landing.type, 'tele');
+    ok(one.takeoff.err > ctx.skokiParams.takeoff.lateLimit, 'en gumb ni odriv: ' + one.takeoff.err);
+    const run = o => PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01, ...o }) }).s;
+    const plain = run({});
+    eq(plain.landing.type, 'tele');
+    ok(plain.takeoff.perfect, 'oba gumba ob robu = ✨');
     eq(run({ hold: true }).landing.type, 'two');
-    ok(run({}).takeoff.perfect, 'dvoklik ob robu = ✨');
+    // brez premikanja miške: samodejni letalni položaj → pristanek pred K, brez padca
+    for (const d2 of ctx.skokiHills) {
+      const h2 = H.buildHill(d2);
+      const r = PH.simulate({ hill: h2, P: ctx.skokiParams, gate: d2.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01 }) }).s;
+      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * 0.7, `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
+    }
   });
   test('skoki: čelni veter podaljša, hrbtni skrajša (velika ~+10–15 m pri +2 m/s)', ctx => {
     const avg = (id, w) => { let s = 0; for (let i = 0; i < 8; i++) s += botJump(ctx, id, { skill: 0.7, seed: i * 31 + 1, wind: { mode: 'const', speed: w, seed: i } }).J.s.dist; return s / 8; };
@@ -171,7 +176,7 @@ export function skokiTests(test, { eq, ok }) {
     ok(['fall', 'touch'].includes(late.landing.type), 'prepozen klik: ' + late.landing.type);
     const later = run({ err: 0.01, pitch: good, lead: 0.04 });
     eq(later.landing.type, 'fall', 'klik po refleksu');
-    const nose = run({ err: 0.01, pitch: () => -15 });
+    const nose = run({ err: 0.01, pitch: s => s.gamma / D.DEG - 15 });
     eq(nose.fallen, 'nose', 'prevelik nagib naprej');
     eq(nose.landing.type, 'fall');
     const tele = run({ err: 0.01, pitch: good, lead: 0.28 });
@@ -219,7 +224,7 @@ export function skokiTests(test, { eq, ok }) {
     const { def: d2, hill } = hillOf(ctx, 'bistra');
     const run = o => PH.simulate({ hill, P: ctx.skokiParams, gate: d2.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01, pitch: s => s.gamma / D.DEG + BOT.BOT_ALPHA, ...o }) }).s;
     const sum = s => SC.styleFromJudges(JU.judgeScores(s, ctx.skokiParams, 1)).sum;
-    const tele = run({ lead: 0.28 }), two = run({ lead: 0.3, hold: true }), none = run({ lead: -1 }), fall2 = run({ lead: 0.28, pitch: () => -15 });
+    const tele = run({ lead: 0.28 }), two = run({ lead: 0.3, hold: true }), none = run({ lead: -1 }), fall2 = run({ lead: 0.28, pitch: s => s.gamma / D.DEG - 15 });
     eq(fall2.landing.type, 'fall');
     ok(sum(two) > sum(none), `dve nogi ${sum(two)} > brez priprave ${sum(none)}`);
     for (const s of [tele, two, fall2]) for (const j of JU.judgeScores(s, ctx.skokiParams, 1)) ok(j >= 0 && j <= 20 && Number.isInteger(j * 2));

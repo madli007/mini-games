@@ -4,11 +4,11 @@
 
    Skok je določen s: skakalnico, parametri (physics-params.json), zaletnim
    mestom, konfiguracijo vetra (seed) in zaporedjem vnosov po tickih.
-   Vnos na tick: { btn: 0|1, pitch: ciljni nagib v stopinjah (korak 0,5°) }.
-   Šteje le pritisk (prehod btn 0 → 1, »klik«); dvoklik = dva klika v takeoff.dblWindow sekundah.
-     zalet: skakalec se sam spusti v držo; DVOKLIK na koncu mize = odriv (tajming = drugi klik)
-     let:   pitch = ciljni nagib telesa (večji = bolj pokonci / nazaj, manjši = bolj naprej)
-            prvi klik = priprava na pristanek; DVOKLIK pred stikom = telemark, en klik = dve nogi
+   Vnos na tick: { btn: 0|1|2 (število pritisnjenih gumbov), pitch: popravek nagiba v stopinjah (korak 0,5°) }.
+     zalet: skakalec se sam spusti v držo; OBA GUMBA HKRATI (btn 2) na koncu mize = odriv
+     let:   skakalec sam drži letalni položaj (smer leta z zamikom + body.autoAlpha); pitch = popravek
+            (+ = bolj pokonci / nazaj, − = bolj naprej)
+            prvi pritisk = priprava na pristanek; oba gumba (btn 2) pred stikom = telemark, en gumb = dve nogi
    Tick 0 = štart z zaletnega mesta (čakanje na semafor je stvar igre).
    ===================================================================== */
 import { DEG, sin, cos, atan2, hypot, clamp, lerp, table } from './dmath.js';
@@ -59,7 +59,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     phase: 'inrun', tick: 0, gate,
     d: hill.gateD(gate), v: IR.startSpeed, crouch: 0,
     x: 0, y: 0, vx: 0, vy: 0, pitch: 0, omega: 0, alpha: 0, gamma: 0, speed: 0, hag: 0,
-    target: B.startPitch, btn: 0, prevBtn: 1, click1: -1,   // prevBtn=1: štartni pritisk ni klik dvoklika
+    target: B.startPitch, btn: 0, prevBtn: 2, gs: 0,   // prevBtn=2: štartni pritisk ni odriv
     tableSpeed: 0, edgeTick: -1, airTick: -1,
     takeoff: null, prep: null, landing: null, fallen: null,
     wobble: 0, flail: 0, flightTime: 0, maxHag: 0, windSamples: [], windIdx: 0,
@@ -94,17 +94,10 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
   }
 
   /* ---------------- zalet */
-  /** Ali je ta klik drugi klik dvoklika? (prvi se zapomni v s.click1) */
-  function dblClick() {
-    const isDbl = s.click1 >= 0 && (s.tick - s.click1) * STEP <= T.dblWindow;
-    s.click1 = isDbl ? -1 : s.tick;
-    return isDbl;
-  }
-
   function stepInrun(inp) {
-    const pressed = inp.btn && !s.prevBtn;
+    const chord = inp.btn >= 2 && s.prevBtn < 2;   // oba gumba hkrati
     const tte = s.v > 0.1 ? s.d / s.v : 9;   // čas do roba
-    if (pressed && s.tick > 10 && dblClick() && tte <= T.earlyLimit) {
+    if (chord && s.tick > 10 && tte <= T.earlyLimit) {
       doTakeoff(-tte - T.idealOffset);
       return;
     }
@@ -134,22 +127,21 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
 
   /* ---------------- let */
   function stepAir(inp) {
-    const pressed = inp.btn && !s.prevBtn;
+    const pressed = inp.btn >= 1 && s.prevBtn === 0, chord = inp.btn >= 2 && s.prevBtn < 2;
     if (!s.takeoff) {
       const late = (s.tick - s.edgeTick) * STEP;
-      if (pressed && dblClick()) doTakeoff(late);
+      if (chord) doTakeoff(late);
       else if (late > T.lateLimit) doTakeoff(T.lateLimit * 2.5);
       if (s.takeoff) return;
-    } else if (!s.prep && pressed && !s.fallen) {
-      s.prep = { tick: s.tick, type: 'press', clicks: 1 };
+    } else if (!s.prep && (pressed || chord) && !s.fallen) {
+      s.prep = { tick: s.tick, type: 'press', clicks: chord ? 2 : 1 };
       ev.push({ type: 'prep' });
-    } else if (pressed && s.prep && s.prep.type === 'press' && s.prep.clicks === 1 && (s.tick - s.prep.tick) * STEP <= T.dblWindow) {
-      s.prep.clicks = 2;   // dvoklik = telemark
+    } else if (chord && s.prep && s.prep.type === 'press' && s.prep.clicks === 1) {
+      s.prep.clicks = 2;   // oba gumba = telemark
       ev.push({ type: 'tele' });
-    } else if (pressed && s.prep && s.prep.type === 'reflex') {
+    } else if ((pressed || chord) && s.prep && s.prep.type === 'reflex') {
       s.prep.late = true;   // klik šele po refleksu: prepozno za telemark
     }
-    if (s.takeoff) s.target = clamp(inp.pitch, B.pitchMin, B.pitchMax);
 
     const t = s.tick * STEP;
     const w = W.at(t, s.x);
@@ -161,6 +153,13 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     const gam = atan2(ry, rx);
     const alpha = s.pitch - gam;
     s.alpha = alpha; s.gamma = gam; s.speed = V;
+    // samodejni letalni položaj: sledi smeri leta z zamikom (autoLag); vnos je popravek
+    if (s.takeoff) {
+      if (s.tick === s.takeoff.tick + 1) s.gs = gam;
+      s.gs += (gam - s.gs) * Math.min(1, STEP / B.autoLag);
+      s.auto = s.gs / DEG + B.autoAlpha;
+      s.target = clamp(s.auto + inp.pitch, B.pitchMin, B.pitchMax);
+    }
     const ad = alpha / DEG;
     const q = 0.5 * rho * V * V;
     const air = s.takeoff ? (s.tick - s.takeoff.tick) * STEP : 0;
@@ -284,7 +283,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     /** En tick simulacije. */
     step(inp) {
       if (s.phase === 'done') return;
-      s.btn = inp.btn ? 1 : 0;
+      s.btn = inp.btn >= 2 ? 2 : inp.btn ? 1 : 0;
       if (s.phase === 'inrun') stepInrun(inp);
       else if (s.phase === 'air') stepAir(inp);
       else if (s.phase === 'out') stepOut();

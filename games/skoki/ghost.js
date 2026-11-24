@@ -8,7 +8,7 @@
    ===================================================================== */
 import { createJump } from './physics.js';
 
-export const GHOST_VERSION = 1;
+export const GHOST_VERSION = 2;   // 2: gumb 0|1|2 (oba gumba)
 export const GHOST_MAX = 4096;
 const MODES = ['off', 'const', 'random'];
 
@@ -16,7 +16,7 @@ const MODES = ['off', 'const', 'random'];
 export class InputRecorder {
   constructor() { this.changes = []; this.last = null; this.ticks = 0; }
   push(tick, inp) {
-    const b = inp.btn ? 1 : 0, p = Math.round(inp.pitch * 2);
+    const b = inp.btn >= 2 ? 2 : inp.btn ? 1 : 0, p = Math.round(inp.pitch * 2);
     if (!this.last || this.last[1] !== b || this.last[2] !== p) { this.last = [tick, b, p]; this.changes.push(this.last); }
     this.ticks = tick + 1;
   }
@@ -24,7 +24,7 @@ export class InputRecorder {
 
 /** Funkcija vnosov iz zapisanih sprememb (za simulate / createJump). */
 export function inputFrom(changes) {
-  let i = 0, cur = { btn: 0, pitch: 18 };
+  let i = 0, cur = { btn: 0, pitch: 0 };
   return (_s, tick) => {
     while (i < changes.length && changes[i][0] <= tick) { cur = { btn: changes[i][1], pitch: changes[i][2] / 2 }; i++; }
     return cur;
@@ -71,7 +71,7 @@ export function encodeGhost(g) {
   for (const [t, b, p] of g.changes) {
     pushU(out, t - pt);
     const dp = p - pp;
-    out.push(b | (dp !== 0 ? 2 : 0));
+    out.push(b | (dp !== 0 ? 4 : 0));
     if (dp !== 0) pushZ(out, dp);
     pt = t; pp = p;
   }
@@ -106,8 +106,8 @@ export function decodeGhost(str) {
   for (let i = 0; i < nc; i++) {
     pt += U();
     const f = b[p++];
-    if (f & 2) pp += Z();
-    changes.push([pt, f & 1, pp]);
+    if (f & 4) pp += Z();
+    changes.push([pt, f & 3, pp]);
   }
   return { pv, hill, gate, wind: { mode, seed, speed }, ticks, dist, total, changes };
 }

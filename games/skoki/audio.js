@@ -6,7 +6,13 @@
    ===================================================================== */
 
 export class Audio {
-  constructor() { this.ctx = null; this.muted = false; this.music = null; this.loops = null; }
+  constructor() { this.ctx = null; this.muted = false; this.music = null; this.loops = null; this.loopsOn = false; }
+
+  /** Zanke (smuči, veter, publika) le med igro; v meniju in med pavzo popolna tišina. */
+  setLoops(on) {
+    this.loopsOn = on;
+    if (this.loopBus) this.loopBus.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, on ? 0.2 : 0.03);
+  }
 
   /** Ustvari kontekst ob prvi uporabnikovi akciji. */
   unlock() {
@@ -22,6 +28,7 @@ export class Audio {
     const d = this.noise.getChannelData(0);
     let b = 0;
     for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; b = 0.97 * b + 0.03 * w; d[i] = w * 0.5 + b * 2; }
+    this.loopBus = c.createGain(); this.loopBus.gain.value = this.loopsOn ? 1 : 0; this.loopBus.connect(this.master);
     this._loops();
   }
 
@@ -34,7 +41,7 @@ export class Audio {
 
   _loops() {
     const c = this.ctx;
-    const mk = (type, f, q) => { const n = this._src(); const flt = c.createBiquadFilter(); flt.type = type; flt.frequency.value = f; flt.Q.value = q; const g = c.createGain(); g.gain.value = 0; n.connect(flt); flt.connect(g); g.connect(this.master); n.start(); return { flt, g }; };
+    const mk = (type, f, q) => { const n = this._src(); const flt = c.createBiquadFilter(); flt.type = type; flt.frequency.value = f; flt.Q.value = q; const g = c.createGain(); g.gain.value = 0; n.connect(flt); flt.connect(g); g.connect(this.loopBus); n.start(); return { flt, g }; };
     const ski = mk('bandpass', 900, 0.8);
     const wind = mk('lowpass', 500, 0.5);
     const crowd = mk('bandpass', 1100, 0.6);

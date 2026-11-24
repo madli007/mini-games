@@ -6,18 +6,20 @@ Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Determi
 
 ## Kontrole
 
-Skok se upravlja **samo z miško** (na telefonu z dotikom), kot pri klasičnih računalniških skokih: dvoklik se zgodi
-med vodenjem nagiba, zato šteje tudi ravnotežje v tistem trenutku. Preslednica in puščice skoka ne upravljajo, desni
-gumb ni potreben (meni brskalnika je na igralni površini onemogočen).
+Skok se upravlja **samo z miško** (na telefonu z dotikom), kot pri klasičnih računalniških skokih. Meni desnega klika
+je na igralni površini onemogočen; preslednica in puščice skoka ne upravljajo.
 
 | Faza | Miška | Telefon |
 |---|---|---|
 | Štart (zelena luč) | klik | tap |
 | Zalet | — (skakalec se sam spusti v nizko držo) | — |
-| Odriv (konec mize) | **dvoklik** (šteje drugi klik, okno 0,4 s) | dvojni tap |
-| Let (nagib) | premik gor (nazaj) / dol (naprej) | vlečenje gor/dol (relativno na dotik), neobvezno nagib telefona |
-| Telemark | **dvoklik** tik pred tlemi (tajming = prvi klik) | dvojni tap |
-| Dve nogi | en klik | en tap |
+| Odriv (konec mize) | **levi + desni gumb hkrati** (en gumb ni odriv) | dva prsta hkrati |
+| Let | skakalec se **sam nagne** v letalni položaj; miška gor (nazaj) / dol (naprej) ga popravlja | vlečenje gor/dol |
+| Telemark | **oba gumba** tik pred tlemi | dva prsta |
+| Dve nogi | en gumb | en tap |
+
+Brez premikanja miške skakalec pristane pred K-točko brez padca (Orlova ~100 m); rahel nagib naprej (−5°) ga nese do K,
+preveč naprej pa na nos.
 
 `R` = nov skok, `Enter` = replay, `Esc`/`P`/⏸ = pavza (tudi samodejno, ko zavihek ni viden; tedaj utihne tudi zvok).
 Merilnik desno pokaže napadni kot (bela črtica) in zeleno okno; rumena puščica je ciljni nagib (telo mu sledi z zamikom).
@@ -54,12 +56,12 @@ spremeni skoke, ga povečaj (stari ghosti se potem ne predvajajo).
 
 - **Zalet** (`inrun`): 1D po profilu smučine: gravitacija, trenje (`mu`, tudi centripetalno v prehodu), zračni upor
   (`cdaCrouch` ob držanju, `cdaUp` brez), malo vpliva vetra. Vsako zaletno mesto ≈ 0,55–0,75 km/h.
-- **Odriv** (`takeoff`): dvoklik (`dblWindow`), napaka tajminga drugega klika `err` (s, − = prezgodaj) → kakovost: ±25 ms ✨ (q = 1), ±60 ms dobro, nato do `minQ`.
+- **Odriv** (`takeoff`): oba gumba hkrati (vnos `btn: 2`), napaka tajminga `err` (s, − = prezgodaj) → kakovost: ±25 ms ✨ (q = 1), ±60 ms dobro, nato do `minQ`.
   Navpični impulz `vPush × q` pravokotno na mizo in vrtenje naprej (`spin`, prepozno še `spinLate × err`).
   Brez odriva čez rob = »padeš z mize« (šibek odriv po `lateLimit`).
 - **Let**: stanje (x, y, vx, vy, nagib, kotna hitrost). Relativni veter: čelni veter piha **vzdolž pobočja** (zato ima tudi
   komponento navzgor, `wind.updraft`). `α = nagib − smer leta`; `L = ½ρv²·CL·A(α)`, `D = ½ρv²·CD·A(α)`, navor `CM(α)` —
-  vse tri so **tabele** (`aero.lift/drag/moment`), `liftScale` itd. so skupni faktorji. Vnos določa ciljni nagib, telo mu
+  vse tri so **tabele** (`aero.lift/drag/moment`), `liftScale` itd. so skupni faktorji. Ciljni nagib = smer leta z zamikom (`body.autoLag`) + `body.autoAlpha` + popravek iz vnosa; telo mu
   sledi s PD regulatorjem z omejenim navorom (`body.kp/kd/maxTorque/inertia`). Preveč naprej (`α < noseCrash`) = padec na nos,
   preveč nazaj = velik upor (`α > backCrash` = padec nazaj).
 - **Pristanek** (`landing`): pritisk pred tlemi začne pripravo (manj vzgona, poravnava smuči s pobočjem s `prepRate`).
@@ -118,14 +120,14 @@ Brez vetra:
 | Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
 |---|---|---|---|---|---|---|---|---|
 | Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
-| Brezova (K60/HS68) | 0.3 | 56.9 m | 2 % | 30 % | 0 % | 56 % | 105.2 | 70.8 km/h |
-| Brezova (K60/HS68) | 0.7 | 62.9 m | 0 % | 90 % | 0 % | 82 % | 120.8 | 70.8 km/h |
-| Brezova (K60/HS68) | 1.0 | 65.3 m | 0 % | 100 % | 0 % | 100 % | 125.9 | 70.9 km/h |
-| Bistra (K95/HS106) | 0.3 | 85.7 m | 2 % | 16 % | 0 % | 60 % | 95.7 | 86.7 km/h |
-| Bistra (K95/HS106) | 0.7 | 98.3 m | 0 % | 86 % | 0 % | 80 % | 122.0 | 86.8 km/h |
-| Bistra (K95/HS106) | 1.0 | 102.9 m | 0 % | 100 % | 0 % | 100 % | 131.6 | 86.8 km/h |
-| Orlova (K125/HS140) | 0.3 | 107.6 m | 2 % | 16 % | 0 % | 60 % | 85.6 | 95.2 km/h |
-| Orlova (K125/HS140) | 0.7 | 128.7 m | 0 % | 78 % | 0 % | 82 % | 122.9 | 95.2 km/h |
+| Brezova (K60/HS68) | 0.3 | 57.0 m | 2 % | 30 % | 0 % | 56 % | 105.5 | 70.8 km/h |
+| Brezova (K60/HS68) | 0.7 | 62.9 m | 0 % | 92 % | 0 % | 80 % | 120.7 | 70.8 km/h |
+| Brezova (K60/HS68) | 1.0 | 65.3 m | 0 % | 100 % | 0 % | 100 % | 125.8 | 70.9 km/h |
+| Bistra (K95/HS106) | 0.3 | 85.8 m | 2 % | 16 % | 0 % | 60 % | 95.9 | 86.7 km/h |
+| Bistra (K95/HS106) | 0.7 | 98.4 m | 0 % | 86 % | 0 % | 82 % | 122.5 | 86.8 km/h |
+| Bistra (K95/HS106) | 1.0 | 102.9 m | 0 % | 100 % | 0 % | 100 % | 131.4 | 86.8 km/h |
+| Orlova (K125/HS140) | 0.3 | 107.9 m | 2 % | 16 % | 0 % | 60 % | 86.0 | 95.2 km/h |
+| Orlova (K125/HS140) | 0.7 | 129.0 m | 0 % | 80 % | 0 % | 80 % | 123.0 | 95.2 km/h |
 | Orlova (K125/HS140) | 1.0 | 136.6 m | 0 % | 100 % | 0 % | 100 % | 136.9 | 95.2 km/h |
 
 Z naključnim vetrom (`--wind`) se povprečja premaknejo za +1–3 m, spretnost 1,0 pa preskoči HS v ~36 % skokov in pade v

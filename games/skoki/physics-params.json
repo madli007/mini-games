@@ -1,5 +1,5 @@
 {
-  "paramsVersion": 2,
+  "paramsVersion": 3,
   "g": 9.81,
   "rho": 1.1,
   "mass": 72,
@@ -21,8 +21,7 @@
     "minQ": 0.35,
     "spin": 0.9,
     "spinLate": 6,
-    "earlySpeedLoss": 0,
-    "dblWindow": 0.4
+    "earlySpeedLoss": 0
   },
   "aero": {
     "lift": [
@@ -80,6 +79,8 @@
     "pitchMin": -45,
     "pitchMax": 60,
     "startPitch": 18,
+    "autoAlpha": 34,
+    "autoLag": 0.35,
     "noseCrash": -6,
     "backCrash": 92
   },

@@ -917,6 +917,11 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 - **Oznake:** črte daljave čez doskočišče prej niso bile vidne (trikotniki so bili obrnjeni navzdol) — popravljeno; dodani
   P-točka, debelejši K in HS s količki in tablami na obeh straneh, barvni pasovi ob robovih območja pristanka.
 
+- **Kontrole, 2. različica (po želji):** namesto dvoklika **levi + desni gumb hkrati** za odriv in telemark, en gumb =
+  dve nogi (vnos `btn` 0/1/2, ghost v2). V letu se skakalec **sam nagne** v letalni položaj (smer leta z zamikom
+  `autoLag` 0,35 s + `autoAlpha` 34°), miška le popravlja — brez popravka pristane pred K brez padca (test).
+  `paramsVersion` 3. Zanke zvoka gredo prek skupnega vodila, ki je v meniju in med pavzi popolnoma utišano.
+
 ## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
 
 - Tekma z več igralci, replay v živo, boti kot tekmeci, dnevni izziv, letalnica; svetovni pokal, kariera, trgovina z opremo
