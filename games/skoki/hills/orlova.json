@@ -1,0 +1,87 @@
+{
+  "id": "orlova",
+  "name": "Orlova",
+  "size": "velika",
+  "k": 125,
+  "hs": 140,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.86,
+    "tail": 13.14
+  },
+  "gateFactor": 6.5,
+  "gates": {
+    "count": 24,
+    "default": 13,
+    "spacing": 1.1
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 6.6,
+    "e2": 35.8
+  },
+  "landing": {
+    "s": 3.2,
+    "b0": 5,
+    "beta": 35,
+    "pArc": 100,
+    "lArc": 142,
+    "r2": 105,
+    "outrunAngle": 1.5,
+    "outrunLength": 100
+  },
+  "theme": {
+    "id": "orlova-zahod",
+    "label": "Zahajajoče sonce pod Orlovo",
+    "sky": {
+      "sun": [
+        18,
+        5
+      ],
+      "zenith": "#24356e",
+      "horizon": "#ff9659",
+      "ground": "#5c5f7a",
+      "sunColor": "#ff8c4d",
+      "clouds": 0.5
+    },
+    "fog": {
+      "color": "#c98f7a",
+      "density": 0.0024
+    },
+    "sunIntensity": 2.6,
+    "hemi": [
+      "#8fa2e0",
+      "#5a4a60",
+      0.75
+    ],
+    "bloom": [
+      0.45,
+      0.55,
+      0.92
+    ],
+    "grade": {
+      "tint": [
+        1.06,
+        0.98,
+        0.95
+      ],
+      "sat": 1.1,
+      "vignette": 0.34
+    },
+    "env": "gore",
+    "trees": 0.8,
+    "crowd": 1,
+    "snowfall": 0.15,
+    "mountains": 1.3,
+    "boards": [
+      "Rušilec",
+      "MINI GAMES",
+      "Herodle",
+      "Orlova · Finale"
+    ]
+  },
+  "desc": "Velika skakalnica pod gorami. Dolg let, popravljanje v zraku, telemark je težak."
+}

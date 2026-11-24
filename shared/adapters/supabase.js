@@ -235,15 +235,16 @@ export class SupabaseBackend {
   /* ------------------------------- ghosti -------------------------------- */
   // Tabela <igra>_ghosts in RPC <igra>_save_ghost (npr. supabase/games/krogla.sql).
 
+  // order 'desc' (več je bolje) uveljavi RPC igre sam (npr. skoki_save_ghost); tu vpliva le na branje.
   async saveGhost({ game, level, mirror = false, timeMs, data }) {
     const fn = game.replace(/-/g, '_') + '_save_ghost';
     return check(await this.client.rpc(fn, { p_level: level, p_mirror: !!mirror, p_time_ms: Math.round(timeMs), p_data: data }));
   }
 
-  async getGhosts({ game, level, mirror = false, limit = 10 }) {
+  async getGhosts({ game, level, mirror = false, limit = 10, order = 'asc' }) {
     const t = game.replace(/-/g, '_') + '_ghosts';
     const rows = check(await this.client.from(t).select('user_id,time_ms,created_at,profiles(nickname,avatar,equipped)')
-      .eq('level', level).eq('mirror', !!mirror).order('time_ms', { ascending: true }).limit(limit));
+      .eq('level', level).eq('mirror', !!mirror).order('time_ms', { ascending: order !== 'desc' }).limit(limit));
     return rows.map(r => ({
       user_id: r.user_id, time_ms: r.time_ms, created_at: r.created_at,
       nickname: r.profiles?.nickname || '???', avatar: r.profiles?.avatar || { emoji: '❔', color: '#888' }, equipped: r.profiles?.equipped || {},

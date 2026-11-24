@@ -105,6 +105,14 @@ const g = await hub.getGhost({ level: '03-skodelice', userId: list[0].user_id })
 - Offline: `localStorage` (`db:ghosts`). Supabase: tabela **`<igra>_ghosts`** (`user_id`, `level`, `mirror`, `time_ms`, `data`,
   `created_at`; pk `(user_id, level, mirror)`, branje za vse prijavljene) in RPC **`<igra>_save_ghost(p_level, p_mirror, p_time_ms, p_data)`**
   (preveri velikost in nemogoče čase). Nova igra skopira `supabase/games/krogla.sql` in zamenja predpono.
+- **Več je bolje** (npr. točke skoka, Smučarski skoki): `order: 'desc'` pri `saveGhost` in `getGhosts`. Rezultat (celo
+  število) gre v isto polje `timeMs`/`time_ms`; offline adapter shrani le večji rezultat in uredi padajoče, na Supabase to
+  uveljavi RPC igre (`skoki_save_ghost`: `where g.time_ms < excluded.time_ms`, glej `supabase/games/skoki.sql`).
+  Privzeto `order: 'asc'` — obstoječe igre (Krogla) so nespremenjene.
+  ```js
+  await hub.saveGhost({ level: 'orlova', timeMs: encodeBoard(142.3, 131.5), data, order: 'desc' });
+  const best = await hub.getGhosts({ level: 'orlova', order: 'desc' });
+  ```
 - Lestvica z izbiro vrstice: `ui.leaderboard(el, { …, onRow: (row, tr) => …, rowHint: row => ' 👻' })` (npr. klik → ghost tega igralca).
 
 ### Objavljene proge igralcev (»proge skupnosti«)

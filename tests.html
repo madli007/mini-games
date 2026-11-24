@@ -30,6 +30,10 @@
     const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => (await fetch('games/rusilec/arenas/' + f, { cache: 'no-cache' })).json()));
     const fIdx = await (await fetch('games/frnikole/tracks/index.json', { cache: 'no-cache' })).json();
     const frnikoleTracks = await Promise.all(fIdx.tracks.map(async f => (await fetch('games/frnikole/tracks/' + f, { cache: 'no-cache' })).json()));
+    const sIdx = await (await fetch('games/skoki/hills/index.json', { cache: 'no-cache' })).json();
+    const skokiHills = await Promise.all(sIdx.hills.map(async f => (await fetch('games/skoki/hills/' + f, { cache: 'no-cache' })).json()));
+    const skokiParams = await (await fetch('games/skoki/physics-params.json', { cache: 'no-cache' })).json();
+    const skokiSql = await (await fetch('supabase/games/skoki.sql', { cache: 'no-cache' })).text();
     const herodleFixture = await (await fetch('tests/fixtures/herodle-compare.json', { cache: 'no-cache' })).json();
     const herodleHeroesSql = await (await fetch('supabase/games/herodle-heroes.sql', { cache: 'no-cache' })).text();
     const herodleHintsSql = await (await fetch('supabase/games/herodle-hints.sql', { cache: 'no-cache' })).text();
@@ -39,7 +43,7 @@
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

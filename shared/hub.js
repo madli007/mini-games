@@ -240,13 +240,14 @@ export const hub = {
   /**
    * Shrani posnetek vožnje (ghost). Shrani se le, če je čas boljši od mojega prejšnjega.
    * Supabase: tabela <igra>_ghosts in RPC <igra>_save_ghost (glej supabase/games/krogla.sql).
-   * @param {{level:string, mirror?:boolean, timeMs:number, data:string, game?:string}} g data: base64 niz (≤ 60.000 znakov)
+   * order: 'asc' (privzeto, manj je bolje — čas) ali 'desc' (več je bolje — npr. točke skoka v polju timeMs).
+   * @param {{level:string, mirror?:boolean, timeMs:number, data:string, order?:'asc'|'desc', game?:string}} g data: base64 niz (≤ 60.000 znakov)
    * @returns {Promise<{saved:boolean}|null>} null ob napaki
    */
-  async saveGhost({ level, mirror = false, timeMs, data, game = hub.gameId }) {
+  async saveGhost({ level, mirror = false, timeMs, data, order = 'asc', game = hub.gameId }) {
     if (!hub.profile) return null;
     try {
-      return await hub.backend.saveGhost({ game, level, mirror, timeMs, data });
+      return await hub.backend.saveGhost({ game, level, mirror, timeMs, data, order });
     } catch (e) {
       console.warn('saveGhost:', e.message);
       return null;
@@ -255,10 +256,11 @@ export const hub = {
 
   /**
    * Najboljši ghosti proge (brez podatkov): [{ user_id, nickname, avatar, equipped, time_ms, created_at }].
-   * @param {{level:string, mirror?:boolean, limit?:number, game?:string}} q
+   * order: 'asc' (privzeto, najmanjši time_ms prvi) ali 'desc' (največji prvi).
+   * @param {{level:string, mirror?:boolean, limit?:number, order?:'asc'|'desc', game?:string}} q
    */
-  async getGhosts({ level, mirror = false, limit = 10, game = hub.gameId }) {
-    try { return await hub.backend.getGhosts({ game, level, mirror, limit }); }
+  async getGhosts({ level, mirror = false, limit = 10, order = 'asc', game = hub.gameId }) {
+    try { return await hub.backend.getGhosts({ game, level, mirror, limit, order }); }
     catch (e) { console.warn('getGhosts:', e.message); return []; }
   },
 

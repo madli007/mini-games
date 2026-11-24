@@ -1,0 +1,87 @@
+{
+  "id": "bistra",
+  "name": "Bistra",
+  "size": "srednja",
+  "k": 95,
+  "hs": 106,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 8,
+    "tail": 9.68
+  },
+  "gateFactor": 5.4,
+  "gates": {
+    "count": 22,
+    "default": 11,
+    "spacing": 1.05
+  },
+  "inrun": {
+    "gamma": 34,
+    "alpha": 10.5,
+    "r1": 90,
+    "t": 5.8,
+    "e2": 29.5
+  },
+  "landing": {
+    "s": 2.8,
+    "b0": 5,
+    "beta": 34.5,
+    "pArc": 76,
+    "lArc": 108,
+    "r2": 90,
+    "outrunAngle": 1.5,
+    "outrunLength": 90
+  },
+  "theme": {
+    "id": "bistra-popoldne",
+    "label": "Sončno popoldne ob jezeru",
+    "sky": {
+      "sun": [
+        205,
+        38
+      ],
+      "zenith": "#2f78d0",
+      "horizon": "#cfe6ff",
+      "ground": "#b9cde0",
+      "sunColor": "#fff4dc",
+      "clouds": 0.22
+    },
+    "fog": {
+      "color": "#d8e7f5",
+      "density": 0.0028
+    },
+    "sunIntensity": 2.5,
+    "hemi": [
+      "#cfe4ff",
+      "#8a9bb0",
+      0.6
+    ],
+    "bloom": [
+      0.28,
+      0.45,
+      1.05
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.02
+      ],
+      "sat": 1.08,
+      "vignette": 0.25
+    },
+    "env": "jezero",
+    "trees": 0.9,
+    "crowd": 0.8,
+    "snowfall": 0,
+    "mountains": 0.8,
+    "boards": [
+      "Potapljanje ladjic",
+      "MINI GAMES",
+      "Zaporedje",
+      "Bistra · Pokal jezer"
+    ]
+  },
+  "desc": "Prava srednja skakalnica ob jezeru. Veter tu že začne šteti."
+}

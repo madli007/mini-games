@@ -167,6 +167,26 @@
     ]
   },
   {
+    "id": "skoki",
+    "name": "Smučarski skoki",
+    "description": "Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Prava pravila točkovanja, veter in ghosti prijateljev.",
+    "icon": "🎿",
+    "path": "games/skoki/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["sport", "spretnost", "rekordi"],
+    "status": "live",
+    "scoreOrder": "desc",
+    "scoreUnit": "točk",
+    "color": "#4fc3f7",
+    "quests": [
+      { "id": "skok-10", "tier": "e", "text": "Skoči 10 skokov brez padca", "event": "skoki:skok", "target": 10 },
+      { "id": "k-tocka", "tier": "m", "text": "Preskoči K-točko v Smučarskih skokih", "event": "skoki:k", "target": 1 },
+      { "id": "tocke-130", "tier": "h", "text": "Doseži 130 točk v enem skoku", "event": "skoki:tocke", "target": 1, "cmp": "gte", "goal": 130 },
+      { "id": "w-skok-50", "tier": "w", "text": "Skoči 50 skokov ta teden", "event": "skoki:skok", "target": 50 }
+    ]
+  },
+  {
     "id": "bomba-arena",
     "name": "Bomba arena",
     "description": "Postavljaj bombe, ruši zidove, poberi powerupe in ostani zadnji na areni.",

@@ -818,3 +818,88 @@ Naslednja prompta: `prompts/17-frnikole-multiplayer.md`, `prompts/18-frnikole-st
 - Kratek posnetek cilja po dirki (replay) — namesto njega je počasni posnetek tik pred ciljem, ko je tesno.
 - Premične ploščice (`movers`) in ventilatorji na progah niso uporabljeni (generator nima pomožne funkcije zanje).
 - Shranjevanje napol odigranega dne ob osvežitvi strani (poskus dneva je porabljen ob začetku).
+
+# Smučarski skoki (`games/skoki/`)
+
+Prompt: `prompts/11-skoki.md` (1. faza od treh). Stanje: **končano** (24. 11. 2026).
+Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
+
+## Načrt
+
+- [x] `dmath.js` — deterministični sin/cos/atan2 (polinomi, napaka < 1e-9), tabele, hash/šum, PRNG (brez `Math.*` trigonometrije v simulaciji)
+- [x] `hill.js` — profil iz parametrov (miza, prehod, zalet; grbina, strmina, prehod, iztečišče), `validateHill`, pravila (vrednost metra, base, veter)
+- [x] `wind.js` (off/const/random iz seeda, vzdolž doskočišča + sunki), `physics.js` (zalet, odriv, let z CL/CD/CM tabelami in PD regulatorjem, pristanek, iztek)
+- [x] `scoring.js`, `judges.js` (5 sodnikov, brez najvišje in najnižje, kompenzacije, zapis za lestvico), `bot.js`, `balance.js`
+- [x] `ghost.js` (spremembe vnosov → varint → base64, < 4 KB), `replay.js` (posnetki, rezi kamere), `texts.js` (komentator, 60 vrstic)
+- [x] 3 skakalnice (Brezova K60/HS68, Bistra K95/HS106, Orlova K125/HS140) kot JSON s temami
+- [x] Testi `tests/skoki.js` (17), `tools/skoki-balance.mjs`, uglaševanje do ciljev
+- [x] Izris: `render/` (svet iz profila, jeklena konstrukcija, stopnice, črte daljave, K/HS, zelena črta rekorda, publika in
+      zastave z valovanjem v shaderju, smreke, gore, jezero, sneženje, panoji, skakalec s pozami, ghosti, kamera, post iz Krogle)
+- [x] HUD (trak v slogu prenosa, semafor, merilnik nagiba, namigi, komentator, semafor daljave, rezultatna kartica), zvok
+- [x] Načina Trening (zaletno mesto, veter, ghosti) in Rekord skakalnice (3 skoki, najboljši na lestvico + ghost)
+- [x] Hub: lestvice (seed `hill:<id>`), `reportGame`, `reportEvent`, XP, 10 dosežkov, 4 naloge; `hub.saveGhost/getGhosts` z `order: 'desc'`
+- [x] Stran z drsniki (`?debug=1`): drsniki po skupinah, urejevalnik krivulj, grafi, ponovitev z novimi parametri, izvoz, boti
+- [x] `supabase/games/skoki.sql` (napisan, **ni pognan** — glej spodaj), `games.json` (live), dokumentacija
+
+## Dnevnik
+
+- **Fizika najprej.** Prva kalibracija je pokazala, da je daljava zelo občutljiva na vzgon (`liftScale` 1,0 → 1,15 = +44 m na
+  Orlovi). Uglašeno na 1,05; dolžina zaleta (`e2`) in privzeto mesto na skakalnico tako, da bot 0,7 skače okoli K.
+- **Veter.** Najprej je čelni veter skok celo skrajšal (upor > vzgon). Fizikalno pravilno je, da veter piha vzdolž pobočja,
+  zato ima čelni tudi komponento navzgor — po tem +2 m/s na Orlovi da ~+12 m (`wind.updraft` 0,8).
+- **Zaletna mesta** so bila sprva preblizu (0,37 km/h); razmik povečan na 0,85–1,1 m (≈ 0,55–0,75 km/h na mesto).
+- **Pristanek.** Na mali skakalnici je ekvivalentna višina padca večja (nižje hitrosti → strmejši spust), zato so meje
+  `hTele/hTwo` dvignjene. Brez klika skakalec refleksno pristane trdo (`none`, −4 pri sodnikih); klik po refleksu = padec.
+- **Prezgodnji odriv** je bil precej hujši od prepoznega zaradi dodatne izgube hitrosti (~7 m) — odstranjena, zdaj sta simetrična.
+- **Napaka, najdena v brskalniku:** dogodek pristanka je imel `type` prepisan z vrsto pristanka, zato se zvok, publika in
+  počasni posnetek niso sprožili (rezultat pa je bil pravilen). Popravljeno (`kind`).
+- **Izris.** Kamera je bila sprva previsoko in preblizu; za ozadje je dolina z gozdom delovala kot zid → nižji breg na
+  daljni strani, brez dreves ob doskočišču, zelene črtice smrečja ob robovih (občutek globine), mehka senca pod skakalcem,
+  pokončni zaslon: kamera dlje in skakalec na sredini. Shaderji se prevedejo ob nalaganju (`gl.compile`).
+
+## Občutek in uglaševanje
+
+- Okno napadnega kota je ozko: ±5° od optimuma (~29°) pomeni na Orlovi 10–20 m. Zato je desno merilnik z zelenim oknom
+  (in ciljno puščico). Brez premikanja miške skakalec »sede« (velik upor) in pristane ~K − 35 m, a ne pade, če klikne za telemark.
+- Odriv: ±25 ms ✨ je težko, ±60 ms je še »dober« in izgubi le nekaj metrov. Pozen odriv bolj vrti naprej (težji začetek leta).
+- Prvi skok brez znanja: z namigi (»Drži …«, »Zdaj spusti!«, »Nagni se naprej«, »Klik za telemark!«) pristane pred K brez
+  padca. Kdor sploh ne klikne in ne nagiba, pade ob pristanku (»Snežni angel«).
+- Sodniki: miren let (bot) dobi 18,5–19,5; nemirno vodenje z miško 15–17. Telemark > dve nogi > trd pristanek > dotik > padec.
+- Uglašeno na strani z drsniki in z orodjem: `liftScale`, `updraft`, `prepRate` (3 rad/s), `hTele/hTwo/hNone`,
+  `wobbleFree/wobblePerPoint`, `earlySpeedLoss` (0).
+
+## Preverjeno
+
+- `node tests/run-node.mjs` in `tests.html`: 167/167 (17 novih za skoke; Krogla, Rušilec in ostali nespremenjeni).
+- Brskalnik (offline): meni, trening na vseh treh skakalnicah, Rekord skakalnice (3 skoki → lestvica, ghost, +40 XP,
+  `reportGame` → kovanci na dashboardu), izbira ghosta prijatelja s klikom na lestvico, dva ghosta hkrati, replay z rezi
+  kamere (spredaj ob mizi, od strani, od spodaj) in časovno osjo, `?bot=0.8` (cela zanka z novim skokom), stran z drsniki
+  (grafi trajektorije in α, primerjava z ghostom).
+- Vnos po vseh poteh (miška: pointer dogodki, tipkovnica: preslednica + puščice, dotik: drža/dvig/tap) z avtomatiziranimi
+  dogodki, usklajenimi s simulacijo: 10 scenarijev na Brezovi in Orlovi, 3 na Bistri (popoln, prezgodnji, prepozen odriv,
+  telemark, dve nogi, brez klika, prepozen klik, preveč naprej, preveč nazaj).
+- Konzola brez napak v igri, Krogli, na dashboardu in v `tests.html`. Telefon 375×812 (meni, semafor, let, kartica) in namizje.
+
+## Ni bilo preverjeno
+
+- **Ročno igranje v realnem času** (»sam skoči 10 skokov«): okno brskalnika med testiranjem ni bilo vidno (skrit zavihek,
+  ~1–3 FPS), zato so skoki odigrani z dogodki miške/tipkovnice/dotika, ki jih je sprožal skript ob pravih tickih, in s
+  hitrim previjanjem simulacije (`__skoki.fastForward`, samo `?debug=1`). Občutek tajminga v živo ni preizkušen.
+- **FPS** na namizju in telefonski emulaciji — meritve v skritem zavihku niso merodajne; samodejno nižanje kakovosti
+  se je v skritem zavihku sprožilo.
+- **Zvok** ni bil poslušan. **Počasni posnetek** pristanka je preverjen le v kodi (v testih previjanja se preskoči).
+- **Supabase** (`?igralec=1/2`, tuj ghost na lestvici, zavrnitve RPC) — migracija ni bila pognana (glej spodaj).
+- Nagib telefona (`deviceorientation`) in realne naprave.
+
+## Kaj mora uporabnik narediti v Supabaseu
+
+Pognati `supabase/games/skoki.sql` (SQL editor ali migracija; idempotentno). Brez tega v Supabase načinu lestvica in
+`reportGame` delujeta (skupne tabele), shranjevanje in branje ghostov pa le izpišeta opozorilo v konzolo. Nato preveri
+advisors (security + performance) in preizkusi: tuj zapis v `skoki_ghosts` (zavrnjen, ni insert pravil), prevelik `data`
+(`ghost_too_big`), slabši rezultat (`saved: false`), nemogoče točke (`impossible_time`, meja `max_points × 10000 + 999`).
+Testnih profilov/ghostov v produkcijski bazi nisem ustvaril.
+
+## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
+
+- Tekma z več igralci, replay v živo, boti kot tekmeci, dnevni izziv, letalnica; svetovni pokal, kariera, trgovina z opremo
+  (videz skakalca je že parameter `skin`).

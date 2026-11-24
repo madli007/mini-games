@@ -379,24 +379,26 @@ export class LocalBackend {
   /* ------------------------------- ghosti -------------------------------- */
   // Ena vožnja na (igra, proga, zrcalo, igralec); shrani se le boljši čas (kot RPC <igra>_save_ghost).
 
-  async saveGhost({ game, level, mirror = false, timeMs, data }) {
+  // order 'desc': več je bolje (npr. točke skoka v polju time_ms, Smučarski skoki).
+  async saveGhost({ game, level, mirror = false, timeMs, data, order = 'asc' }) {
     if (!(timeMs > 0) || typeof data !== 'string' || data.length > GHOST_MAX || !/^[A-Za-z0-9+/=]*$/.test(data)) {
       throw codedError('invalid', 'Neveljaven ghost.');
     }
     const key = `${game}|${level}|${mirror ? 1 : 0}|${this.userId}`;
     const all = S.load('db:ghosts', {});
     const cur = all[key];
-    if (cur && cur.time_ms <= timeMs) return { saved: false };
+    if (cur && (order === 'desc' ? cur.time_ms >= timeMs : cur.time_ms <= timeMs)) return { saved: false };
     all[key] = { game, level, mirror: !!mirror, user_id: this.userId, time_ms: Math.round(timeMs), data, created_at: now() };
     S.save('db:ghosts', all);
     return { saved: true };
   }
 
-  async getGhosts({ game, level, mirror = false, limit = 10 }) {
+  async getGhosts({ game, level, mirror = false, limit = 10, order = 'asc' }) {
     const profs = this._profiles();
+    const dir = order === 'desc' ? -1 : 1;
     return Object.values(S.load('db:ghosts', {}))
       .filter(g => g.game === game && g.level === level && !!g.mirror === !!mirror)
-      .sort((a, b) => a.time_ms - b.time_ms).slice(0, limit)
+      .sort((a, b) => (a.time_ms - b.time_ms) * dir).slice(0, limit)
       .map(g => ({
         user_id: g.user_id, time_ms: g.time_ms, created_at: g.created_at,
         nickname: profs[g.user_id]?.nickname || '???', avatar: profs[g.user_id]?.avatar || { emoji: '❔', color: '#888' },

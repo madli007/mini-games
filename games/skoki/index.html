@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1530">
+<meta name="description" content="Smučarski skoki — zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Prava pravila točkovanja, veter in ghosti prijateljev.">
+<title>Smučarski skoki · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234fc3f7'/%3E%3Cpath d='M2 12 L14 6' stroke='%23fff' stroke-width='1.6'/%3E%3Ccircle cx='9' cy='5' r='1.6' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+<!-- Three.js: jedro in dodatki (examples/jsm) na isti pripeti verziji -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="mg sk">
+  <div class="sk-loader mg-hidden" id="loader" role="status"><span class="mg-spin"></span> Pripravljam skakalnico …</div>
+  <main class="mg-container sk-menu" id="menu" aria-live="polite">
+    <div class="mg-empty"><span class="mg-spin"></span> Nalagam skakalnice …</div>
+  </main>
+
+  <section class="sk-play mg-hidden" id="play" aria-label="Skok">
+    <canvas id="cv" aria-label="Skakalnica"></canvas>
+    <div class="sk-top">
+      <div class="sk-chips">
+        <span class="sk-chip" id="hudHill">Orlova</span>
+        <span class="sk-chip sk-chip--mode" id="hudMode">Trening</span>
+        <span class="sk-chip mg-hidden" id="hudGhost">👻</span>
+      </div>
+      <div class="sk-btns">
+        <button class="sk-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+        <button class="sk-btn" id="btnPause" type="button" aria-label="Pavza">⏸</button>
+      </div>
+    </div>
+    <div class="sk-light mg-hidden" id="light" aria-live="polite">
+      <div class="sk-lamps"><i class="sk-lamp sk-lamp--r on"></i><i class="sk-lamp sk-lamp--g"></i></div>
+      <b id="lightCount">10</b>
+    </div>
+    <div class="sk-lean mg-hidden" id="lean" aria-hidden="true">
+      <span class="sk-lean__lbl sk-lean__lbl--t">nazaj</span>
+      <div class="sk-lean__bar"><i class="sk-lean__win" id="leanWin"></i><i class="sk-lean__tgt" id="leanTgt"></i><i class="sk-lean__cur" id="leanCur"></i></div>
+      <span class="sk-lean__lbl sk-lean__lbl--b">naprej</span>
+    </div>
+    <div class="sk-hint mg-hidden" id="hint"></div>
+    <div class="sk-flash mg-hidden" id="flash"></div>
+    <div class="sk-big mg-hidden" id="big"><b id="bigDist">0,0 m</b><span id="bigSub"></span></div>
+    <div class="sk-comment mg-hidden" id="comment"></div>
+    <div class="sk-bar" id="bar">
+      <div class="sk-bar__who" id="barWho"></div>
+      <div class="sk-bar__cell"><span>Zaletno mesto</span><b id="barGate">12</b></div>
+      <div class="sk-bar__cell sk-wind" id="barWindCell"><span>Veter</span><b><i class="sk-arrow" id="barArrow">➜</i> <em id="barWind">0,0</em> m/s</b></div>
+      <div class="sk-bar__cell"><span>Hitrost</span><b id="barSpeed">—</b></div>
+      <div class="sk-bar__cell sk-bar__cell--rec"><span id="barRecLbl">Rekord</span><b id="barRec">—</b></div>
+    </div>
+    <div class="sk-replay mg-hidden" id="replayBar">
+      <span class="sk-rec">● REPLAY</span>
+      <input type="range" id="replayPos" min="0" max="100" value="0" aria-label="Časovna os replaya">
+      <button class="sk-btn" id="replayExit" type="button">Konec</button>
+    </div>
+    <div class="sk-card mg-hidden" id="card" role="dialog" aria-modal="false"></div>
+    <div class="sk-fps mg-hidden" id="fps"></div>
+    <div class="sk-overlay mg-hidden" id="overlay" role="dialog" aria-modal="true"></div>
+  </section>
+
+  <aside class="sk-debug mg-hidden" id="debug" aria-label="Uglaševanje fizike"></aside>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

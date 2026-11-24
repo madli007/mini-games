@@ -1,0 +1,87 @@
+{
+  "id": "brezova",
+  "name": "Brezova",
+  "size": "mala",
+  "k": 60,
+  "hs": 68,
+  "meterValue": 2.4,
+  "base": 60,
+  "windFactors": {
+    "head": 3.9,
+    "tail": 4.72
+  },
+  "gateFactor": 4.2,
+  "gates": {
+    "count": 20,
+    "default": 10,
+    "spacing": 0.85
+  },
+  "inrun": {
+    "gamma": 32,
+    "alpha": 10,
+    "r1": 60,
+    "t": 4.6,
+    "e2": 19.8
+  },
+  "landing": {
+    "s": 2,
+    "b0": 6,
+    "beta": 35,
+    "pArc": 48,
+    "lArc": 70,
+    "r2": 60,
+    "outrunAngle": 2,
+    "outrunLength": 70
+  },
+  "theme": {
+    "id": "brezova-jutro",
+    "label": "Jutro v brezovem gozdu",
+    "sky": {
+      "sun": [
+        115,
+        9
+      ],
+      "zenith": "#5d97d6",
+      "horizon": "#f6d9bd",
+      "ground": "#c9d6e2",
+      "sunColor": "#ffcf9a",
+      "clouds": 0.35
+    },
+    "fog": {
+      "color": "#e6e2e4",
+      "density": 0.0042
+    },
+    "sunIntensity": 2.4,
+    "hemi": [
+      "#d6e6ff",
+      "#9aa7b8",
+      0.9
+    ],
+    "bloom": [
+      0.32,
+      0.5,
+      1
+    ],
+    "grade": {
+      "tint": [
+        1.04,
+        1,
+        0.97
+      ],
+      "sat": 1.05,
+      "vignette": 0.28
+    },
+    "env": "gozd",
+    "trees": 1.3,
+    "crowd": 0.45,
+    "snowfall": 0.35,
+    "mountains": 0.5,
+    "boards": [
+      "MINI GAMES",
+      "Hrčkova krogla",
+      "Reakcija",
+      "Brezova 2026"
+    ]
+  },
+  "desc": "Mala in odpustna skakalnica sredi brezovega gozda. Nizek let, idealna za učenje tajminga."
+}

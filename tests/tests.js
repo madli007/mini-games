@@ -28,6 +28,7 @@ import { rusilecTests } from './rusilec.js';
 import { herodleTests } from './herodle.js';
 import { herodle2Tests } from './herodle2.js';
 import { frnikoleTests } from './frnikole.js';
+import { skokiTests } from './skoki.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1485,6 +1486,8 @@ herodleTests(test, { eq, ok });
 herodle2Tests(test, { eq, ok });
 /* ------------------------------------------------------- Dirka frnikol (tests/frnikole.js) */
 frnikoleTests(test, { eq, ok });
+/* ------------------------------------------------------- Smučarski skoki (tests/skoki.js) */
+skokiTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.
