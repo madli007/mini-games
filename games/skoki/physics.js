@@ -5,9 +5,10 @@
    Skok je določen s: skakalnico, parametri (physics-params.json), zaletnim
    mestom, konfiguracijo vetra (seed) in zaporedjem vnosov po tickih.
    Vnos na tick: { btn: 0|1, pitch: ciljni nagib v stopinjah (korak 0,5°) }.
-     zalet: btn = drža (čep); spust (ali klik, ko tipka ni držana) na mizi = odriv
+   Šteje le pritisk (prehod btn 0 → 1, »klik«); dvoklik = dva klika v takeoff.dblWindow sekundah.
+     zalet: skakalec se sam spusti v držo; DVOKLIK na koncu mize = odriv (tajming = drugi klik)
      let:   pitch = ciljni nagib telesa (večji = bolj pokonci / nazaj, manjši = bolj naprej)
-            btn pritisk = priprava na pristanek (spust pred stikom = telemark, držanje čez stik = dve nogi)
+            prvi klik = priprava na pristanek; DVOKLIK pred stikom = telemark, en klik = dve nogi
    Tick 0 = štart z zaletnega mesta (čakanje na semafor je stvar igre).
    ===================================================================== */
 import { DEG, sin, cos, atan2, hypot, clamp, lerp, table } from './dmath.js';
@@ -58,7 +59,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     phase: 'inrun', tick: 0, gate,
     d: hill.gateD(gate), v: IR.startSpeed, crouch: 0,
     x: 0, y: 0, vx: 0, vy: 0, pitch: 0, omega: 0, alpha: 0, gamma: 0, speed: 0, hag: 0,
-    target: B.startPitch, btn: 0, prevBtn: 1,       // prevBtn=1: štartni pritisk ni »klik« na mizi
+    target: B.startPitch, btn: 0, prevBtn: 1, click1: -1,   // prevBtn=1: štartni pritisk ni klik dvoklika
     tableSpeed: 0, edgeTick: -1, airTick: -1,
     takeoff: null, prep: null, landing: null, fallen: null,
     wobble: 0, flail: 0, flightTime: 0, maxHag: 0, windSamples: [], windIdx: 0,
@@ -93,14 +94,21 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
   }
 
   /* ---------------- zalet */
+  /** Ali je ta klik drugi klik dvoklika? (prvi se zapomni v s.click1) */
+  function dblClick() {
+    const isDbl = s.click1 >= 0 && (s.tick - s.click1) * STEP <= T.dblWindow;
+    s.click1 = isDbl ? -1 : s.tick;
+    return isDbl;
+  }
+
   function stepInrun(inp) {
-    const pressed = inp.btn && !s.prevBtn, released = !inp.btn && s.prevBtn;
+    const pressed = inp.btn && !s.prevBtn;
     const tte = s.v > 0.1 ? s.d / s.v : 9;   // čas do roba
-    if ((released || (pressed && s.crouch < 0.5)) && tte <= T.earlyLimit && s.tick > 10) {
+    if (pressed && s.tick > 10 && dblClick() && tte <= T.earlyLimit) {
       doTakeoff(-tte - T.idealOffset);
       return;
     }
-    s.crouch = clamp(s.crouch + (inp.btn ? 1 : -1) * IR.crouchRate * STEP, 0, 1);
+    s.crouch = clamp(s.crouch + IR.crouchRate * STEP, 0, 1);
     const pt = hill.inrunAt(s.d);
     const w = W.at(s.tick * STEP, pt.x).h * IR.windEffect;
     const cda = lerp(IR.cdaUp, IR.cdaCrouch, s.crouch);
@@ -126,15 +134,18 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
 
   /* ---------------- let */
   function stepAir(inp) {
-    const pressed = inp.btn && !s.prevBtn, released = !inp.btn && s.prevBtn;
+    const pressed = inp.btn && !s.prevBtn;
     if (!s.takeoff) {
       const late = (s.tick - s.edgeTick) * STEP;
-      if (released || pressed) doTakeoff(late);
+      if (pressed && dblClick()) doTakeoff(late);
       else if (late > T.lateLimit) doTakeoff(T.lateLimit * 2.5);
       if (s.takeoff) return;
     } else if (!s.prep && pressed && !s.fallen) {
-      s.prep = { tick: s.tick, type: 'press' };
+      s.prep = { tick: s.tick, type: 'press', clicks: 1 };
       ev.push({ type: 'prep' });
+    } else if (pressed && s.prep && s.prep.type === 'press' && s.prep.clicks === 1 && (s.tick - s.prep.tick) * STEP <= T.dblWindow) {
+      s.prep.clicks = 2;   // dvoklik = telemark
+      ev.push({ type: 'tele' });
     } else if (pressed && s.prep && s.prep.type === 'reflex') {
       s.prep.late = true;   // klik šele po refleksu: prepozno za telemark
     }
@@ -226,13 +237,12 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
       else if (!s.prep || s.prep.type === 'reflex') type = 'none';
       else {
         timing = (s.tick - s.prep.tick) * STEP;
-        if (inp.btn && timing >= L.teleMin * 0.6) type = 'two';
-        else {
+        if (s.prep.clicks >= 2) {
           teleQ = teleQuality(timing, L);
           type = 'tele';
-          // prepozen klik: telemark ne uspe — dotik z roko ali padec
-          if (teleQ === 0) lateTele = timing < L.teleMin * 0.6 ? 2 : 1;
-        }
+        } else type = 'two';
+        // prepozen klik: pristanek ne uspe — dotik z roko ali padec
+        if (timing < L.teleMin) lateTele = timing < L.teleMin * 0.6 ? 2 : 1;
       }
       const lim = type === 'tele' ? L.hTele : type === 'two' ? L.hTwo : L.hNone;
       const ar = Math.abs(skiRel);

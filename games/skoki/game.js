@@ -59,7 +59,8 @@ const stats = S.load('skoki:stats', { jumps: 0, falls: 0, overK: {}, hints: 0 })
 const saveStats = () => S.save('skoki:stats', stats);
 // lokalni najboljši skok (ghost) na skakalnico — vezan na profil, da si ga dva profila v istem brskalniku ne delita
 const bestKey = id => 'skoki:best:' + (hub.userId || 'anon') + ':' + id;
-const localBest = id => S.load(bestKey(id), null);
+// šteje le »Rekord skakalnice« (trening ne postavlja rekordov); rekord iz starejše fizike (paramsVersion) ne velja
+const localBest = id => { const b = S.load(bestKey(id), null); return b && b.pv === P?.paramsVersion ? b : null; };
 
 /* ------------------------------------------------------------ globalno */
 let P = null;             // parametri fizike
@@ -137,7 +138,7 @@ function renderMenu() {
       <div class="sk-modes">
         <div class="mg-card">
           <h2 class="mg-title">Trening</h2>
-          <p class="sk-note">Neomejeno skokov, ena tipka za nov skok, takojšen replay. Brez lestvice.</p>
+          <p class="sk-note">Neomejeno skokov, ena tipka za nov skok, takojšen replay. Ne šteje za rekorde in lestvico.</p>
           <div class="sk-row"><label>Zaletno mesto <select class="mg-select" id="selGate">${gateOpts}</select></label></div>
           <div class="sk-row"><label>Veter <select class="mg-select" id="selWind">
             <option value="off" ${settings.wind === 'off' ? 'selected' : ''}>Izklopljen</option>
@@ -205,11 +206,11 @@ function renderMenu() {
 
 function helpHtml() {
   return `<dl class="sk-help">
-    <dt>1. Zalet</dt><dd>${IS_TOUCH ? 'Tapni za štart in drži prst na zaslonu' : 'Klik ali preslednica za štart in <b>drži</b>'} — nizka drža je hitrejša.</dd>
-    <dt>2. Odriv</dt><dd>${IS_TOUCH ? 'Dvigni prst' : 'Spusti tipko'} točno na koncu mize. ✨ = popoln odriv (±25 ms).</dd>
-    <dt>3. Let</dt><dd>${IS_TOUCH ? 'Vleci prst gor/dol' : 'Premikaj miško gor/dol ali ↑/↓ (W/S)'}: nagib telesa. Bela črtica na merilniku desno naj bo v zelenem oknu — okno se med letom premika. Preveč naprej = padec na nos, preveč nazaj = zavora.</dd>
-    <dt>4. Pristanek</dt><dd>${IS_TOUCH ? 'Tapni' : 'Klikni'} tik pred tlemi = telemark (več točk). ${IS_TOUCH ? 'Drži prst pri miru' : 'Drži tipko'} čez stik = pristanek na obe nogi (varneje). Prepozno = padec.</dd>
-    <dt>Tipke</dt><dd><span class="mg-kbd">R</span> nov skok · <span class="mg-kbd">Enter</span> replay · <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> pavza</dd>
+    <dt>1. Zalet</dt><dd>${IS_TOUCH ? 'Tapni' : 'Klikni'} za štart — skakalec se sam spusti v nizko držo.</dd>
+    <dt>2. Odriv</dt><dd><b>${IS_TOUCH ? 'Dvojni tap' : 'Dvoklik'}</b> točno na koncu mize (šteje drugi klik). ✨ = popoln odriv (±25 ms).</dd>
+    <dt>3. Let</dt><dd>${IS_TOUCH ? 'Vleci prst gor/dol' : 'Premikaj miško gor/dol'}: nagib telesa. Bela črtica na merilniku desno naj bo v zelenem oknu — okno se med letom premika. Preveč naprej = padec na nos, preveč nazaj = zavora.</dd>
+    <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'Dvojni tap' : 'Dvoklik'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'en tap' : 'en klik'} = pristanek na obe nogi (varneje). Prepozno = padec. Desni gumb ni potreben.</dd>
+    <dt>Tipke</dt><dd>Skok se upravlja samo z miško (kot dvoklik med vodenjem nagiba). <span class="mg-kbd">R</span> nov skok · <span class="mg-kbd">Enter</span> replay · <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> pavza</dd>
     <dt>Točke</dt><dd>60 točk na K-točki ± vrednost metra, slog 5 sodnikov (najvišja in najnižja se ne štejeta), kompenzacija vetra in zaletnega mesta.</dd></dl>`;
 }
 
@@ -356,7 +357,7 @@ function updateGate(dt) {
   if (was < RED_TIME && green) audio.beep(true);
   else if (green && Math.ceil(GATE_TIME - (was - RED_TIME)) !== left && left <= 3 && left > 0) audio.beep(false);
   if (green && G.bot && G.gateT > RED_TIME + 0.6) startJump();
-  if (G.hintsOn) hint(green ? (IS_TOUCH ? 'Tapni in drži prst' : 'Klikni in drži (ali preslednica)') : 'Pripravi se …');
+  if (G.hintsOn) hint(green ? (IS_TOUCH ? 'Tapni za štart' : 'Klikni za štart') : 'Pripravi se …');
 }
 
 function startJump() {
@@ -402,6 +403,7 @@ function onEvent(e) {
     case 'crash': if (e.how === 'nose') comment(say('nose')); else comment(say('sitting')); break;
     case 'land': {
       const L = e;
+      G.landAt = performance.now();
       audio.land(Math.min(1, L.hEq / 1.4));
       if (L.kind === 'fall') { audio.crash(); renderer.shake(0.5); }
       else renderer.shake(0.12 + Math.min(0.3, L.hEq * 0.15));
@@ -409,7 +411,7 @@ function onEvent(e) {
       renderer.setCheer(L.kind === 'fall' ? 0.2 : 0.2 + lvl * 0.8);
       if (L.kind !== 'fall' && L.dist >= H.k) { audio.bells(L.dist >= H.hs ? 14 : 8); audio.fanfare(); }
       audio.cheer(L.kind === 'fall' ? 0.3 : 0.4 + lvl);
-      const pb = (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && (localBest(H.id) != null);
+      const pb = G.mode === 'record' && (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && (localBest(H.id) != null);
       comment(say(landingGroup({ type: L.kind, fallen: s.fallen, dist: L.dist, k: H.k, hs: H.hs, wind: L.windAvg, pb })));
       if (!reducedMotion() && L.dist >= H.k && L.kind !== 'fall' && G.hist.length > TPS) {
         const to = G.hist.length - 1;
@@ -478,12 +480,12 @@ function updateHud(v) {
     let h = '', go = false;
     if (s.phase === 'inrun') {
       const tte = s.v > 0.1 ? s.d / s.v : 9;
-      if (tte < 0.3) { h = IS_TOUCH ? 'Zdaj dvigni prst!' : 'Zdaj spusti!'; go = true; }
-      else h = s.crouch > 0.5 ? 'Drži … nizka drža' : (IS_TOUCH ? 'Drži prst na zaslonu' : 'Drži tipko');
+      if (tte < 0.45) { h = IS_TOUCH ? 'Zdaj dvojni tap!' : 'Zdaj dvoklik!'; go = true; }
+      else h = IS_TOUCH ? 'Na koncu mize: dvojni tap' : 'Na koncu mize: dvoklik';
     } else if (s.phase === 'air' && s.takeoff && !s.prep && !s.fallen) {
       const ttc = s.vn > 0.1 ? s.hag / s.vn : 9;
       const a = s.alpha * 180 / Math.PI;
-      if (ttc < 0.5) { h = IS_TOUCH ? 'Tapni za telemark!' : 'Klik za telemark!'; go = true; }
+      if (ttc < 0.6) { h = IS_TOUCH ? 'Dvojni tap za telemark!' : 'Dvoklik za telemark!'; go = true; }
       else if ((s.tick - s.takeoff.tick) * STEP > 0.3) {
         if (a > BOT_ALPHA + 7) h = 'Nagni se naprej ' + (IS_TOUCH ? '(povleci dol)' : '(miška dol / ↓)');
         else if (a < BOT_ALPHA - 7) h = 'Malo nazaj ' + (IS_TOUCH ? '(povleci gor)' : '(miška gor / ↑)');
@@ -497,7 +499,8 @@ function updateHud(v) {
     ski: s.phase === 'inrun' ? Math.min(1, s.v / 25) : s.phase === 'out' ? Math.min(1, s.outV / 25) * 0.7 : 0,
     speed: Math.min(1, (s.phase === 'inrun' ? s.v : s.outV || 0) / 27),
     wind: s.phase === 'air' && s.takeoff ? Math.min(1, s.speed / 30) * (0.6 + Math.min(0.4, Math.abs(s.alpha) * 0.6)) : 0,
-    crowd: G.state === 'gate' ? 0.15 : s.landing ? (s.landing.type === 'fall' ? 0.25 : Math.min(1, 0.3 + s.landing.dist / hillOf(G.hillId).def.hs * 0.7)) : s.phase === 'air' ? Math.min(0.8, 0.2 + Math.max(0, s.x) / hillOf(G.hillId).def.k * 0.5) : 0.15,
+    // publika: po pristanku vzklik izzveni (prej je šumela naprej)
+    crowd: G.state === 'gate' ? 0.1 : s.landing ? (s.landing.type === 'fall' ? 0.25 : Math.min(1, 0.3 + s.landing.dist / hillOf(G.hillId).def.hs * 0.7)) * Math.exp(-(performance.now() - (G.landAt || 0)) / 2500) : s.phase === 'air' ? Math.min(0.8, 0.2 + Math.max(0, s.x) / hillOf(G.hillId).def.k * 0.5) : 0.1,
   });
 }
 
@@ -518,9 +521,9 @@ async function finishJump() {
   G.state = 'result';
   if (!G.landShown) showBig();
 
-  // lokalni najboljši skok (ghost) — po točkah
+  // lokalni najboljši skok (ghost) — po točkah, le v »Rekordu skakalnice« (trening ne šteje)
   const prev = localBest(Hd.id);
-  const isPb = !res.fall && (!prev || res.total > prev.total);
+  const isPb = G.mode === 'record' && !res.fall && (!prev || res.total > prev.total);
   if (isPb && ghostData.length < GHOST_MAX) S.save(bestKey(Hd.id), { total: res.total, dist: L.dist, data: ghostData, pv: P.paramsVersion, at: Date.now() });
 
   // statistika in namigi
@@ -681,6 +684,7 @@ function togglePause(force) {
   if (on === G.paused) return;
   if (on && !['gate', 'jump', 'slowmo'].includes(G.state)) return;
   G.paused = on;
+  input?.reset();   // kliki med pavzo se ne štejejo
   const ov = $('#overlay');
   if (on) {
     audio.silence();

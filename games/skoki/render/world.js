@@ -69,7 +69,7 @@ function lineAt(hill, s, w, color, emissive = 0, opacity = 1) {
   const g = new THREE.BufferGeometry();
   const lift = 0.035;
   g.setAttribute('position', new THREE.Float32BufferAttribute([a.x, a.y + lift, -hw, a.x, a.y + lift, hw, b.x, b.y + lift, -hw, b.x, b.y + lift, hw], 3));
-  g.setIndex([0, 2, 1, 1, 2, 3]);
+  g.setIndex([0, 1, 2, 1, 3, 2]);   // normala navzgor (prej obrnjena → nevidno od zgoraj)
   g.computeVertexNormals();
   const m = emissive
     ? new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(emissive), transparent: opacity < 1, opacity, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })
@@ -163,8 +163,8 @@ export function buildWorld(hill, q) {
   const lines = new THREE.Group(); lines.name = 'lines';
   const s0 = Math.ceil(hill.k * 0.45 / 5) * 5;
   for (let s = s0; s <= hill.hs + 15; s += 5) {
-    if (Math.abs(s - hill.k) < 0.01 || Math.abs(s - hill.hs) < 0.01) continue;
-    lines.add(lineAt(hill, s, s % 10 === 0 ? 0.16 : 0.1, '#1d3b7a'));
+    if (Math.abs(s - hill.k) < 0.01 || Math.abs(s - hill.hs) < 0.01 || s === Math.round(hill.def.landing.pArc * 0.85)) continue;
+    lines.add(lineAt(hill, s, s % 10 === 0 ? 0.22 : 0.12, s % 10 === 0 ? '#1c46c4' : '#3a66d8', 1.0));   // vsakih 5 m (vsakih 10 m debelejša)
     if (s % 10 === 0) {
       const p = hill.landAt(s), hw = hillHalfWidth(hill, s);
       for (const side of [1, -1]) {
@@ -175,14 +175,37 @@ export function buildWorld(hill, q) {
       }
     }
   }
-  const kLine = lineAt(hill, hill.k, 0.35, '#e3263a', 1.6);
-  const hsLine = lineAt(hill, hill.hs, 0.35, '#2f6bff', 1.6);
-  lines.add(kLine, hsLine);
-  for (const [s, txt, colr] of [[hill.k, 'K ' + hill.k, '#e3263a'], [hill.hs, 'HS ' + hill.hs, '#2f6bff']]) {
+  // P-točka (začetek doskočišča), K-točka in HS: debele črte čez celo doskočišče, oznake in količki na obeh straneh
+  const P_S = Math.round(hill.def.landing.pArc * 0.85);
+  const MARKS = [[P_S, 'P ' + P_S, '#1fb86b'], [hill.k, 'K ' + hill.k, '#e3263a'], [hill.hs, 'HS ' + hill.hs, '#2f6bff']];
+  for (const [s, , colr] of MARKS) lines.add(lineAt(hill, s, s === P_S ? 0.3 : 0.6, colr, 1.8));
+  const poleG = new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6); poleG.translate(0, 1.3, 0);
+  for (const [s, txt, colr] of MARKS) {
     const p = hill.landAt(s), hw = hillHalfWidth(hill, s);
-    const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.4), new THREE.MeshBasicMaterial({ map: label(txt, { color: '#ffffff', bg: colr, w: 192 }), toneMapped: false }));
-    pl.position.set(p.x, p.y + 1.1, hw + 1.1);
-    lines.add(pl);
+    for (const side of [1, -1]) {
+      const z = side * (hw + 1.1);
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.4), new THREE.MeshBasicMaterial({ map: label(txt, { color: '#ffffff', bg: colr, w: 192 }), toneMapped: false, side: THREE.DoubleSide }));
+      pl.position.set(p.x, p.y + 2.1, z);
+      lines.add(pl);
+      const pole = new THREE.Mesh(poleG, new THREE.MeshStandardMaterial({ color: colr, emissive: colr, emissiveIntensity: 0.4 }));
+      pole.position.set(p.x - 1.9, p.y, z); pole.castShadow = true;
+      lines.add(pole);
+    }
+  }
+  // barvna pasova ob robovih: P → K zelen, K → HS rdeč, za HS moder (območje pristanka na prvi pogled)
+  for (const [s0, s1, colr] of [[P_S, hill.k, '#1fb86b'], [hill.k, hill.hs, '#e3263a'], [hill.hs, hill.hs + 12, '#2f6bff']]) {
+    for (const side of [-1, 1]) {
+      const pos = [], idx = [];
+      let i = 0;
+      for (let s = s0; s <= s1 + 1e-6; s += 1) {
+        const p = hill.landAt(s), hw = hillHalfWidth(hill, s);
+        pos.push(p.x, p.y + 0.045, side * (hw - 0.15), p.x, p.y + 0.045, side * (hw - 1.05));
+        if (i) { const k = (i - 1) * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+        i++;
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+      lines.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color(colr).multiplyScalar(1.3), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3 })));
+    }
   }
   group.add(lines);
   let recLine = null;

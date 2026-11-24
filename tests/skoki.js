@@ -27,15 +27,22 @@ export function skokiTests(test, { eq, ok }) {
     const J = PH.simulate({ hill, P: params || ctx.skokiParams, gate: gate ?? def.gates.default, wind, record, input: (s, t) => { const i = bot.input(s); rec.push(t, i); return i; } });
     return { J, def, hill, rec };
   };
-  /** Vnosi »po scenariju«: odriv z napako err (s), konstanten nagib, klik lead s pred stikom (ali -1 = brez). */
+  /** Vnosi »po scenariju«: odriv z dvoklikom (drugi klik z napako err s), nagib, pristanek: prvi klik lead s pred stikom,
+   *  drugi (telemark) 0,15 s kasneje; hold = samo en klik (dve nogi); lead -1 = brez klika. */
   const scripted = ({ err = 0, pitch = () => 18, lead = 0.28, hold = false }) => {
-    let pressT = -1;
+    const clicks = []; let to = 0, land = -1;
     return s => {
-      if (s.phase === 'inrun') { const tte = s.d / s.v; return { btn: err < 0 && tte <= -err ? 0 : 1, pitch: 18 }; }
-      if (s.phase === 'air' && !s.takeoff) return { btn: (s.tick - s.edgeTick) * PH.STEP >= err ? 0 : 1, pitch: 18 };
+      const t = s.tick, btn = () => clicks.some(c => t >= c && t < c + 2) ? 1 : 0;
+      if (s.phase === 'inrun' || (s.phase === 'air' && !s.takeoff)) {
+        const rel = s.phase === 'inrun' ? -(s.d / s.v) : (t - s.edgeTick) * PH.STEP;
+        if (to === 0 && t > 12 && rel >= err - 0.15) { clicks.push(t); to = 1; }
+        else if (to === 1 && rel >= err && t - clicks[0] >= 3) { clicks.push(t); to = 2; }
+        return { btn: btn(), pitch: 18 };
+      }
       const ttc = s.vn > 0.1 ? s.hag / s.vn : 9;
-      if (lead > 0 && pressT < 0 && s.takeoff && ttc <= lead) pressT = s.tick;
-      return { btn: pressT > 0 && (hold || s.tick - pressT < 8) ? 1 : 0, pitch: pitch(s) };
+      if (lead > 0 && land < 0 && s.takeoff && ttc <= lead) { land = t; clicks.push(t); }
+      else if (land >= 0 && !hold && clicks[clicks.length - 1] === land && (t - land) * PH.STEP >= 0.15) clicks.push(t);
+      return { btn: btn(), pitch: pitch(s) };
     };
   };
 
@@ -127,6 +134,21 @@ export function skokiTests(test, { eq, ok }) {
     ok(perfect.dist > early.dist + 3, `prezgodaj krajši (${perfect.dist} / ${early.dist})`);
     ok(perfect.dist > late.dist + 3, `prepozno krajši (${perfect.dist} / ${late.dist})`);
     ok(late.takeoff.err > 0 && early.takeoff.err < 0);
+  });
+  test('skoki: odriv šele z dvoklikom, telemark z dvoklikom, en klik = dve nogi', ctx => {
+    const { def, hill } = hillOf(ctx, 'bistra');
+    // en sam klik na koncu mize: ni odriva → »padeš z mize« (samodejen šibek odriv)
+    let clicked = -1;
+    const one = PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: s => {
+      if (s.phase === 'inrun' && clicked < 0 && s.d / s.v < 0.02) clicked = s.tick;
+      return { btn: clicked >= 0 && s.tick - clicked < 2 ? 1 : 0, pitch: s.gamma / D.DEG + BOT.BOT_ALPHA };
+    } }).s;
+    ok(one.takeoff.err > ctx.skokiParams.takeoff.lateLimit, 'en klik ni odriv: ' + one.takeoff.err);
+    const good = s => s.gamma / D.DEG + BOT.BOT_ALPHA;
+    const run = o => PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01, pitch: good, ...o }) }).s;
+    eq(run({}).landing.type, 'tele');
+    eq(run({ hold: true }).landing.type, 'two');
+    ok(run({}).takeoff.perfect, 'dvoklik ob robu = ✨');
   });
   test('skoki: čelni veter podaljša, hrbtni skrajša (velika ~+10–15 m pri +2 m/s)', ctx => {
     const avg = (id, w) => { let s = 0; for (let i = 0; i < 8; i++) s += botJump(ctx, id, { skill: 0.7, seed: i * 31 + 1, wind: { mode: 'const', speed: w, seed: i } }).J.s.dist; return s / 8; };

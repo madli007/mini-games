@@ -50,15 +50,15 @@ export class Audio {
   update(v) {
     if (!this.ctx || !this.loops) return;
     const t = this.ctx.currentTime, L = this.loops;
-    L.ski.g.gain.setTargetAtTime(v.ski * 0.35, t, 0.05);
+    L.ski.g.gain.setTargetAtTime(v.ski * 0.2, t, 0.05);
     L.ski.flt.frequency.setTargetAtTime(500 + v.speed * 1500, t, 0.1);
-    L.wind.g.gain.setTargetAtTime(v.wind * 0.5, t, 0.08);
+    L.wind.g.gain.setTargetAtTime(v.wind * 0.28, t, 0.08);
     L.wind.flt.frequency.setTargetAtTime(300 + v.wind * 900, t, 0.1);
-    L.crowd.g.gain.setTargetAtTime(0.03 + v.crowd * 0.32, t, 0.25);
-    L.lfoGain.gain.setTargetAtTime(0.02 + v.crowd * 0.1, t, 0.25);
+    L.crowd.g.gain.setTargetAtTime(0.01 + v.crowd * 0.17, t, 0.25);
+    L.lfoGain.gain.setTargetAtTime(0.005 + v.crowd * 0.05, t, 0.25);
   }
 
-  silence() { if (this.loops) { const t = this.ctx.currentTime; for (const k of ['ski', 'wind']) this.loops[k].g.gain.setTargetAtTime(0, t, 0.03); } }
+  silence() { if (this.loops) { const t = this.ctx.currentTime; for (const k of ['ski', 'wind', 'crowd']) this.loops[k].g.gain.setTargetAtTime(0, t, 0.05); this.loops.lfoGain.gain.setTargetAtTime(0, t, 0.05); } }
 
   _tone(f, dur, { type = 'sine', gain = 0.2, at = 0, slide = 0, attack = 0.005 } = {}) {
     if (!this.ctx) return;

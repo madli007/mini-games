@@ -1,11 +1,11 @@
 /* =====================================================================
    SMUČARSKI SKOKI — input.js: miška, tipkovnica, dotik (in nagib telefona)
    → vnos na tick { btn, pitch } za simulacijo.
-     Miška: klik = štart, držanje = drža, spust = odriv, premik gor/dol = nagib,
-            klik = telemark, držanje = dve nogi.
-     Tipkovnica: preslednica = akcije, ↑/↓ (W/S) = nagib.
-     Dotik: tap = štart, prst = drža, dvig = odriv, vlečenje gor/dol = nagib
-            (relativno na mesto dotika), tap = telemark, mirno držanje = dve nogi.
+     Miška (le levi gumb; desni meni je onemogočen): klik = štart, DVOKLIK na koncu mize = odriv,
+            premik gor/dol = nagib, DVOKLIK pred tlemi = telemark, en klik = dve nogi.
+     Tipkovnica: le R (nov skok), Enter (replay), Esc/P (pavza) — preslednica in puščice NE upravljajo skoka.
+     Dotik: tap = klik (dvojni tap = dvoklik), vlečenje gor/dol v letu = nagib (relativno na mesto dotika).
+   Vsak klik je kratek impulz gumba (2 ticka); simulacija šteje le pritiske.
    Igra nastavi mode ('gate' | 'inrun' | 'air' | 'other') in ob odrivu resetPitch().
    ===================================================================== */
 import { quantPitch } from './physics.js';
@@ -23,7 +23,9 @@ export class Input {
     this.btnMouse = false; this.btnKey = false; this.btnTouch = false;
     this.pitch = 18;
     this.keyUp = false; this.keyDown = false;
-    this.pulse = 0;          // tap: gumb pritisnjen za nekaj tickov
+    this.pulse = 0;          // klik: gumb pritisnjen 2 ticka
+    this.queue = 0;          // klik, ki je prišel med impulzom (hiter dvoklik)
+    this.gap = 0;
     this.touch = null;       // { id, y0, t0, moved, pitch0, holdTimer }
     this.lastY = null;
     this.tilt = null;        // { base } nagib telefona
@@ -36,18 +38,18 @@ export class Input {
   _bind() {
     const s = this.surface;
     s.style.touchAction = 'none';
+    // desni klik bi odprl meni brskalnika — na igralni površini ga onemogočimo
+    (s.closest('section') || s).addEventListener('contextmenu', e => e.preventDefault());
+    s.addEventListener('dblclick', e => e.preventDefault());
     s.addEventListener('pointerdown', e => {
       if (e.pointerType === 'touch') return this._touchStart(e);
       if (e.button !== 0) return;
       this.used.mouse = true;
-      this.btnMouse = true; this.lastY = e.clientY;
-      this.onAction?.('press');
+      this.lastY = e.clientY;
+      this.click();
     });
-    window.addEventListener('pointerup', e => {
-      if (e.pointerType === 'touch') return this._touchEnd(e);
-      if (e.button === 0) this.btnMouse = false;
-    });
-    window.addEventListener('pointercancel', e => { if (e.pointerType === 'touch') this._touchEnd(e, true); else this.btnMouse = false; });
+    window.addEventListener('pointerup', e => { if (e.pointerType === 'touch') this._touchEnd(e); });
+    window.addEventListener('pointercancel', e => { if (e.pointerType === 'touch') this._touchEnd(e, true); });
     window.addEventListener('pointermove', e => {
       if (e.pointerType === 'touch') return this._touchMove(e);
       if (this.lastY != null && this.mode === 'air') this.pitch -= (e.clientY - this.lastY) * MOUSE_SENS;
@@ -57,25 +59,18 @@ export class Input {
     window.addEventListener('keydown', e => {
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
       const k = e.key;
-      if (k === ' ' || k === 'Spacebar') {
-        e.preventDefault();
-        if (e.repeat) return;
-        this.used.key = true;
-        this.btnKey = true;
-        this.onAction?.('press');
-      } else if (k === 'ArrowUp' || k === 'w' || k === 'W') { this.keyUp = true; this.used.key = true; e.preventDefault(); }
-      else if (k === 'ArrowDown' || k === 's' || k === 'S') { this.keyDown = true; this.used.key = true; e.preventDefault(); }
+      // skok se upravlja samo z miško (dvoklik med vodenjem nagiba, kot pri DSJ) — tipke le za meni
+      if (k === ' ' || k === 'Spacebar') e.preventDefault();
       else if (k === 'r' || k === 'R') this.onAction?.('r');
       else if (k === 'Enter') this.onAction?.('enter');
       else if (k === 'Escape' || k === 'p' || k === 'P') this.onAction?.('pause');
     });
     window.addEventListener('keyup', e => {
       const k = e.key;
-      if (k === ' ' || k === 'Spacebar') this.btnKey = false;
-      else if (k === 'ArrowUp' || k === 'w' || k === 'W') this.keyUp = false;
+      if (k === 'ArrowUp' || k === 'w' || k === 'W') this.keyUp = false;
       else if (k === 'ArrowDown' || k === 's' || k === 'S') this.keyDown = false;
     });
-    window.addEventListener('blur', () => { this.btnMouse = this.btnKey = this.btnTouch = false; this.keyUp = this.keyDown = false; });
+    window.addEventListener('blur', () => { this.keyUp = this.keyDown = false; });
   }
 
   /* ---------------- dotik */
@@ -83,33 +78,29 @@ export class Input {
     if (this.touch) return;
     this.used.touch = true;
     e.preventDefault();
-    this.touch = { id: e.pointerId, y0: e.clientY, t0: performance.now(), moved: false, pitch0: this.pitch, hold: false };
-    if (this.mode === 'air') {
-      // v letu: vlečenje = nagib, tap = telemark, mirno držanje = dve nogi
-      const t = this.touch;
-      t.holdTimer = setTimeout(() => { if (this.touch === t && !t.moved) { t.hold = true; this.btnTouch = true; } }, 350);
-    } else {
-      this.btnTouch = true;
-      this.onAction?.('press');
-    }
+    this.touch = { id: e.pointerId, y0: e.clientY, t0: performance.now(), moved: false, pitch0: this.pitch };
+    // pred letom: tap je takoj klik (hiter dvojni tap za odriv); v letu ločimo tap od vlečenja ob dvigu prsta
+    if (this.mode !== 'air') { this.touch.clicked = true; this.click(); }
   }
   _touchMove(e) {
     const t = this.touch;
     if (!t || t.id !== e.pointerId) return;
     const dy = e.clientY - t.y0;
     if (Math.abs(dy) > 10) t.moved = true;
-    if (this.mode === 'air' && t.moved && !t.hold) { this.pitch = t.pitch0 - dy * TOUCH_SENS; this._clamp(); }
+    if (this.mode === 'air' && t.moved) { this.pitch = t.pitch0 - dy * TOUCH_SENS; this._clamp(); }
   }
   _touchEnd(e, cancel = false) {
     const t = this.touch;
     if (!t || t.id !== e.pointerId) return;
-    clearTimeout(t.holdTimer);
     this.touch = null;
-    this.btnTouch = false;
-    if (!cancel && this.mode === 'air' && !t.moved && !t.hold && performance.now() - t.t0 < 350) {
-      this.pulse = 4;   // tap → kratek pritisk (telemark)
-      this.onAction?.('press');
-    }
+    if (!cancel && !t.clicked && !t.moved && performance.now() - t.t0 < 350) this.click();
+  }
+
+  /** En klik (impulz gumba za simulacijo). */
+  click() {
+    if (this.pulse > 0 || this.gap > 0) this.queue = Math.min(2, this.queue + 1);
+    else this.pulse = 2;
+    this.onAction?.('press');
   }
 
   /* ---------------- nagib telefona (neobvezno) */
@@ -139,7 +130,7 @@ export class Input {
   /** Ob odrivu: ciljni nagib na privzeto vrednost. */
   resetPitch(p = 18) { this.pitch = p; this.tilt = null; if (this.touch) { this.touch.pitch0 = p; this.touch.y0 = this.touch.y0; } }
 
-  get btn() { return this.btnMouse || this.btnKey || this.btnTouch || this.pulse > 0; }
+  get btn() { return this.pulse > 0; }
 
   /** Vnos za en tick (kliči natanko enkrat na tick simulacije). */
   sample() {
@@ -148,10 +139,12 @@ export class Input {
       if (this.keyDown) this.pitch -= KEY_RATE / 120;
       this._clamp();
     }
-    const btn = this.btn ? 1 : 0;
-    if (this.pulse > 0) this.pulse--;
+    let btn = 0;
+    if (this.pulse > 0) { btn = 1; if (--this.pulse === 0) this.gap = 1; }
+    else if (this.gap > 0) this.gap--;
+    else if (this.queue > 0) { this.queue--; btn = 1; this.pulse = 1; }
     return { btn, pitch: quantPitch(this.pitch) };
   }
 
-  reset() { this.btnMouse = this.btnKey = this.btnTouch = false; this.pulse = 0; this.keyUp = this.keyDown = false; }
+  reset() { this.pulse = 0; this.queue = 0; this.gap = 0; this.keyUp = this.keyDown = false; }
 }
