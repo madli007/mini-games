@@ -2,13 +2,13 @@
 --  SMUČARSKI SKOKI — ghosti (posnetki najboljših skokov) za »Rekord skakalnice«
 --  Idempotentno: lahko se požene večkrat. Zahteva supabase/schema.sql (profiles, shema private).
 --
---  skoki_hills   — skakalnice in največje mogoče točke (za zavrnitev nemogočih rezultatov);
---                  vrednosti = maxPoints() iz games/skoki/scoring.js (test preveri ujemanje)
+--  skoki_hills   — skakalnice, največje mogoče točke in daljava (za zavrnitev nemogočih rezultatov);
+--                  vrednosti = maxPoints() in maxDist() iz games/skoki/scoring.js (test preveri ujemanje)
 --  skoki_ghosts  — en ghost na (igralec, skakalnica); berejo vsi prijavljeni,
 --                  piše se SAMO prek RPC skoki_save_ghost (le BOLJŠI rezultat, omejena velikost).
 --
 --  Rezultat je v stolpcu time_ms (ime zaradi skupnega API-ja hub.saveGhost/getGhosts):
---  točke v desetinkah × 1000 + daljava × 2 (encodeBoard v scoring.js) — VEČ JE BOLJE.
+--  daljava × 2 × 10000 + točke v desetinkah (encodeBoard v scoring.js) — VEČ JE BOLJE, rekord je v metrih.
 --  Klient: hub.saveGhost({ level, timeMs, data, order: 'desc' }), hub.getGhosts({ level, order: 'desc' }).
 -- =====================================================================
 
@@ -16,6 +16,7 @@ create table if not exists public.skoki_hills (
   hill        text primary key check (hill ~ '^[a-z0-9-]{2,30}$'),
   max_points  int not null check (max_points > 0 and max_points < 1000)
 );
+alter table public.skoki_hills add column if not exists max_dist int not null default 200 check (max_dist > 0 and max_dist < 500);
 alter table public.skoki_hills enable row level security;
 drop policy if exists skoki_hills_select on public.skoki_hills;
 create policy skoki_hills_select on public.skoki_hills for select to authenticated using (true);
@@ -47,15 +48,16 @@ returns json language plpgsql security definer set search_path = '' as $$
 declare
   uid   uuid := auth.uid();
   mx    int;
+  md    int;
   n     int;
 begin
   if uid is null then raise exception 'not_authenticated'; end if;
   perform 1 from public.profiles p where p.id = uid;
   if not found then raise exception 'no_profile'; end if;
-  select h.max_points into mx from public.skoki_hills h where h.hill = p_level;
+  select h.max_points, h.max_dist into mx, md from public.skoki_hills h where h.hill = p_level;
   if mx is null then raise exception 'unknown_level'; end if;
-  -- time_ms = točke × 10 × 1000 + daljava × 2 (daljava ≤ 499,5 m)
-  if p_time_ms is null or p_time_ms <= 0 or p_time_ms > mx * 10000 + 999 then raise exception 'impossible_time'; end if;
+  -- time_ms = daljava × 2 × 10000 + točke × 10 (točke ≤ 999,9)
+  if p_time_ms is null or p_time_ms <= 0 or p_time_ms / 10000 > md * 2 or p_time_ms % 10000 > mx * 10 then raise exception 'impossible_time'; end if;
   if p_data is null or char_length(p_data) > 6000 or p_data !~ '^[A-Za-z0-9+/=]+$' then raise exception 'ghost_too_big'; end if;
 
   insert into public.skoki_ghosts as g (user_id, level, mirror, time_ms, data)
@@ -76,10 +78,10 @@ $$;
 revoke all on function public.skoki_save_ghost(text, boolean, int, text) from public, anon;
 grant execute on function public.skoki_save_ghost(text, boolean, int, text) to authenticated;
 
--- BEGIN HILLS (maxPoints iz games/skoki/scoring.js: daljava HS + 25 m, 60 slog, 30 kompenzacije)
-insert into public.skoki_hills (hill, max_points) values
-  ('brezova', 230),
-  ('bistra', 222),
-  ('orlova', 222)
-on conflict (hill) do update set max_points = excluded.max_points;
+-- BEGIN HILLS (maxPoints / maxDist iz games/skoki/scoring.js: daljava HS + 25 m, 60 slog, 30 kompenzacije)
+insert into public.skoki_hills (hill, max_points, max_dist) values
+  ('brezova', 230, 93),
+  ('bistra', 222, 131),
+  ('orlova', 222, 165)
+on conflict (hill) do update set max_points = excluded.max_points, max_dist = excluded.max_dist;
 -- END HILLS

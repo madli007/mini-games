@@ -65,11 +65,14 @@ export function maxPoints(def) {
 }
 
 /* ------------------------------------------------------------ zapis za lestvico */
-// Lestvica huba hrani celo število: točke (desetinke) × 1000 + daljava × 2.
-// Razvrščanje je po točkah, enake točke loči daljava; format() prikaže oboje.
+// Rekord skakalnice šteje v METRIH (kot pravi rekordi). Lestvica huba hrani celo število:
+// daljava × 2 × 10000 + točke (desetinke). Razvrščanje je po daljavi, enako dolge skoke loči točkovanje.
 
-export const encodeBoard = (total, dist) => Math.round(total * 10) * 1000 + Math.min(999, Math.round(dist * 2));
-export const decodeBoard = n => ({ total: Math.floor(n / 1000) / 10, dist: (n % 1000) / 2 });
+export const encodeBoard = (total, dist) => Math.round(dist * 2) * 10000 + Math.min(9999, Math.max(0, Math.round(total * 10)));
+export const decodeBoard = n => ({ dist: Math.floor(n / 10000) / 2, total: (n % 10000) / 10 });
+
+/** Najdaljša mogoča daljava za zavrnitev nemogočih rezultatov (HS + 25 m). */
+export const maxDist = def => Math.ceil(def.hs + 25);
 
 const fmt1 = v => v.toLocaleString('sl-SI', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 export const fmtDist = d => fmt1(d) + ' m';

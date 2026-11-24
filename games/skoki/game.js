@@ -60,6 +60,9 @@ const saveStats = () => S.save('skoki:stats', stats);
 // lokalni najboljši skok (ghost) na skakalnico — vezan na profil, da si ga dva profila v istem brskalniku ne delita
 const bestKey = id => 'skoki:best:' + (hub.userId || 'anon') + ':' + id;
 // šteje le »Rekord skakalnice« (trening ne postavlja rekordov); rekord iz starejše fizike (paramsVersion) ne velja
+// rekord = najdaljši skok brez padca (v metrih); enako dolge skoke loči točkovanje
+const better = (a, b) => !b || a.dist > b.dist || (a.dist === b.dist && a.total > b.total);
+const BOARD_SEED = id => 'rekord:' + id;
 const localBest = id => { const b = S.load(bestKey(id), null); return b && b.pv === P?.paramsVersion ? b : null; };
 
 /* ------------------------------------------------------------ globalno */
@@ -151,7 +154,7 @@ function renderMenu() {
         </div>
         <div class="mg-card">
           <h2 class="mg-title">Rekord skakalnice</h2>
-          <p class="sk-note">Trije skoki s privzetega zaletnega mesta (${H.gates.default}) in z naključnim vetrom. Šteje najboljši skok, ki gre na lestvico ${esc(H.name)}.</p>
+          <p class="sk-note">Trije skoki s privzetega zaletnega mesta (${H.gates.default}) in z naključnim vetrom. Šteje <b>najdaljši skok brez padca</b> (v metrih; enako dolge loči točkovanje), ki gre na lestvico ${esc(H.name)}.</p>
           <div class="sk-stats"><div><span class="mg-muted mg-small">Seja na ${esc(H.name)}</span><b>${tot.length} ${tot.length === 1 ? 'skok' : 'skokov'}</b></div>
             <div><span class="mg-muted mg-small">Najdaljši</span><b>${tot.length ? fmtDist(Math.max(...tot.map(j => j.dist))) : '—'}</b></div>
             <div><span class="mg-muted mg-small">Povprečje</span><b>${tot.length ? fmtDist(tot.reduce((a, j) => a + j.dist, 0) / tot.length) : '—'}</b></div>
@@ -195,7 +198,7 @@ function renderMenu() {
     if (settings.tilt) { const okT = await getInput().enableTilt(); if (!okT) { ui.toast('Nagib telefona ni na voljo.'); settings.tilt = false; saveSettings(); e.target.checked = false; } } else getInput().disableTilt();
   });
   // lestvica skakalnice
-  const seed = 'hill:' + H.id;
+  const seed = BOARD_SEED(H.id);
   board = ui.leaderboard($('#board'), {
     title: 'Rekord skakalnice · ' + H.name, format: fmtBoard,
     tabs: [{ label: 'Danes', seed, period: 'today' }, { label: 'Teden', seed, period: 'week' }, { label: 'Vseh časov', seed }],
@@ -524,7 +527,7 @@ async function finishJump() {
 
   // lokalni najboljši skok (ghost) — po točkah, le v »Rekordu skakalnice« (trening ne šteje)
   const prev = localBest(Hd.id);
-  const isPb = G.mode === 'record' && !res.fall && (!prev || res.total > prev.total);
+  const isPb = G.mode === 'record' && !res.fall && better(res, prev);
   if (isPb && ghostData.length < GHOST_MAX) S.save(bestKey(Hd.id), { total: res.total, dist: L.dist, data: ghostData, pv: P.paramsVersion, at: Date.now() });
 
   // statistika in namigi
@@ -560,7 +563,7 @@ async function finishJump() {
 
   if (G.mode === 'record') {
     G.record.tries.push({ ...res, ghost: ghostData });
-    if (!G.record.best || res.total > G.record.best.total) G.record.best = { ...res, ghost: ghostData };
+    if (!res.fall && better(res, G.record.best)) { G.record.best = { ...res, ghost: ghostData }; G.record.bestIdx = G.record.tries.length - 1; }
     if (G.record.tries.length >= 3) await finishRecord();
   } else if (Date.now() - G.lastReport > 60000) {
     G.lastReport = Date.now();
@@ -575,11 +578,18 @@ async function finishJump() {
 async function finishRecord() {
   const Hd = hillOf(G.hillId).def;
   const best = G.record.best;
-  const seed = 'hill:' + Hd.id;
+  const seed = BOARD_SEED(Hd.id);
+  if (!best) {   // vsi trije skoki s padcem: ni veljavnega rekorda
+    hub.reportGame({ won: false, players: 1, score: 0, daily: false });
+    G.lastReport = Date.now();
+    hub.awardXp(15, 'skoki: rekord skakalnice');
+    G.record.done = { xp: 15, none: true };
+    return;
+  }
   const prevBest = await hub.getMyBest({ seed });
   const enc = encodeBoard(best.total, best.dist);
   await hub.submitScore(enc, { seed, meta: { dist: best.dist, wind: best.wind, gate: best.gate, style: best.style, total: best.total } });
-  if (best.total > 0 && !best.fall) await hub.saveGhost({ level: Hd.id, timeMs: enc, data: best.ghost, order: 'desc' });
+  await hub.saveGhost({ level: Hd.id, timeMs: enc, data: best.ghost, order: 'desc' });
   hub.reportGame({ won: false, players: 1, score: Math.round(best.total), daily: false });
   G.lastReport = Date.now();
   let xp = 15;
@@ -591,8 +601,8 @@ async function finishRecord() {
 }
 
 function rankText(res) {
-  const mine = G.session.jumps.filter(j => j.hill === G.hillId).map(j => j.total).sort((a, b) => b - a);
-  const r = mine.indexOf(res.total) + 1;
+  const mine = G.session.jumps.filter(j => j.hill === G.hillId).map(j => j.dist).sort((a, b) => b - a);
+  const r = mine.indexOf(res.dist) + 1;
   return `${r}. od ${mine.length} ${mine.length === 1 ? 'skoka' : 'skokov'} v seji`;
 }
 
@@ -602,7 +612,7 @@ function showResult(res, isPb) {
   $('#big').classList.add('mg-hidden');
   const cls = v => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
   const rec = G.record;
-  const tries = rec ? `<div class="sk-tries">${rec.tries.map((t, i) => `<span class="${t === rec.tries.find(x => x.total === rec.best.total) ? 'best' : ''}">${i + 1}. ${fmtDist(t.dist)} · ${fmt1(t.total)} t</span>`).join('')}</div>` : '';
+  const tries = rec ? `<div class="sk-tries">${rec.tries.map((t, i) => `<span class="${i === rec.bestIdx ? 'best' : ''}">${i + 1}. ${fmtDist(t.dist)} · ${fmt1(t.total)} t</span>`).join('')}</div>` : '';
   const done = rec?.done;
   el.innerHTML = `
     <div class="sk-card__head"><b>${esc(Hd.name)} · K${Hd.k}</b><span>${G.mode === 'record' ? `Skok ${rec.tries.length}/3` : 'Trening'}</span></div>
@@ -616,7 +626,7 @@ function showResult(res, isPb) {
     </tbody></table></div>
     <div class="sk-card__rank">${res.speed ? 'Hitrost na mizi ' + fmt1(res.speed) + ' km/h · ' : ''}${res.takeoff?.perfect ? '✨ popoln odriv · ' : ''}${rankText(res)}</div>
     ${tries}
-    ${done ? `<div class="sk-card__rank">🏁 Najboljši: <b>${fmtDist(rec.best.dist)} · ${fmt1(rec.best.total)} t</b> → lestvica. ${done.newPb ? '<b style="color:var(--mg-green)">Nov osebni rekord!</b>' : ''} +${done.xp} XP</div>` : ''}
+    ${done ? (done.none ? `<div class="sk-card__rank">🏁 Vsi trije skoki s padcem — ni veljavnega rekorda. +${done.xp} XP</div>` : `<div class="sk-card__rank">🏁 Rekord: <b>${fmtDist(rec.best.dist)}</b> (${fmt1(rec.best.total)} t) → lestvica. ${done.newPb ? '<b style="color:var(--mg-green)">Nov osebni rekord!</b>' : ''} +${done.xp} XP</div>`) : ''}
     <div class="sk-card__btns">
       ${rec && done ? `<button class="mg-btn mg-btn--pink" data-a="again">Nov poskus (R)</button>` : `<button class="mg-btn mg-btn--primary" data-a="next">${rec ? 'Naslednji skok' : 'Nov skok'} (R)</button>`}
       <button class="mg-btn" data-a="replay">Replay (Enter)</button>

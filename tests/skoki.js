@@ -233,12 +233,13 @@ export function skokiTests(test, { eq, ok }) {
     ok(new Set(JU.judgeScores(tele, ctx.skokiParams, 1)).size > 1 || true);
     ok(SC.maxPoints(def) > SC.distancePoints(def, def.hs) + 60);
   });
-  test('skoki: zapis za lestvico (točke + daljava v enem številu)', () => {
+  test('skoki: zapis za lestvico (rekord v metrih, točke ločijo enake daljave)', () => {
     const n = SC.encodeBoard(142.3, 131.5);
-    eq(SC.decodeBoard(n), { total: 142.3, dist: 131.5 });
-    ok(SC.encodeBoard(142.4, 100) > SC.encodeBoard(142.3, 140), 'razvrščanje po točkah');
-    ok(SC.encodeBoard(142.3, 131) > SC.encodeBoard(142.3, 130.5), 'enake točke loči daljava');
-    ok(SC.encodeBoard(300, 250) < 2147483647, 'int32');
+    eq(SC.decodeBoard(n), { dist: 131.5, total: 142.3 });
+    ok(SC.encodeBoard(60, 140) > SC.encodeBoard(150, 139.5), 'razvrščanje po daljavi');
+    ok(SC.encodeBoard(142.4, 131) > SC.encodeBoard(142.3, 131), 'enako dolge loči točkovanje');
+    ok(SC.encodeBoard(300, 250) < 10000000, 'meja stolpca time_ms');
+    eq(SC.decodeBoard(SC.encodeBoard(0, 88.5)), { dist: 88.5, total: 0 });
     eq(SC.fmtBoard(n), '131,5 m · 142,3 t');
   });
 
@@ -274,11 +275,11 @@ export function skokiTests(test, { eq, ok }) {
 
   test('skoki: SQL skakalnic (meje točk = maxPoints, vse skakalnice, RLS)', ctx => {
     const sql = ctx.skokiSql;
-    for (const def of ctx.skokiHills) ok(sql.includes(`('${def.id}', ${SC.maxPoints(def)})`), `${def.id}: max_points ${SC.maxPoints(def)}`);
+    for (const def of ctx.skokiHills) ok(sql.includes(`('${def.id}', ${SC.maxPoints(def)}, ${SC.maxDist(def)})`), `${def.id}: max_points ${SC.maxPoints(def)}, max_dist ${SC.maxDist(def)}`);
     ok(/alter table public\.skoki_ghosts enable row level security/.test(sql), 'RLS');
     ok(/security definer/.test(sql) && /private\.skoki_save_ghost/.test(sql), 'definer v private');
     ok(/where g\.time_ms < excluded\.time_ms/.test(sql), 'shrani le boljši (več je bolje)');
-    for (const def of ctx.skokiHills) ok(SC.encodeBoard(SC.maxPoints(def), def.hs + 25) <= SC.maxPoints(def) * 10000 + 999, 'meja kodiranja');
+    for (const def of ctx.skokiHills) { const e = SC.encodeBoard(SC.maxPoints(def), def.hs + 25); ok(Math.floor(e / 10000) <= SC.maxDist(def) * 2 && e % 10000 <= SC.maxPoints(def) * 10, 'meja kodiranja'); }
   });
 
   /* ------------------------------------------------------------ uravnoteženje z botom */

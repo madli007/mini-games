@@ -922,6 +922,11 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
   `autoLag` 0,35 s + `autoAlpha` 34°), miška le popravlja — brez popravka pristane pred K brez padca (test).
   `paramsVersion` 3. Zanke zvoka gredo prek skupnega vodila, ki je v meniju in med pavzi popolnoma utišano.
 
+- **Rekord v metrih:** Rekord skakalnice šteje najdaljši skok brez padca (točke ločijo le enako dolge), prav tako lokalni
+  rekord, ghost in lestvica (zapis `daljava × 2 × 10000 + točke × 10`, nov seed `rekord:<id>`). Supabase: migracija
+  `skoki_record_in_meters` (`skoki_hills.max_dist`, meja v RPC po daljavi in točkah); preizkušeno z lažnim JWT in
+  rollbackom (daljši shrani, krajši z več točkami ne, enako dolg z več točkami da, 165,5 m na Orlovi zavrnjeno).
+
 ## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
 
 - Tekma z več igralci, replay v živo, boti kot tekmeci, dnevni izziv, letalnica; svetovni pokal, kariera, trgovina z opremo

@@ -102,14 +102,15 @@ dodaj vrstico v `skoki_hills` z `maxPoints(def)` (test preveri).
   Vsak sodnik ima deterministično občutljivost in šum iz seeda skoka.
 - Veter: povprečje čelne komponente v 5 točkah leta; čelni odšteje `head × m/s`, hrbtni prišteje `tail × m/s`.
 - Zaletno mesto: (privzeto − uporabljeno) × `gateFactor`.
-- Lestvica (`hub.submitScore`, seed `hill:<id>`) hrani celo število **točke × 10 × 1000 + daljava × 2** (`encodeBoard`) —
-  razvrstitev po točkah, prikaz »131,5 m · 142,3 t«.
+- **Rekord skakalnice je v metrih:** od treh skokov šteje najdaljši brez padca (enako dolge loči točkovanje; če so vsi
+  trije padci, rekorda ni). Lestvica (`hub.submitScore`, seed `rekord:<id>`) hrani celo število
+  **daljava × 2 × 10000 + točke × 10** (`encodeBoard`) — razvrstitev po daljavi, prikaz »131,5 m · 142,3 t«.
 
 ## Ghost
 
 `{ pv, hill, gate, wind: { mode, seed, speed }, ticks, dist, total, changes: [[tick, btn, pitch×2], …] }` — zapisane so le
 spremembe vnosa, varint + zigzag → base64 (tipično 0,3–1,5 KB, meja 4 KB). Predvajanje = nova simulacija z istimi vnosi.
-Lokalno se vedno shrani najboljši skok (po točkah) na skakalnico in profil (`skoki:best:<userId>:<id>`; stari ključi brez profila se ob prvem zagonu preselijo k trenutnemu profilu); »Rekord skakalnice« shrani najboljši
+Lokalno se shrani najdaljši skok brez padca iz »Rekorda skakalnice« (trening ne šteje) na skakalnico in profil (`skoki:best:<userId>:<id>`; stari ključi brez profila se ob prvem zagonu preselijo k trenutnemu profilu); »Rekord skakalnice« shrani najboljši
 skok tudi prek `hub.saveGhost({ level, timeMs: encodeBoard(...), data, order: 'desc' })` (Supabase: `skoki_ghosts`).
 Ghost prijatelja: klik na vrstico lestvice v meniju.
 
