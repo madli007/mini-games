@@ -17,7 +17,7 @@
 ## Kaj se spremeni pri vnosu igre
 - **Način:** `turn` · **Število igralcev:** 1–10 · **Oznake:** dodaj `party`, `daily`.
 - Kratek opis posodobi: »… Tekma do 10 prijateljev v dveh serijah, replay v živo, dnevni izziv in letalnica.«
-- Igra ostane ena kartica v `games.json`; v meniju igre so načini Trening, Rekord skakalnice, **Tekma**, **Dnevni izziv**.
+- Igra ostane ena kartica v `games.json`; v meniju igre so načini Trening, Rekord skakalnice, **Tekma**, **Lokalna tekma**, **Dnevni izziv**, poleg tega zaslon **Moji skakalci**.
 
 ---
 
@@ -76,6 +76,30 @@
 2–4 ekipe po 2–4 skakalce (dodelitev v lobbyju ali naključno), seštevek točk ekipe, serije po skupinah (vsak
 iz vsake ekipe po vrsti). Rezultat ekipe v `ui.results`.
 
+### Lastni skakalci in lokalna tekma (na eni napravi)
+Kot v starih računalniških skokih: igralec si sestavi **svoj seznam skakalcev** in tekmuje z njimi sam ali s
+prijatelji za istim računalnikom.
+- **Urejevalnik skakalcev** (nov zaslon v meniju »Moji skakalci«): ime (poljubno, vnese ga igralec), zastava, barvi
+  dresa in čelade (le videz v tekmi, ločeno od kozmetike iz trgovine), **tip**: *človek* (skače nekdo za to napravo)
+  ali *bot* (spretnost 0–1 in značaj iz `bot.js`, npr. »agresiven odriv«, »varen pristanek«, »nestanoviten«).
+  Dodaj, uredi, podvoji, izbriši, razvrsti. Do 60 skakalcev. Shrani lokalno (`shared/storage.js`).
+  Igra **sama ne ponuja imen pravih skakalcev**: kar igralec vpiše, je njegovo (tudi če je to ime pravega skakalca).
+- **Deljenje seznama:** izvoz/uvoz kot kratka koda ali datoteka JSON (z validacijo in omejitvijo velikosti), da si
+  prijatelji izmenjajo »svoje ekipe«. Seznam se ne pošilja na strežnik in ne prikazuje drugim brez izvoza.
+- **Lokalna tekma** (brez sobe, deluje offline): izbereš skakalce s seznama (ali »vse«), skakalnico in iste nastavitve
+  kot pri Tekmi (serije, veter, žirija, poskusna serija). Človeški skakalci skačejo **po vrsti na isti napravi**
+  (vmesni zaslon »Na vrsti: <ime>, pritisni za štart«), boti skočijo sami (pospešen ali preskočen replay, po izbiri).
+  Enak potek, rezultatna kartica, razglasitev in `ui.results` kot pri spletni tekmi. Ponovno uporabi isto logiko
+  tekme (`sport/`), ne podvajaj je.
+- **Statistika po skakalcu** (lokalno): skoki, najdaljši skok po skakalnici, zmage, stopničke. Zaslon »Moji skakalci«
+  pokaže tabelo, kot bi bila sezona tvoje lige.
+- **Točkovanje v hubu:** lokalna tekma **ne gre na lestvice** in ne daje ghostov (en človek lahko skače za več
+  skakalcev). Po koncu `hub.reportGame({ won, players: <število človeških skakalcev>, score: <najboljši človeški>, daily: false })`,
+  `won` = prvo mesto je človeški skakalec. XP kot za trening (dokumentiraj v `PROGRESS.md`).
+- **Boti v spletni tekmi:** host lahko polje dopolni z boti s **svojega seznama** namesto z vgrajenimi izmišljenimi imeni.
+- Testi: validacija uvoza (prevelik, pokvarjen, neznana polja), vrstni red in točke lokalne tekme z mešanico ljudi in
+  botov (z vnaprej posnetimi vnosi), statistika po skakalcu.
+
 ---
 
 ## 2. Dnevni izziv
@@ -92,7 +116,13 @@ iz vsake ekipe po vrsti). Rezultat ekipe v `ui.results`.
 
 ## 3. Nove skakalnice (vsaj 5, skupaj vsaj 8)
 Vse kot JSON v `games/skoki/hills/`, profil iz parametrov (`hill.js`), validator mora vse sprejeti, **bot mora na vsaki
-izpolniti cilje uravnoteženja** (tabela iz `tools/skoki-balance.mjs` v README). Imena so izmišljena.
+izpolniti cilje uravnoteženja** (tabela iz `tools/skoki-balance.mjs` v README).
+
+### Trening skakalnice (izmišljene)
+Vse skakalnice v tej fazi so **izmišljene** in v meniju spadajo v skupino **»Trening«**, skupaj z Brezovo, Bistro in
+Orlovo iz 1. faze (te ostanejo, kot so). **Prave skakalnice** (imena krajev, profili po FIS-ovih certifikatih) pridejo
+posebej v `prompts/29-skoki-prave-skakalnice.md`. Meni in format skakalnice pripravi tako, da se druga skupina
+(»Prave skakalnice«) doda brez predelave (polje `group` v `hills/index.json` ali v JSON-u skakalnice, privzeto `trening`).
 
 | Predlog | K / HS | Posebnost |
 |---|---|---|
@@ -105,8 +135,8 @@ izpolniti cilje uravnoteženja** (tabela iz `tools/skoki-balance.mjs` v README).
 - Letalnica mora imeti **svoj občutek**: dolgo, mirno jadranje, kjer vsak mali popravek šteje, in nevaren pristanek.
   Če model iz 1. faze tega brez sprememb ne zmore, razširi ga s **parametri skakalnice** (npr. `airDensity`, `gravity`,
   `noAir`), ne s posebnimi primeri v kodi; obstoječe tri skakalnice se ne smejo spremeniti (testi to preverijo).
-- **Odklepanje:** Mini, mala, srednja in velika so odprte. Nočna in Puščavska se odklenete s skokom čez K na veliki,
-  Letalnica s skokom čez HS na veliki, Lunina s katerimkoli skokom na letalnici čez K. Odklepi so dosežki (veljajo
+- **Odklepanje:** Mini, mala, srednja in velika so odprte. Nočna in Puščavska se odklenete s skokom čez K
+  na veliki, Letalnica s skokom čez HS na veliki, Lunina s katerimkoli skokom na letalnici čez K. Odklepi so dosežki (veljajo
   na vseh napravah). V tekmi lahko host izbere le skakalnice, ki jih ima odklenjene host (ali vsaj en igralec — izberi in dokumentiraj).
 
 ---

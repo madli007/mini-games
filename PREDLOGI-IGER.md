@@ -16,7 +16,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 19. Zaporedje | ✅ | `games/zaporedje/` |
 | Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj | `games/herodle/` |
 | 40. Dirka frnikol | 🟡 1. del ✅, 📝 2.–4. del | `games/frnikole/` |
-| 36. Smučarski skoki | 🟡 1. faza ✅, 📝 tekma, pokal | `games/skoki/`, prompti 12–13 |
+| 36. Smučarski skoki | 🟡 1. faza ✅, 📝 tekma, prave skakalnice, pokal | `games/skoki/`, prompti 12, 29, 13 |
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |

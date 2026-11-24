@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Smučarski skoki — 3. faza (svetovni pokal, kariera, trgovina, športni okvir)
 
-> **Stanje:** ⬜ čaka — predpogoj: 12
+> **Stanje:** ⬜ čaka — predpogoj: 12, 29
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/13-skoki-pokal.md in ga v celoti izvedi.«**
@@ -22,7 +22,21 @@ Prijatelji niso vsi hkrati na spletu, zato je pokal **asinhron**: vsak skače, k
 - **Sezona = koledarski mesec** (ime npr. »Pokal Novembra 2026«). Koledar sezone (`sport/season.js`, brez DOM-a)
   se **izračuna iz datuma in seeda sezone**, zato ga ni treba nikjer ustvarjati in je enak v obeh adapterjih:
   ~10 **postaj** (tekem), vsaka odprta 2–3 dni (po ljubljanskem času), z izbrano skakalnico, profilom vetra in pogojem.
-  Zadnja postaja je vedno na letalnici (»finale«). Lunina in Mini ne štejeta.
+  Zadnja postaja je vedno na letalnici (»finale«, praviloma Planica). Pokal se skače **samo na pravih skakalnicah**
+  (`prompts/29-skoki-prave-skakalnice.md`, skupina »Prave skakalnice«); trening skakalnice (Brezova, Bistra, Orlova in
+  izmišljene iz 2. faze) ostanejo za trening, kariero in tekme s prijatelji. Postaje imenuj po kraju (»Postaja 4: Zakopane«).
+- **Turneja 4 skakalnic** (format prave novoletne turneje, a pod svojim imenom; **ne** uporabljaj imen »Novoletna
+  turneja«, »Vierschanzentournee«, »Four Hills«, ne pokala Zlati orel ne njihove grafične podobe):
+  - Štiri zaporedne postaje Oberstdorf → Garmisch → Innsbruck → Bischofshofen; v koledarju pokala jih postavi na
+    konec decembra in začetek januarja (v mesečni sezoni: štiri zaporedne postaje), na voljo pa tudi kot samostojen
+    način v Lokalni tekmi in v spletni Tekmi.
+  - **KO sistem v 1. seriji:** 50 skakalcev v 25 parih (1. proti 50., 2. proti 49. … po kvalifikacijah ali razvrstitvi
+    pokala). Zmagovalec para gre v 2. serijo, poleg njih še **5 najboljših poraženih** (»srečni poraženci«), skupaj 30.
+    Pri manj skakalcih: pari po istem pravilu, polje dopolnijo boti, ali KO izklopljen (izberi in dokumentiraj).
+  - **Skupna razvrstitev turneje** = vsota **točk skokov** (ne točk pokala) vseh štirih tekem; ločena lestvica in
+    zmagovalec turneje (dosežek, kozmetika, »Dvorana slavnih«). Kdor zamudi postajo, izpade iz skupne razvrstitve.
+  - Logika (pari, srečni poraženci, seštevek) gre v `sport/` brez skakalnih pojmov in v teste (tudi izenačenja v paru:
+    oba naprej).
 - **Postaja:** dve seriji. 1. serija je odprta ves čas postaje (en skok, poskus se porabi ob štartu). 2. serija je odprta
   le **najboljšim 30** po 1. seriji (pri manj igralcih vsem) in se odpre zadnji dan postaje. Prijatelj, ki zamudi
   1. serijo, ne skače (DNS). Pred 1. serijo je neomejen **trening** na isti skakalnici in vetru (ne šteje).
@@ -67,7 +81,9 @@ Naredi le, če osnovni pokal deluje in je ostal čas.
 - Začneš kot neznan skakalec na **Mini** in **mali** skakalnici v »Celinskem pokalu« in napreduješ: Celinski pokal →
   Svetovni pokal → Poleti (letalnice). Vsaka kariera-sezona ima 6–8 tekem z dvema serijama proti **29 botom** z
   izmišljenimi imeni, zastavami in osebnostmi (stalni rivali, ki se pojavljajo vsako sezono, imajo svojo spretnost in
-  »formo«, ki niha; nekateri so mojstri na letalnicah, drugi stabilni na srednjih).
+  »formo«, ki niha; nekateri so mojstri na letalnicah, drugi stabilni na srednjih). Ob začetku kariere lahko igralec
+  namesto vgrajenih rivalov izbere **bote s svojega seznama »Moji skakalci«** (2. faza); manjkajoče do 29 dopolnijo
+  vgrajeni. Forma in značaj se jim nato vodita enako.
 - **Brez nadgradenj fizike:** igralec ne kupuje boljših smuči ali statistik; napreduje samo z znanjem. Kariera odklepa
   skakalnice (za druge načine), opremo (kot nagrade, ne za kovance) in naslove.
 - Napredovanje: med najboljših 10 v sezoni → višja liga. Kratki »novinarski« napisi med tekmami (»Mediji te že kličejo

@@ -38,7 +38,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 10 | [minigolf](10-minigolf.md) | Hrčkov minigolf | — | ⬜ | | 03, 07 ✅ |
 | 11 | [skoki](11-skoki.md) | Smučarski skoki | 1/3 | ✅ | `6e7824c` | — |
 | 12 | [skoki-tekma](12-skoki-tekma.md) | Smučarski skoki: tekma | 2/3 | ⬜ | | 11 ✅ |
-| 13 | [skoki-pokal](13-skoki-pokal.md) | Smučarski skoki: pokal | 3/3 | ⬜ | | 12 |
+| 13 | [skoki-pokal](13-skoki-pokal.md) | Smučarski skoki: pokal | 3/3 | ⬜ | | 12, 29 |
 | 14 | [herodle-nacini](14-herodle-nacini.md) | Herodle, 2. faza | 2/3 | ✅ | `e3f8d5a` | 09 |
 | 15 | [herodle-dvoboj](15-herodle-dvoboj.md) | Herodle, 3. faza | 3/3 | ⬜ | | 14 ✅ |
 | 16 | [frnikole](16-frnikole.md) | Dirka frnikol: solo Dirkalni dan | 1 | ✅ | `59eb0ba` | 03, 07 |
@@ -54,9 +54,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 26 | [lane-wars](26-lane-wars.md) | Lane wars skozi dobe | — | ⬜ | | 01 ✅ |
 | 27 | [tarce](27-tarce.md) | Tarče (aim trainer) | — | ⬜ | | 01 ✅ |
 | 28 | [ustavi-uro](28-ustavi-uro.md) | Ustavi uro | — | ⬜ | | 01 ✅ |
+| 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ⬜ | | 12 |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 29.**
+**Naslednja prosta številka: 30.**
 
 ## Pravila (da se ne izgubimo)
 

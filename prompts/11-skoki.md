@@ -25,8 +25,10 @@
 - **Rezultat:** točke skoka (daljava + slog + kompenzacije). **Več je bolje** (`scoreUnit: 'točk'`). Daljavo hrani v `meta`.
 
 Igra je navdihnjena s smučarskimi skoki kot športom, ni pa kopija nobene obstoječe igre (npr. Deluxe Ski Jump):
-imena, skakalnice, grafika, zvok in skakalci so naši. **Ne uporabljaj imen pravih skakalnic, skakalcev ali
-blagovnih znamk.** Skakalnice so izmišljene (lahko z navdihom slovenske pokrajine).
+grafika, zvok in skakalci so naši. **Ne uporabljaj imen pravih skakalcev, blagovnih znamk, sponzorjev, logotipov
+ali zaščitenih imen tekmovanj** (npr. FIS, Novoletna turneja, Raw Air). Skakalnice v tej fazi so izmišljene (z
+navdihom slovenske pokrajine). *Dopolnitev (24. 11. 2026):* od 2. faze naprej so dovoljene tudi **prave skakalnice
+pod imenom kraja** (npr. »Planica«, »Kulm«) s profilom po njihovem FIS-ovem certifikatu; glej `prompts/12-skoki-tekma.md`.
 
 ### Občutek (najpomembnejše)
 Igra mora biti **prijetna v prvi minuti in globoka po stotem skoku**. Prvi skok brez navodil naj pristane nekje
