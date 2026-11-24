@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Smučarski skoki — 2. faza (tekma do 10 igralcev, replay v živo, dnevni izziv, letalnica)
 
-> **Stanje:** ✅ narejeno (commit »Smučarski skoki: 2. faza« na main; SQL pognan; test s Supabase ni bil narejen — glej PROGRESS.md)
+> **Stanje:** ✅ narejeno (`ab9c933`, popravki `ce81cbf`; SQL pognan; test s Supabase ni bil narejen — glej PROGRESS.md)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/12-skoki-tekma.md in ga v celoti izvedi.«**
