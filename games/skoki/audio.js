@@ -14,6 +14,8 @@ export class Audio {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const c = this.ctx = new AC();
+    // skrit zavihek = tišina (tudi glasba v meniju)
+    document.addEventListener('visibilitychange', () => { if (document.hidden) c.suspend(); else c.resume(); });
     this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 0.8; this.master.connect(c.destination);
     const len = c.sampleRate * 2;
     this.noise = c.createBuffer(1, len, c.sampleRate);
@@ -97,7 +99,7 @@ export class Audio {
       const notes = [262, 330, 392, 523, 392, 330, 294, 349, 440, 587, 440, 349];
       let i = 0;
       this.music = setInterval(() => {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         const f = notes[i++ % notes.length];
         this._tone(f, 0.5, { type: 'triangle', gain: 0.035 });
         if (i % 6 === 1) this._tone(f / 2, 1.2, { type: 'sine', gain: 0.04 });
