@@ -1,0 +1,89 @@
+{
+  "id": "zajcek",
+  "name": "Zajček",
+  "size": "mini",
+  "group": "trening",
+  "k": 20,
+  "hs": 24,
+  "meterValue": 4.8,
+  "base": 60,
+  "windFactors": {
+    "head": 1.3,
+    "tail": 1.57
+  },
+  "gateFactor": 3,
+  "gates": {
+    "count": 12,
+    "default": 6,
+    "spacing": 0.45
+  },
+  "inrun": {
+    "gamma": 28,
+    "alpha": 8,
+    "r1": 32,
+    "t": 3,
+    "e2": 6
+  },
+  "landing": {
+    "s": 0.9,
+    "b0": 6,
+    "beta": 30,
+    "pArc": 15,
+    "lArc": 25,
+    "r2": 32,
+    "outrunAngle": 2,
+    "outrunLength": 45
+  },
+  "theme": {
+    "id": "zajcek-otroska",
+    "label": "Otroška skakalnica s plišasto publiko",
+    "sky": {
+      "sun": [
+        220,
+        40
+      ],
+      "zenith": "#5aa0f0",
+      "horizon": "#e8f4ff",
+      "ground": "#c8d8e8",
+      "sunColor": "#fff6e0",
+      "clouds": 0.35
+    },
+    "fog": {
+      "color": "#e4eef8",
+      "density": 0.003
+    },
+    "sunIntensity": 2.6,
+    "hemi": [
+      "#d8eaff",
+      "#a0b0c0",
+      0.7
+    ],
+    "bloom": [
+      0.25,
+      0.5,
+      1.05
+    ],
+    "grade": {
+      "tint": [
+        1.02,
+        1,
+        1
+      ],
+      "sat": 1.15,
+      "vignette": 0.2
+    },
+    "env": "mini",
+    "trees": 0.7,
+    "crowd": 0.6,
+    "plush": 1,
+    "snowfall": 0.08,
+    "mountains": 0.6,
+    "boards": [
+      "MINI GAMES",
+      "Zajček",
+      "Prvi koraki",
+      "Hop!"
+    ]
+  },
+  "desc": "Otroška skakalnica za šalo in prve korake. Publiko sestavljajo plišasti medvedki in zajčki."
+}

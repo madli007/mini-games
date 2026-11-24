@@ -1,0 +1,102 @@
+{
+  "id": "mirno-morje",
+  "name": "Mirno morje",
+  "size": "luna",
+  "group": "trening",
+  "k": 150,
+  "hs": 180,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 13.18,
+    "tail": 15.95
+  },
+  "gateFactor": 6,
+  "gates": {
+    "count": 24,
+    "default": 12,
+    "spacing": 1.2
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 110,
+    "t": 7,
+    "e2": 60
+  },
+  "landing": {
+    "s": 3.5,
+    "b0": 4,
+    "beta": 35,
+    "pArc": 120,
+    "lArc": 182,
+    "r2": 110,
+    "outrunAngle": 1,
+    "outrunLength": 110
+  },
+  "physics": {
+    "gravity": 1.62,
+    "noAir": true
+  },
+  "unlock": {
+    "hill": "orlovo-gnezdo",
+    "over": "k"
+  },
+  "noCup": true,
+  "theme": {
+    "id": "luna-morje",
+    "label": "Morje tišine pod zvezdami, Zemlja nad obzorjem",
+    "sky": {
+      "sun": [
+        240,
+        30
+      ],
+      "zenith": "#000000",
+      "horizon": "#05060c",
+      "ground": "#1a1a1e",
+      "sunColor": "#ffffff",
+      "clouds": 0,
+      "stars": 1.2
+    },
+    "fog": {
+      "color": "#05060c",
+      "density": 0.0008
+    },
+    "sunIntensity": 3.2,
+    "hemi": [
+      "#40445a",
+      "#101014",
+      0.25
+    ],
+    "bloom": [
+      0.4,
+      0.4,
+      0.9
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.02
+      ],
+      "sat": 0.75,
+      "vignette": 0.4
+    },
+    "env": "luna",
+    "terrain": "#a3a3a6",
+    "rock": "#58585e",
+    "trees": 0,
+    "crowd": 0.15,
+    "snowfall": 0,
+    "mountains": 0.6,
+    "mountainColor": "#77777c",
+    "earth": 1,
+    "boards": [
+      "MINI GAMES",
+      "Mirno morje",
+      "1,62 m/s²",
+      "Brez zraka"
+    ]
+  },
+  "desc": "Lunina skakalnica: šestina zemeljske teže in brez zraka. Ni vzgona ne upora — čisto balistično, nagib šteje le za pristanek."
+}

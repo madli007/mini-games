@@ -192,6 +192,22 @@ export function validateHill(def) {
   if (!(L.lArc >= def.hs - 5 && L.lArc <= def.hs + 15)) e.push('landing.lArc (konec strmine) mora biti blizu HS (HS−5 … HS+15).');
   if (!(L.outrunAngle >= -2 && L.outrunAngle < 10)) e.push('landing.outrunAngle: −2°–10°.');
   if (!(L.outrunLength >= 40)) e.push('landing.outrunLength: vsaj 40 m.');
+  // neobvezno: skupina v meniju, odklepanje, parametri fizike skakalnice
+  if (def.group != null && !(typeof def.group === 'string' && /^[a-z0-9-]{2,20}$/.test(def.group))) e.push('group: male črke, številke, »-« (privzeto »trening«).');
+  if (def.unlock != null && !(typeof def.unlock?.hill === 'string' && ['k', 'hs'].includes(def.unlock.over))) e.push('unlock: { hill, over: "k"|"hs" }.');
+  if (def.physics != null) {
+    const F = def.physics, known = ['gravity', 'airDensity', 'liftScale', 'pushScale', 'noAir', 'thermals'];
+    if (typeof F !== 'object') e.push('physics mora biti objekt.');
+    else {
+      for (const k of Object.keys(F)) if (!known.includes(k)) e.push(`physics.${k}: neznan parameter.`);
+      if (F.gravity != null && !(F.gravity >= 0.5 && F.gravity <= 20)) e.push('physics.gravity: 0,5–20 m/s².');
+      if (F.airDensity != null && !(F.airDensity >= 0 && F.airDensity <= 2)) e.push('physics.airDensity: 0–2 (faktor).');
+      if (F.liftScale != null && !(F.liftScale >= 0.5 && F.liftScale <= 1.5)) e.push('physics.liftScale: 0,5–1,5.');
+      if (F.pushScale != null && !(F.pushScale >= 0.5 && F.pushScale <= 4)) e.push('physics.pushScale: 0,5–4.');
+      if (F.thermals != null && !(F.thermals >= 0 && F.thermals <= 3)) e.push('physics.thermals: 0–3.');
+      if (F.noAir != null && typeof F.noAir !== 'boolean') e.push('physics.noAir: true/false.');
+    }
+  }
   if (e.length) return e;
 
   const h = buildHill(def);

@@ -1,0 +1,97 @@
+{
+  "id": "orlovo-gnezdo",
+  "name": "Orlovo gnezdo",
+  "size": "letalnica",
+  "group": "trening",
+  "k": 200,
+  "hs": 240,
+  "meterValue": 1.2,
+  "base": 120,
+  "windFactors": {
+    "head": 13.34,
+    "tail": 16.14
+  },
+  "gateFactor": 7.2,
+  "gates": {
+    "count": 26,
+    "default": 13,
+    "spacing": 1.25
+  },
+  "inrun": {
+    "gamma": 36,
+    "alpha": 11.5,
+    "r1": 120,
+    "t": 7.5,
+    "e2": 50
+  },
+  "landing": {
+    "s": 4,
+    "b0": 4,
+    "beta": 36,
+    "pArc": 160,
+    "lArc": 235,
+    "r2": 70,
+    "outrunAngle": 1,
+    "outrunLength": 130
+  },
+  "unlock": {
+    "hill": "orlova",
+    "over": "hs"
+  },
+  "theme": {
+    "id": "gnezdo-pomlad",
+    "label": "Zgodnja pomlad pod gorami, 30.000 gledalcev",
+    "sky": {
+      "sun": [
+        175,
+        44
+      ],
+      "zenith": "#2b6fd6",
+      "horizon": "#d6ecff",
+      "ground": "#9fb3c6",
+      "sunColor": "#fff6e6",
+      "clouds": 0.3
+    },
+    "fog": {
+      "color": "#d2e3f2",
+      "density": 0.0016
+    },
+    "sunIntensity": 2.9,
+    "hemi": [
+      "#cfe6ff",
+      "#7a8a70",
+      0.65
+    ],
+    "bloom": [
+      0.3,
+      0.5,
+      1
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1.02,
+        1
+      ],
+      "sat": 1.1,
+      "vignette": 0.28
+    },
+    "env": "gore",
+    "spring": 1,
+    "trees": 1.1,
+    "crowd": 1.8,
+    "snowfall": 0,
+    "mountains": 1.7,
+    "boards": [
+      "MINI GAMES",
+      "Orlovo gnezdo",
+      "Polet",
+      "Rušilec",
+      "Herodle"
+    ]
+  },
+  "desc": "Letalnica pod gorami. Sedem sekund mirnega jadranja, kjer šteje vsak popravek — in nevaren pristanek.",
+  "physics": {
+    "liftScale": 1.045
+  }
+}

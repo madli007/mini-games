@@ -1,0 +1,99 @@
+{
+  "id": "sipina",
+  "name": "Sipina",
+  "size": "srednja",
+  "group": "trening",
+  "k": 105,
+  "hs": 117,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 8.42,
+    "tail": 10.19
+  },
+  "gateFactor": 5.8,
+  "gates": {
+    "count": 22,
+    "default": 11,
+    "spacing": 1.05
+  },
+  "inrun": {
+    "gamma": 34.5,
+    "alpha": 10.5,
+    "r1": 95,
+    "t": 6,
+    "e2": 31.5
+  },
+  "landing": {
+    "s": 2.9,
+    "b0": 5,
+    "beta": 34.5,
+    "pArc": 84,
+    "lArc": 119,
+    "r2": 95,
+    "outrunAngle": 1.5,
+    "outrunLength": 90
+  },
+  "physics": {
+    "thermals": 1
+  },
+  "unlock": {
+    "hill": "orlova",
+    "over": "k"
+  },
+  "theme": {
+    "id": "sipina-puscava",
+    "label": "Umeten sneg sredi puščave",
+    "sky": {
+      "sun": [
+        150,
+        52
+      ],
+      "zenith": "#3a7fd0",
+      "horizon": "#f3d9a6",
+      "ground": "#d6b57a",
+      "sunColor": "#fff0c8",
+      "clouds": 0.05
+    },
+    "fog": {
+      "color": "#efd8ad",
+      "density": 0.0026
+    },
+    "sunIntensity": 3.1,
+    "hemi": [
+      "#ffe7b8",
+      "#b08a50",
+      0.7
+    ],
+    "bloom": [
+      0.3,
+      0.6,
+      1.05
+    ],
+    "grade": {
+      "tint": [
+        1.06,
+        1,
+        0.92
+      ],
+      "sat": 1.12,
+      "vignette": 0.25
+    },
+    "env": "puscava",
+    "terrain": "#e2bd7f",
+    "rock": "#b98a4e",
+    "trees": 0,
+    "palms": 1,
+    "crowd": 0.7,
+    "snowfall": 0,
+    "mountains": 0.5,
+    "mountainColor": "#d9a865",
+    "boards": [
+      "MINI GAMES",
+      "Sipina · Vroči pokal",
+      "Herodle",
+      "Ledeno hladno"
+    ]
+  },
+  "desc": "Pas umetnega snega sredi peska. Vroč zrak se dviga v stebrih — sunki od spodaj te nesejo naprej."
+}

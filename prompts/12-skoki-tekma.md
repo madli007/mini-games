@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Smučarski skoki — 2. faza (tekma do 10 igralcev, replay v živo, dnevni izziv, letalnica)
 
-> **Stanje:** ⬜ čaka — predpogoj: 11 ✅ (lahko takoj)
+> **Stanje:** ✅ narejeno (commit »Smučarski skoki: 2. faza« na main; Supabase SQL še ni pognan — glej PROGRESS.md)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/12-skoki-tekma.md in ga v celoti izvedi.«**

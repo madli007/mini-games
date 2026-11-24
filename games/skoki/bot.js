@@ -14,17 +14,29 @@ export const BOT_ALPHA = 29;
 /**
  * @param {{skill:number, seed:number, alpha?:number}} o
  */
-export function createBot({ skill = 0.7, seed = 1, alpha = BOT_ALPHA } = {}) {
+/** Značaji bota (lastni skakalci): spremenijo načrt skoka, ne pa zaporedja naključnih števil privzetega bota. */
+export const BOT_STYLES = {
+  normal: 'Uravnotežen',
+  agresiven: 'Agresiven odriv',
+  varen: 'Varen pristanek',
+  nestanoviten: 'Nestanoviten',
+};
+
+export function createBot({ skill = 0.7, seed = 1, alpha = BOT_ALPHA, style = null } = {}) {
   skill = clamp(skill, 0, 1);
+  // nestanoviten: spretnost niha od skoka do skoka (ločen PRNG, da privzeti bot ostane bit za bit enak)
+  if (style === 'nestanoviten') { const r2 = prng((seed >>> 0) ^ 0x6c8e9cf5); skill = clamp(skill + (r2() - 0.5) * 0.5, 0, 1); }
   const r = prng((seed >>> 0) ^ 0x2545f491);
   const miss = 1 - skill;
   // načrt skoka (vse naključno vnaprej, deterministično iz seeda)
-  const toErr = clamp(r.gauss() * (0.006 + miss * 0.075) + miss * 0.01, -0.2, 0.14);
-  const landLead = 0.28 + r.gauss() * (0.015 + miss * 0.11);
-  const twoFeet = r() < miss * 0.45;
+  let toErr = clamp(r.gauss() * (0.006 + miss * 0.075) + miss * 0.01, -0.2, 0.14);
+  let landLead = 0.28 + r.gauss() * (0.015 + miss * 0.11);
+  let twoFeet = r() < miss * 0.45;
   const delayTicks = Math.round((0.03 + miss * 0.22) / STEP);
   const noiseAmp = 0.4 + miss * 7;
-  const alphaBias = r.gauss() * miss * 4 + miss * 6;   // začetniki se radi »usedejo« (premalo naprej)
+  let alphaBias = r.gauss() * miss * 4 + miss * 6;   // začetniki se radi »usedejo« (premalo naprej)
+  if (style === 'agresiven') { toErr = clamp(toErr * 0.6, -0.2, 0.14); alphaBias -= 2 + miss * 3; landLead -= 0.03; }
+  else if (style === 'varen') { alphaBias += 1.5; landLead = 0.3 + (landLead - 0.28) * 0.5; twoFeet = twoFeet || r() < 0.3; }
   const standUp = r() < miss * 0.35 ? { at: 120 + Math.floor(r() * 300), len: 20 + Math.floor(r() * 50) } : null;
   const hist = [];
   void r();                        // (rezerva: ohrani zaporedje naključnih števil)

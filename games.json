@@ -169,12 +169,12 @@
   {
     "id": "skoki",
     "name": "Smučarski skoki",
-    "description": "Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Prava pravila točkovanja, veter in ghosti prijateljev.",
+    "description": "Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Tekma do 10 prijateljev v dveh serijah, replay v živo, dnevni izziv in letalnica.",
     "icon": "🎿",
     "path": "games/skoki/",
-    "players": { "min": 1, "max": 1 },
-    "mode": "single",
-    "tags": ["sport", "spretnost", "rekordi"],
+    "players": { "min": 1, "max": 10 },
+    "mode": "turn",
+    "tags": ["sport", "spretnost", "rekordi", "party", "daily"],
     "status": "live",
     "scoreOrder": "desc",
     "scoreUnit": "točk",
@@ -183,7 +183,10 @@
       { "id": "skok-10", "tier": "e", "text": "Skoči 10 skokov brez padca", "event": "skoki:skok", "target": 10 },
       { "id": "k-tocka", "tier": "m", "text": "Preskoči K-točko v Smučarskih skokih", "event": "skoki:k", "target": 1 },
       { "id": "tocke-130", "tier": "h", "text": "Doseži 130 točk v enem skoku", "event": "skoki:tocke", "target": 1, "cmp": "gte", "goal": 130 },
-      { "id": "w-skok-50", "tier": "w", "text": "Skoči 50 skokov ta teden", "event": "skoki:skok", "target": 50 }
+      { "id": "w-skok-50", "tier": "w", "text": "Skoči 50 skokov ta teden", "event": "skoki:skok", "target": 50 },
+      { "id": "zmaga-tekma", "tier": "m", "text": "Zmagaj na tekmi v skokih", "event": "skoki:zmaga", "target": 1 },
+      { "id": "letalnica-k", "tier": "h", "text": "Preleti K na letalnici", "event": "skoki:letalnica", "target": 1 },
+      { "id": "w-tekme-5", "tier": "w", "text": "Odskači 5 tekem ta teden", "event": "skoki:tekma", "target": 5 }
     ]
   },
   {

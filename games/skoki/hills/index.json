@@ -1,1 +1,6 @@
-{ "hills": ["brezova.json", "bistra.json", "orlova.json"] }
+{
+  "groups": [
+    { "id": "trening", "name": "Trening", "desc": "Izmišljene skakalnice za trening in tekme s prijatelji." }
+  ],
+  "hills": ["zajcek.json", "brezova.json", "bistra.json", "sipina.json", "reflektor.json", "orlova.json", "orlovo-gnezdo.json", "mirno-morje.json"]
+}

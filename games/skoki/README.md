@@ -1,8 +1,7 @@
 # Smučarski skoki (`games/skoki/`)
 
 Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Deterministična 2D fizika, 2,5D izris
-(Three.js 0.160), prava pravila točkovanja, veter, ghosti. 1. faza od treh (`prompts/11-skoki.md`; naslednji:
-`12-skoki-tekma.md`, `13-skoki-pokal.md`).
+(Three.js 0.160), prava pravila točkovanja, veter, ghosti. 1. in 2. faza od treh (`prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`; naslednja: `29-skoki-prave-skakalnice.md`, `13-skoki-pokal.md`).
 
 ## Kontrole
 
@@ -120,19 +119,121 @@ Brez vetra:
 
 | Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
 |---|---|---|---|---|---|---|---|---|
-| Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
+| Zajček (K20/HS24) | 0.3 | 17.6 m | 2 % | 0 % | 0 % | 56 % | 100.2 | 41.6 km/h |
+| Zajček (K20/HS24) | 0.7 | 18.9 m | 0 % | 0 % | 0 % | 80 % | 105.9 | 41.7 km/h |
+| Zajček (K20/HS24) | 1.0 | 19.5 m | 0 % | 0 % | 0 % | 100 % | 107.0 | 41.7 km/h |
 | Brezova (K60/HS68) | 0.3 | 57.0 m | 2 % | 30 % | 0 % | 56 % | 105.5 | 70.8 km/h |
 | Brezova (K60/HS68) | 0.7 | 62.9 m | 0 % | 92 % | 0 % | 80 % | 120.7 | 70.8 km/h |
 | Brezova (K60/HS68) | 1.0 | 65.3 m | 0 % | 100 % | 0 % | 100 % | 125.8 | 70.9 km/h |
 | Bistra (K95/HS106) | 0.3 | 85.8 m | 2 % | 16 % | 0 % | 60 % | 95.9 | 86.7 km/h |
 | Bistra (K95/HS106) | 0.7 | 98.4 m | 0 % | 86 % | 0 % | 82 % | 122.5 | 86.8 km/h |
 | Bistra (K95/HS106) | 1.0 | 102.9 m | 0 % | 100 % | 0 % | 100 % | 131.4 | 86.8 km/h |
+| Sipina (K105/HS117) | 0.3 | 93.1 m | 2 % | 16 % | 0 % | 60 % | 93.1 | 89.3 km/h |
+| Sipina (K105/HS117) | 0.7 | 107.9 m | 0 % | 78 % | 0 % | 80 % | 120.7 | 89.4 km/h |
+| Sipina (K105/HS117) | 1.0 | 113.2 m | 0 % | 100 % | 0 % | 100 % | 130.4 | 89.4 km/h |
+| Reflektor (K120/HS134) | 0.3 | 104.3 m | 2 % | 16 % | 0 % | 60 % | 87.7 | 93.9 km/h |
+| Reflektor (K120/HS134) | 0.7 | 123.8 m | 0 % | 78 % | 0 % | 80 % | 122.7 | 93.9 km/h |
+| Reflektor (K120/HS134) | 1.0 | 130.8 m | 0 % | 100 % | 0 % | 100 % | 135.5 | 93.9 km/h |
 | Orlova (K125/HS140) | 0.3 | 107.9 m | 2 % | 16 % | 0 % | 60 % | 86.0 | 95.2 km/h |
 | Orlova (K125/HS140) | 0.7 | 129.0 m | 0 % | 80 % | 0 % | 80 % | 123.0 | 95.2 km/h |
 | Orlova (K125/HS140) | 1.0 | 136.6 m | 0 % | 100 % | 0 % | 100 % | 136.9 | 95.2 km/h |
+| Orlovo gnezdo (K200/HS240) | 0.3 | 130.1 m | 2 % | 8 % | 2 % | 58 % | 96.0 | 106.0 km/h |
+| Orlovo gnezdo (K200/HS240) | 0.7 | 197.4 m | 2 % | 46 % | 8 % | 64 % | 170.2 | 106.1 km/h |
+| Orlovo gnezdo (K200/HS240) | 1.0 | 244.3 m | 0 % | 100 % | 100 % | 46 % | 220.5 | 106.1 km/h |
+| Mirno morje (K150/HS180) | 0.3 | 141.3 m | 2 % | 24 % | 0 % | 60 % | 99.4 | 49.3 km/h |
+| Mirno morje (K150/HS180) | 0.7 | 149.3 m | 0 % | 68 % | 0 % | 82 % | 114.5 | 49.3 km/h |
+| Mirno morje (K150/HS180) | 1.0 | 151.3 m | 0 % | 100 % | 0 % | 100 % | 118.6 | 49.3 km/h |
+
+Cilji (`balanceTarget` v `balance.js`, test »cilji uravnoteženja«): 0,3 → K − 22 % … K − 5 %, ≤ 30 % padcev · 0,7 → K ± 5 m, ≤ 10 % padcev ·
+1,0 → HS − 6 … HS + 2, čez HS < 50 %. **Letalnica** (K ≥ 170): vsaka stopinja nagiba stane ~20 m, razpon spretnosti je širši kot v resnici —
+0,3 → K − 40 % … K − 5 %, 1,0 → HS − 6 … HS + 6 in ≤ 20 % padcev (najboljši pogosto preletijo HS; v tekmi žirija zniža zalet).
+**Luna** (brez zraka): daljavo določa le odriv, zato 1,0 → K … HS + 2. Mini skakalnica ima majhne razlike (kratek let).
 
 Z naključnim vetrom (`--wind`) se povprečja premaknejo za +1–3 m, spretnost 1,0 pa preskoči HS v ~36 % skokov in pade v
 ~20 % (pristanek daleč za HS). Čelni veter +2 m/s na Orlovi podaljša skok za ~12 m (test: 9–16 m).
 
 Cilj za spretnost 0,3 (»~K − 15 m«) je na mali in srednji skakalnici sorazmeren (K − 5 … 22 %): manjše hitrosti pomenijo
 manjši vpliv napak na daljavo, zato je razpon na Brezovi le ~9 m. Na Orlovi je 0,3 pri K − 18 m.
+
+## 2. faza: tekma, lokalna tekma, dnevni izziv, nove skakalnice
+
+### Meni
+Načini: **Trening**, **Rekord skakalnice**, **Tekma** (soba), **Lokalna tekma** (ena naprava), **Dnevni izziv** in zaslon
+**Moji skakalci**. Skakalnice so v skupinah (`hills/index.json` → `groups`, v JSON-u skakalnice `group`, privzeto `trening`);
+skupina »Prave skakalnice« (`prompts/29-skoki-prave-skakalnice.md`) se doda le z novim vnosom v `groups` in skakalnicami z
+`"group": "prave"` — meni jih nariše sam.
+
+### Tekma s prijatelji (`match.js`, 2–10 ljudi)
+1. Host (TV/prenosnik ali telefon) v meniju izbere **Tekma → Ustvari sobo**. Na TV-ju obkljukaj **»Ta naprava je samo zaslon (TV)«**
+   (ali `?tv=1`, ali gumb »📺 TV pogled« v lobbyju): TV ne skače, pokaže veliko sliko, lestvico desno in trak »na vrsti / naslednji«.
+2. Ostali skenirajo QR ali vpišejo kodo (tudi `?room=KODA`). Vsak skače s svojega zaslona.
+3. Host nastavi: skakalnico (ali naključno), format (ena serija / dve seriji / poskusna + dve), rez za 2. serijo, veter
+   (*enak za vse* — isti profil iz seeda serije; *spremenljiv* — seed serije + štartna številka, s kompenzacijo; *brez*),
+   zaletno mesto (samodejna žirija ali ročno), sproščen način, bote (0–20, Začetniki / Mešano / Svetovni razred,
+   izmišljena imena ali **Moji boti**) in ekipe (2–4, naključno; seštevek ekipe v rezultatih).
+4. Med skokom vsi gledajo **replay v živo**: skakalec pošilja spremembe vnosa (`room.send('in')`, paket na ~100 ms),
+   gledalci simulirajo isti skok z zamikom ~300 ms in se ob manjkajočem paketu ustavijo (»… čakam na podatke«).
+   Po pristanku skakalec doda potezo z vsemi vnosi, **host ponovi simulacijo** in zapiše uradni rezultat
+   (`room.setState` z `expectedVersion`); neujemanje = opozorilo v konzoli, velja hostov izračun.
+5. Po vsakem skoku: rezultatna kartica, sprotna lestvica s puščicami ↑↓, sporočilo žirije; naslednji ima zeleno črto
+   »za vodstvo« in lower-third »za vodstvo potrebuje 128,5 m« (`distForLead`, slog 54, veter = povprečje profila serije).
+6. Reakcije gledalcev 🔔 👏 😱 🔥 (1 na 2 s na igralca, tudi pri prejemniku) letijo čez zaslon skakalca in TV-ja.
+7. Konec: razglasitev (oder, fanfara, konfeti), `ui.results` s seštevkom obeh serij in posebnimi nagradami
+   (najdaljši skok, najlepši slog, najbolj nesrečen veter, kralj padcev, največji napredek v 2. seriji).
+
+**Pravila:** 1. serija v naključnem vrstnem redu iz seeda sobe, 2. serija obratno po vmesni razvrstitvi (rez: najboljših N,
+izenačeni na meji gredo vsi), poskusna serija ne šteje. Po zeleni luči 10 s za štart, sicer DSQ (sproščeno: na konec serije);
+skupaj 90 s na skakalca (DNF ali na konec). **Žirija:** začne pri privzetem mestu skakalnice; ko kdo pristane čez 95 % HS (tudi
+pri padcu), zalet za naslednje zniža za 1 (čez HS + 3 m za 2); kompenzacija velja glede na začetno mesto serije; vsaka serija
+začne znova. **Skakalnice v tekmi:** host lahko izbere skakalnico, ki jo ima odklenjeno **host ali vsaj en prisoten igralec**
+(odklepe sporočajo v sporočilu `hello`).
+
+**Odpornost:** prenos hosta (nov host prebere stanje in poteze; skok v teku počaka 15 s na potezo, nato dovoli ponovitev),
+osvežitev strani (stanje + poteze, klik na vrstico lestvice = replay preteklega skoka; skakalec na vrsti dobi skok znova),
+odhod skakalca med skokom (po 20 s DNF ali na konec), odhod pred skokom (DNS »odšel«), pridružitev med tekmo = gledalec.
+
+**XP in hub:** 30 za končano tekmo, +60 za zmago z vsaj 2 človekoma, +20 za oder; `reportGame({ won: 1. med ljudmi, players: ljudje })`;
+dogodki `skoki:tekma`, `skoki:zmaga`, `skoki:oder`, `skoki:letalnica`. Boti ne dobijo XP in ne odklepajo dosežkov.
+
+### Lokalna tekma in Moji skakalci
+- **Moji skakalci:** do 60 (ime, zastava, barvi dresa in čelade, človek ali bot s spretnostjo 0–1 in značajem: uravnotežen,
+  agresiven odriv, varen pristanek, nestanoviten). Dodaj / uredi / podvoji / razvrsti / izbriši. Shranjeno lokalno
+  (`skoki:jumpers:<profil>`), na strežnik ne gre. **Izvoz/uvoz:** koda `SKOKI1:…` ali datoteka JSON (≤ 20.000 znakov,
+  neznana polja se zavržejo, neveljavni vnosi izpustijo). Igra ne ponuja imen pravih skakalcev; vgrajeni boti imajo 43 izmišljenih imen.
+- **Lokalna tekma:** izbereš skakalce (ali vse), skakalnico, format, veter, žirijo; ljudje skačejo po vrsti (»Na vrsti: …,
+  pritisni za štart«), boti sami (v živo, 2× ali preskočeno). Ista logika (`sport/competition.js`, `contest.js`).
+  Statistika po skakalcu (skoki, padci, najdaljši po skakalnici, zmage, stopničke) je tabela »sezone tvoje lige«.
+- Lokalna tekma ne gre na lestvice in ne daje ghostov; `reportGame({ won: zmagal je človek, players: število ljudi,
+  score: najboljši človek })`, **XP kot pri treningu** (brez XP za tekmo).
+
+### Dnevni izziv
+`dailyPick(hub.dailySeed())` izbere skakalnico (vse, tudi še zaklenjene — skakalnica dneva je odprta za vse), veter dneva
+(stalen −2 … +2 m/s z rahlimi sunki) in pogoj: Sneženje (trenje ×1,25, megla, sneg), Noč pod reflektorji, Sunkovit veter
+(sunki ×2), Nizko zaletno mesto (−3), Samo telemark šteje (pristanek na obe nogi = slog padca), Luna (le na Mirnem morju).
+Trije poskusi (porabi se ob štartu), šteje najboljši; nato trening. Lestvica dneva (`submitScore(točke × 10, { seed })`),
+ghost vodilnega dneva in prijatelja (klik na vrstico; Supabase: `skoki_ghosts` z levelom `d-YYYYMMDD`). Po treh poskusih
+`reportGame({ daily: true })` (dogodek `daily:skoki`), +20 XP, dosežek »Teden izzivov« (7 dni zapored).
+
+### Nove skakalnice (skupina Trening, vse izmišljene)
+| Skakalnica | K / HS | Posebnost | Odklep |
+|---|---|---|---|
+| Zajček | K20 / HS24 | otroška, plišasta publika | odprta |
+| Sipina | K105 / HS117 | umeten sneg sredi peska, palme, **toplotni stebri** (`physics.thermals`: navpični sunki na stalnih mestih) | čez K na Orlovi |
+| Reflektor | K120 / HS134 | noč, reflektorji s stožci svetlobe, sneg, lučke telefonov | čez K na Orlovi |
+| Orlovo gnezdo | K200 / HS240 | **letalnica**: base 120, vrednost metra 1,2, `physics.liftScale` 1,045, let ~8 s, kamera bolj oddaljena, pomlad, 30.000 gledalcev | čez HS na Orlovi |
+| Mirno morje | K150 / HS180 | **Luna**: `physics.gravity` 1,62, `noAir` (brez vzgona, upora in vetra — nagib šteje le za pristanek), zvezde, Zemlja; ločena lestvica, ne šteje v pokal (`noCup`) | čez K na letalnici |
+
+Fizika skakalnice (`physics` v JSON-u, validator pozna le `gravity`, `airDensity`, `liftScale`, `pushScale`, `noAir`, `thermals`):
+skakalnice brez tega bloka računajo **natanko kot v 1. fazi** (test s fiksturami `tests/fixtures/skoki-ref.json`).
+Meje pristanka so v »zemeljskih« metrih (`hEq` z `P.g`). `paramsVersion` ostane 3.
+
+### Moduli 2. faze
+| Modul | Vsebina |
+|---|---|
+| `sport/competition.js`, `sport/live-replay.js` | splošno tekmovanje in tok vnosov (glej `sport/README.md`) |
+| `contest.js` | skakalni del: simulacija iz vnosov, veter serije, žirija, za vodstvo, nagrade, dnevni izbor, odklepi, XP |
+| `jumpers.js` | lastni skakalci, izvoz/uvoz, statistika, izmišljeni boti |
+| `match.js` | DOM: soba, host, gledanje, reakcije, TV, lokalna tekma, Moji skakalci |
+
+Razvojni parametri: `?tv=1`, `?bots=9` (hitra lokalna tekma: ti + 9 botov), `?fast=1` (boti brez replaya), `?test=1`
+(`window.__skoki` brez strani z drsniki: `skipRed()`, `fastForward()`, `timeScale`), orodje `node tools/skoki-tune.mjs <id>`.

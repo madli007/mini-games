@@ -11,7 +11,8 @@ import * as GH from '../games/skoki/ghost.js';
 import * as BOT from '../games/skoki/bot.js';
 import { createWind } from '../games/skoki/wind.js';
 import { LocalBackend } from '../shared/adapters/local.js';
-import { balanceTable, BALANCE_N } from '../games/skoki/balance.js';
+import { balanceTable, BALANCE_N, balanceTarget, meetsTarget } from '../games/skoki/balance.js';
+import { skokiPhase2Tests } from './skoki2.js';
 
 /**
  * @param {(name:string, fn:Function)=>void} test
@@ -59,7 +60,7 @@ export function skokiTests(test, { eq, ok }) {
 
   /* ------------------------------------------------------------ skakalnice */
   test('skoki: validator na vseh skakalnicah in zaznava napak', ctx => {
-    ok(ctx.skokiHills.length >= 3, 'vsaj 3 skakalnice');
+    ok(ctx.skokiHills.length >= 8, 'vsaj 8 skakalnic');
     for (const def of ctx.skokiHills) eq(H.validateHill(def), [], def.id);
     const bad = structuredClone(ctx.skokiHills[0]);
     bad.hs = bad.k - 1;
@@ -104,7 +105,8 @@ export function skokiTests(test, { eq, ok }) {
     eq([a.dist, a.tick, a.x], [b.dist, b.tick, b.x]);
   });
   test('skoki: zalet (višje zaletno mesto = večja hitrost, monotono)', ctx => {
-    for (const def of ctx.skokiHills) {
+    // korak hitrosti na mesto velja za »zemeljske« skakalnice običajne velikosti (Luna ima 1/6 teže, mini skakalnica kratek zalet)
+    for (const def of ctx.skokiHills.filter(d => !d.physics?.gravity && d.k >= 40)) {
       let prev = 0, first = 0;
       for (let g = 1; g <= def.gates.count; g++) {
         const { J } = botJump(ctx, def.id, { gate: g });
@@ -152,7 +154,10 @@ export function skokiTests(test, { eq, ok }) {
     for (const d2 of ctx.skokiHills) {
       const h2 = H.buildHill(d2);
       const r = PH.simulate({ hill: h2, P: ctx.skokiParams, gate: d2.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01 }) }).s;
-      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * 0.7, `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
+      // letalnica: brez popravljanja ne ujameš jadranja (pristanek precej pred K, a brez padca)
+      // Luna: brez zraka nagib ne šteje, skok je čisto balističen (le brez padca)
+      if (d2.physics?.noAir) { ok(r.landing.type === 'tele', d2.id + ': ' + r.landing.type); continue; }
+      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * (d2.k >= 170 ? 0.5 : 0.7), `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
     }
   });
   test('skoki: čelni veter podaljša, hrbtni skrajša (velika ~+10–15 m pri +2 m/s)', ctx => {
@@ -289,18 +294,12 @@ export function skokiTests(test, { eq, ok }) {
     for (const r of rows) {
       const { def } = hillOf(ctx, r.hill);
       const K = def.k, HS = def.hs;
-      if (r.skill === 0.3) {
-        ok(r.falls <= 0.3, `${r.hill} 0,3: padci ${r.falls}`);
-        ok(r.avg >= K - 0.22 * K && r.avg <= K - 0.05 * K, `${r.hill} 0,3: povprečje ${r.avg} (K${K})`);
-      } else if (r.skill === 0.7) {
-        ok(r.falls <= 0.1, `${r.hill} 0,7: padci ${r.falls}`);
-        ok(Math.abs(r.avg - K) <= 5, `${r.hill} 0,7: povprečje ${r.avg} (K${K} ± 5)`);
-      } else {
-        ok(r.avg >= HS - 6 && r.avg <= HS + 2, `${r.hill} 1,0: povprečje ${r.avg} (HS${HS} −6/+2)`);
-        ok(r.overHS < 0.5, `${r.hill} 1,0: čez HS ${r.overHS}`);
-      }
+      const t = balanceTarget(def, r.skill);
+      ok(meetsTarget(def, r), `${r.hill} ${r.skill}: povprečje ${r.avg} (cilj ${t.min.toFixed(0)}–${t.max.toFixed(0)}, K${K}/HS${HS}), padci ${r.falls} (≤ ${t.maxFalls}), čez HS ${r.overHS} (≤ ${t.maxOverHS})`);
       notes.push(`${r.hill} ${r.skill}: ${r.avg.toFixed(1)} m`);
     }
     return notes.join(', ');
   });
+
+  skokiPhase2Tests(test, { eq, ok });
 }

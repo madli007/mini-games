@@ -53,3 +53,25 @@ export function balanceMarkdown(rows, defs) {
   const name = id => { const d = defs.find(x => x.id === id); return d ? `${d.name} (K${d.k}/HS${d.hs})` : id; };
   return head + '\n' + rows.map(r => `| ${name(r.hill)} | ${r.skill.toFixed(1)} | ${r.avg.toFixed(1)} m | ${pct(r.falls)} | ${pct(r.overK)} | ${pct(r.overHS)} | ${pct(r.tele)} | ${r.pts.toFixed(1)} | ${r.speed.toFixed(1)} km/h |`).join('\n');
 }
+
+/**
+ * Cilji uravnoteženja za skakalnico in spretnost (test, orodje, README).
+ *   običajne: 0,3 → K − 22 % … K − 5 %, ≤ 30 % padcev · 0,7 → K ± 5 m, ≤ 10 % padcev · 1,0 → HS − 6 … HS + 2, čez HS < 50 %
+ *   letalnice (K ≥ 170): vsaka stopinja nagiba stane ~20 m (kot v resnici), zato je razpon spretnosti širši:
+ *     0,3 → K − 40 % … K − 5 % · 1,0 → HS − 6 … HS + 6, ≤ 20 % padcev (čez HS je pogosto — v tekmi žirija zniža zalet)
+ *   brez zraka (Luna): daljavo določa le odriv (ni vzgona), zato najboljši ne letijo dlje od K + 15 m:
+ *     1,0 → K … HS + 2, ≤ 20 % padcev
+ * @returns {{min:number, max:number, maxFalls:number, maxOverHS:number}}
+ */
+export function balanceTarget(def, skill) {
+  const K = def.k, HS = def.hs;
+  const fly = K >= 170, noAir = !!def.physics?.noAir;
+  if (skill <= 0.3) return { min: K * (fly ? 0.6 : 0.78), max: K * 0.95, maxFalls: 0.3, maxOverHS: 1 };
+  if (skill <= 0.7) return { min: K - 5, max: K + 5, maxFalls: 0.1, maxOverHS: 1 };
+  if (noAir) return { min: K, max: HS + 2, maxFalls: 0.2, maxOverHS: 1 };
+  if (fly) return { min: HS - 6, max: HS + 6, maxFalls: 0.2, maxOverHS: 1 };
+  return { min: HS - 6, max: HS + 2, maxFalls: 1, maxOverHS: 0.49 };
+}
+
+/** Ali vrstica tabele izpolni cilj. */
+export const meetsTarget = (def, r) => { const t = balanceTarget(def, r.skill); return r.avg >= t.min && r.avg <= t.max && r.falls <= t.maxFalls && r.overHS <= t.maxOverHS; };

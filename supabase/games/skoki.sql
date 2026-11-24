@@ -4,7 +4,7 @@
 --
 --  skoki_hills   — skakalnice, največje mogoče točke in daljava (za zavrnitev nemogočih rezultatov);
 --                  vrednosti = maxPoints() in maxDist() iz games/skoki/scoring.js (test preveri ujemanje)
---  skoki_ghosts  — en ghost na (igralec, skakalnica); berejo vsi prijavljeni,
+--  skoki_ghosts  — en ghost na (igralec, skakalnica ali dan 'd-YYYYMMDD' za dnevni izziv); berejo vsi prijavljeni,
 --                  piše se SAMO prek RPC skoki_save_ghost (le BOLJŠI rezultat, omejena velikost).
 --
 --  Rezultat je v stolpcu time_ms (ime zaradi skupnega API-ja hub.saveGhost/getGhosts):
@@ -54,7 +54,13 @@ begin
   if uid is null then raise exception 'not_authenticated'; end if;
   perform 1 from public.profiles p where p.id = uid;
   if not found then raise exception 'no_profile'; end if;
-  select h.max_points, h.max_dist into mx, md from public.skoki_hills h where h.hill = p_level;
+  -- dnevni izziv: level 'd-YYYYMMDD' (ghost dneva); meje = največje med skakalnicami, vrstica za tuji ključ se doda sama
+  if p_level ~ '^d-[0-9]{8}$' then
+    select max(h.max_points), max(h.max_dist) into mx, md from public.skoki_hills h where h.hill !~ '^d-';
+    insert into public.skoki_hills (hill, max_points, max_dist) values (p_level, mx, md) on conflict (hill) do nothing;
+  else
+    select h.max_points, h.max_dist into mx, md from public.skoki_hills h where h.hill = p_level;
+  end if;
   if mx is null then raise exception 'unknown_level'; end if;
   -- time_ms = daljava × 2 × 10000 + točke × 10 (točke ≤ 999,9)
   if p_time_ms is null or p_time_ms <= 0 or p_time_ms / 10000 > md * 2 or p_time_ms % 10000 > mx * 10 then raise exception 'impossible_time'; end if;
@@ -80,8 +86,13 @@ grant execute on function public.skoki_save_ghost(text, boolean, int, text) to a
 
 -- BEGIN HILLS (maxPoints / maxDist iz games/skoki/scoring.js: daljava HS + 25 m, 60 slog, 30 kompenzacije)
 insert into public.skoki_hills (hill, max_points, max_dist) values
+  ('zajcek', 290, 49),
   ('brezova', 230, 93),
   ('bistra', 222, 131),
-  ('orlova', 222, 165)
+  ('sipina', 217, 142),
+  ('reflektor', 221, 159),
+  ('orlova', 222, 165),
+  ('orlovo-gnezdo', 288, 265),
+  ('mirno-morje', 249, 205)
 on conflict (hill) do update set max_points = excluded.max_points, max_dist = excluded.max_dist;
 -- END HILLS

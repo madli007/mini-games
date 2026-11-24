@@ -122,6 +122,13 @@ export class Renderer {
     try { this.gl.compile(this.scene, this.camera); } catch { /* */ }
   }
 
+  /** Zamenjaj dres/čelado skakalca (tekma: vsak skakalec svoje barve). */
+  setSkin(skin) {
+    if (!this.me || !skin || (this.skin && this.skin.suit === skin.suit && this.skin.helmet === skin.helmet && String(this.skin.flag) === String(skin.flag))) return;
+    this.scene.remove(this.me.root); this.me.dispose();
+    this.me = makeJumper(skin); this.scene.add(this.me.root); this.skin = skin;
+  }
+
   /** Število ghostov (prosojni skakalci). */
   setGhosts(n) {
     while (this.ghosts.length > n) { const g = this.ghosts.pop(); this.scene.remove(g.root); g.dispose(); }
@@ -146,7 +153,8 @@ export class Renderer {
   _camTarget(v, mode) {
     const H = this.hill;
     const P = new THREE.Vector3(), Lk = new THREE.Vector3();
-    const zoom = this.portrait ? 1.65 : 1, ah = this.portrait ? 0.35 : 1;   // pokončno: dlje in bolj na sredini
+    // letalnica: kamera se še bolj oddalji (dolg let); TV pogled malo širše
+    const zoom = (this.portrait ? 1.65 : 1) * (H.def.k >= 170 ? 1.3 : 1) * (this.wide ? 1.15 : 1), ah = this.portrait ? 0.35 : 1;   // pokončno: dlje in bolj na sredini
     let fov = 42;
     if (mode === 'front') {
       // spredaj ob mizi: gleda nazaj po zaletu, nato za skakalcem

@@ -116,7 +116,7 @@ export function decodeGhost(str) {
  * Ustvari simulacijo, ki predvaja ghost (koračiš jo z J.step(inp(J.s, J.s.tick))).
  * @returns {{J:Object, input:Function}}
  */
-export function ghostJump(g, hill, P, record = 0) {
-  const J = createJump({ hill, P, gate: g.gate, wind: g.wind, record });
+export function ghostJump(g, hill, P, record = 0, mods = null) {
+  const J = createJump({ hill, P, gate: g.gate, wind: g.wind, record, mods });
   return { J, input: inputFrom(g.changes) };
 }

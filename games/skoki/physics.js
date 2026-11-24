@@ -49,10 +49,22 @@ export function teleQuality(dt, L) {
  * @param {{hill:Object, P:Object, gate:number, wind:Object, record?:number}} o
  *   record: vsakih koliko tickov shrani točko v sled (0 = brez sledi)
  */
-export function createJump({ hill, P, gate, wind, record = 0 }) {
-  const W = createWind(wind, P);
+export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
+  // parametri skakalnice (hills/<id>.json → physics): gravity, airDensity, liftScale, noAir (brez zraka: ni vzgona,
+  // upora ne vetra). Skakalnice brez bloka physics računajo natanko kot prej (iste vrednosti, isti vrstni red operacij).
+  //   thermals: toplotni stebri (navpični sunki od spodaj na stalnih mestih, puščava).
+  // mods (dnevni izziv): inrunMu = faktor trenja v smučini, gust = faktor sunkov vetra.
+  const HP = hill.def?.physics || {};
+  const PW = mods?.gust ? { ...P, wind: { ...P.wind, gustAmp: P.wind.gustAmp * mods.gust, vertical: P.wind.vertical * mods.gust } } : P;
+  const W = createWind(HP.noAir ? { mode: 'off', seed: 0 } : wind, PW);
+  const therm = HP.thermals ? x => { if (x <= 5) return 0; const u = Math.max(0, sin((x - 5) / 22 * Math.PI)), u2 = u * u; return HP.thermals * 1.6 * u2 * u2 * u2; } : null;
   const T = P.takeoff, A = P.aero, B = P.body, L = P.landing, IR = P.inrun;
-  const g = P.g, m = P.mass, rho = P.rho;
+  const g = HP.gravity != null ? HP.gravity : P.g, m = P.mass;
+  const rho = HP.noAir ? 0 : HP.airDensity != null ? P.rho * HP.airDensity : P.rho;
+  const liftScale = HP.liftScale != null ? A.liftScale * HP.liftScale : A.liftScale;
+  const vPush = HP.pushScale != null ? T.vPush * HP.pushScale : T.vPush;   // odriv (na Luni noge »nesejo« več)
+  // pogoji dneva (dnevni izziv): mods.inrunMu = faktor trenja v smučini
+  const mu = mods?.inrunMu ? IR.mu * mods.inrunMu : IR.mu;
   const windPts = [0.25, 0.45, 0.65, 0.85, 1.0].map(f => hill.landAt(hill.k * f).x);
 
   const s = {
@@ -82,7 +94,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
       vx = s.v * cos(a) * loss; vy = -s.v * sin(a) * loss;
       if (s.tableSpeed === 0) s.tableSpeed = Math.round(s.v * KMH * 10) / 10;
     }
-    const push = T.vPush * tq.q;
+    const push = vPush * tq.q;
     vx += push * sin(a); vy += push * cos(a);
     s.vx = vx; s.vy = vy;
     const gam = atan2(vy, vx);
@@ -106,7 +118,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     const w = W.at(s.tick * STEP, pt.x).h * IR.windEffect;
     const cda = lerp(IR.cdaUp, IR.cdaCrouch, s.crouch);
     const vr = s.v + w;
-    const acc = g * sin(pt.theta) - IR.mu * (g * cos(pt.theta) + s.v * s.v * pt.kappa) - 0.5 * rho * cda * vr * (vr < 0 ? -vr : vr) / m;
+    const acc = g * sin(pt.theta) - mu * (g * cos(pt.theta) + s.v * s.v * pt.kappa) - 0.5 * rho * cda * vr * (vr < 0 ? -vr : vr) / m;
     s.v = Math.max(0, s.v + acc * STEP);
     s.d -= s.v * STEP;
     if (s.d <= 0) {
@@ -144,7 +156,8 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     }
 
     const t = s.tick * STEP;
-    const w = W.at(t, s.x);
+    let w = W.at(t, s.x);
+    if (therm) w = { h: w.h, v: w.v + therm(s.x) };
     s.wind = w;
     // veter piha vzdolž pobočja (čelni ima zato tudi komponento navzgor) + navpični sunki
     const gw = hill.groundAt(s.x).theta;
@@ -169,7 +182,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
       lm *= lerp(1, L.prepLift, u); dm *= lerp(1, L.prepDrag, u);
     }
     if (s.fallen) { lm = 0.1; dm = 1.6; }
-    const Lf = q * table(A.lift, ad) * A.liftScale * lm;
+    const Lf = q * table(A.lift, ad) * liftScale * lm;
     const Df = q * table(A.drag, ad) * A.dragScale * dm;
     s.lift = Lf; s.drag = Df;
     const ax = (Lf * (-ry / V) + Df * (-rx / V)) / m;
@@ -224,7 +237,7 @@ export function createJump({ hill, P, gate, wind, record = 0 }) {
     const th = gr.theta;
     const nx = sin(th), ny = cos(th);
     const vn = -(s.vx * nx + s.vy * ny);
-    const hEq = vn > 0 ? vn * vn / (2 * g) : 0;
+    const hEq = vn > 0 ? vn * vn / (2 * P.g) : 0;   // meje pristanka v »zemeljskih« metrih (tudi na Luni)
     const skiRel = (s.pitch + th) / DEG;
     const sLand = Math.max(0, gr.s);
     const dist = Math.floor(sLand * 2) / 2;

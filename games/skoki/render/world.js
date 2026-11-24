@@ -101,7 +101,7 @@ export function buildWorld(hill, q) {
     const st = q.detail >= 2 ? 2.5 : q.detail >= 1 ? 3.5 : 5;
     const nx = Math.ceil((x1 - x0) / st), nz = Math.ceil((z1 - z0) / st);
     const pos = new Float32Array((nx + 1) * (nz + 1) * 3), uv = new Float32Array((nx + 1) * (nz + 1) * 2), col = new Float32Array((nx + 1) * (nz + 1) * 3);
-    const rock = new THREE.Color('#8b8f9c'), white = new THREE.Color('#ffffff'), tmp = new THREE.Color();
+    const rock = new THREE.Color(T.rock || '#8b8f9c'), white = new THREE.Color(T.terrain || '#ffffff'), grass = new THREE.Color('#6f9a4a'), tmp = new THREE.Color();
     let p = 0;
     for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
       const x = x0 + i * st, z = z0 + j * st, y = terrainAt(x, z);
@@ -109,6 +109,7 @@ export function buildWorld(hill, q) {
       uv[p * 2] = x / 6; uv[p * 2 + 1] = z / 6;
       const r = Math.max(0, fbm(x * 0.05, z * 0.05, 31, 3) - 0.62) * 3 * Math.min(1, Math.abs(z) / 60);
       tmp.copy(white).lerp(rock, Math.min(0.7, r));
+      if (T.spring) { const gr = Math.max(0, fbm(x * 0.02 + 7, z * 0.02, 37, 3) - 0.48) * 4 * Math.min(1, Math.max(0, Math.abs(z) - 30) / 40); tmp.lerp(grass, Math.min(0.85, gr)); }
       col[p * 3] = tmp.r; col[p * 3 + 1] = tmp.g; col[p * 3 + 2] = tmp.b;
       p++;
     }
@@ -119,7 +120,7 @@ export function buildWorld(hill, q) {
     g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     g.setIndex(idx); g.computeVertexNormals();
-    const m = new THREE.MeshStandardMaterial({ color: '#f4f8ff', vertexColors: true, map: sn.map, normalMap: sn.normalMap, roughnessMap: sn.roughnessMap, roughness: 1, normalScale: new THREE.Vector2(0.6, 0.6) });
+    const m = new THREE.MeshStandardMaterial({ color: T.terrain ? '#ffffff' : '#f4f8ff', vertexColors: true, map: T.terrain ? null : sn.map, normalMap: sn.normalMap, roughnessMap: sn.roughnessMap, roughness: 1, normalScale: new THREE.Vector2(0.6, 0.6) });
     const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.name = 'terrain';
     group.add(mesh);
   }
@@ -425,8 +426,10 @@ export function buildWorld(hill, q) {
     };
     mat.customProgramCacheKey = () => 'crowd';
     const crowd = new THREE.InstancedMesh(body, mat, per);
+    const phones = T.phoneLights ? [] : null;
     const mtx = new THREE.Matrix4(), c = new THREE.Color();
-    const palette = ['#e63946', '#1d3557', '#f1c40f', '#2a9d8f', '#ff7a1a', '#7b2cbf', '#ffffff', '#3a86ff', '#ff4fd8', '#222831'];
+    const palette = T.plush ? ['#f7c6d9', '#c9b18f', '#f2e3c6', '#a8d8f0', '#ffd6a5', '#cdb4db', '#b5e48c', '#8d6e63'] : ['#e63946', '#1d3557', '#f1c40f', '#2a9d8f', '#ff7a1a', '#7b2cbf', '#ffffff', '#3a86ff', '#ff4fd8', '#222831'];
+    if (T.plush) body.scale(1.5, 1.25, 1.5);
     let n = 0;
     for (let i = 0; i < per; i++) {
       const s = sA + hash(i, 11, seed) * (sB - sA);
@@ -437,10 +440,25 @@ export function buildWorld(hill, q) {
       const x = p.x + (hash(i, 14, seed) - 0.5) * 1.5;
       const y = Math.max(terrainAt(x, z), p.y) + row * 0.45;
       mtx.makeTranslation(x, y, z); crowd.setMatrixAt(n, mtx);
+      if (phones && hash(i, 16, seed) < 0.45) phones.push(x, y + (T.plush ? 2.1 : 1.55), z + 0.25);
       c.set(palette[Math.floor(hash(i, 15, seed) * palette.length)]); crowd.setColorAt(n, c);
       n++;
     }
     crowd.count = n; crowd.castShadow = false; group.add(crowd);
+    // lučke telefonov (nočna): utripajoče točke nad publiko
+    if (phones && phones.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(phones, 3));
+      const pm = new THREE.PointsMaterial({ map: dot(), size: 0.5, transparent: true, depthWrite: false, color: '#fff6d0', blending: THREE.AdditiveBlending });
+      pm.onBeforeCompile = sh => {
+        sh.uniforms.uTime = WAVE.uTime;
+        sh.vertexShader = sh.vertexShader.replace('void main() {', 'uniform float uTime;\nvarying float vTw;\nvoid main() {')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\n vTw = 0.55 + 0.45 * sin(uTime * 3.0 + position.x * 1.7 + position.z * 2.3);\n transformed.x += sin(uTime * 1.5 + position.z) * 0.15;');
+        sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'varying float vTw;\nvoid main() {')
+          .replace('#include <premultiplied_alpha_fragment>', '#include <premultiplied_alpha_fragment>\n gl_FragColor.rgb *= vTw * 2.0;');
+      };
+      pm.customProgramCacheKey = () => 'phones';
+      group.add(new THREE.Points(g, pm));
+    }
     crowdAnchor.copy(hill.landAt((sA + sB) / 2)); crowdAnchor.z = -hillHalfWidth(hill, (sA + sB) / 2) - 6;
     // tribuna (stopnice pod publiko)
     const stand = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: '#4c5260', roughness: 0.8 }));
@@ -490,7 +508,8 @@ export function buildWorld(hill, q) {
         const jit = (hash(k, i, 40) - 0.5) * 0.18 * w * (1 - (y + h / 2) / h);
         pos.setX(k, pos.getX(k) + jit); pos.setZ(k, pos.getZ(k) + (hash(k, i, 41) - 0.5) * 0.12 * w);
         const t = (y + h / 2) / h;
-        cc.set(t > 0.55 + hash(k, i, 42) * 0.15 ? '#f6f9ff' : '#7d8494'); colors.push(cc.r, cc.g, cc.b);
+        if (T.mountainColor) { cc.set(T.mountainColor); if (t > 0.6) cc.offsetHSL(0, 0, 0.06); } else cc.set(t > 0.55 + hash(k, i, 42) * 0.15 ? '#f6f9ff' : '#7d8494');
+        colors.push(cc.r, cc.g, cc.b);
       }
       geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
       geo.computeVertexNormals();
@@ -527,6 +546,67 @@ export function buildWorld(hill, q) {
     m.customProgramCacheKey = () => 'snowfall';
     snowPts = new THREE.Points(g, m); snowPts.frustumCulled = false;
     group.add(snowPts);
+  }
+
+  /* ---------------- reflektorji (nočna): drogovi, žarometi, svetlobni stožci v megli */
+  if (T.spotlights) {
+    const n = T.spotlights;
+    const poleM = new THREE.MeshStandardMaterial({ color: '#3a3f4c', metalness: 0.7, roughness: 0.4 });
+    const lampM = new THREE.MeshBasicMaterial({ color: '#fffbe8', toneMapped: false });
+    const beamM = new THREE.MeshBasicMaterial({ color: '#d8e4ff', transparent: true, opacity: 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    for (let i = 0; i < n; i++) {
+      const sx = -20 + (hill.def.landing.lArc + 30) * i / Math.max(1, n - 1);
+      const p = sx < 0 ? hill.inrunAt(-sx) : hill.landAt(sx);
+      const side = i % 2 ? 1 : -1;
+      const z = side * (hillHalfWidth(hill, Math.max(0, sx)) + 14);
+      const base = terrainAt(p.x, z);
+      const h = Math.max(18, p.y - base + 22);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, h, 6), poleM); pole.position.set(p.x, base + h / 2, z); group.add(pole);
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.5), lampM); lamp.position.set(p.x, base + h, z); lamp.lookAt(p.x + 10, p.y, 0); group.add(lamp);
+      // stožec svetlobe od žarometa do doskočišča
+      const to = new V3(p.x + 14, p.y - 4, -side * 2), from = new V3(p.x, base + h, z);
+      const len = from.distanceTo(to);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(5.5, len, 20, 1, true), beamM);
+      cone.position.copy(from).lerp(to, 0.5);
+      cone.quaternion.setFromUnitVectors(new V3(0, -1, 0), to.clone().sub(from).normalize());
+      group.add(cone);
+    }
+  }
+
+  /* ---------------- palme (puščava) */
+  if (T.palms) {
+    const count = Math.max(1, Math.round(140 * T.palms * q.decor));
+    const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.35, 1, 6).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: '#8a6a44', roughness: 0.9 }), count);
+    const crown = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 0.6, 7).translate(0, 0.3, 0), new THREE.MeshStandardMaterial({ color: '#3d7a3a', roughness: 0.8, flatShading: true }), count);
+    const mtx = new THREE.Matrix4(), qn = new THREE.Quaternion(), sc = new V3(), ps = new V3();
+    let n = 0;
+    for (let t = 0; n < count && t < count * 10; t++) {
+      const x = hill.top.x - 100 + hash(t, 61, seed) * (endX - hill.top.x + 300), z = -200 + hash(t, 62, seed) * 380;
+      const s2 = x >= 0 ? hill.groundAt(Math.min(x, endX)).s : -1;
+      if (Math.abs(z) < (x >= 0 ? hillHalfWidth(hill, s2) : 4) + 25 || (z > 0 && z < 70)) continue;
+      const y = terrainAt(x, z), h = 7 + hash(t, 63, seed) * 6;
+      qn.setFromAxisAngle(new V3(0, 0, 1), (hash(t, 64, seed) - 0.5) * 0.25);
+      sc.set(1, h, 1); ps.set(x, y, z); mtx.compose(ps, qn, sc); trunk.setMatrixAt(n, mtx);
+      sc.set(3.2, 2, 3.2); ps.set(x, y + h, z); mtx.compose(ps, qn, sc); crown.setMatrixAt(n, mtx);
+      n++;
+    }
+    trunk.count = n; crown.count = n; group.add(trunk, crown);
+  }
+
+  /* ---------------- Zemlja nad lunarnim obzorjem */
+  if (T.earth) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#1d5fb8'; x.fillRect(0, 0, 256, 128);
+    for (let i = 0; i < 40; i++) { x.fillStyle = i % 3 ? '#3f8f4a' : '#c9b27a'; x.beginPath(); x.ellipse(hash(i, 71, 3) * 256, 20 + hash(i, 72, 3) * 88, 8 + hash(i, 73, 3) * 26, 5 + hash(i, 74, 3) * 14, hash(i, 75, 3) * 3, 0, 6.3); x.fill(); }
+    x.fillStyle = 'rgba(255,255,255,0.75)';
+    for (let i = 0; i < 30; i++) { x.beginPath(); x.ellipse(hash(i, 76, 3) * 256, hash(i, 77, 3) * 128, 12 + hash(i, 78, 3) * 30, 3 + hash(i, 79, 3) * 6, 0, 0, 6.3); x.fill(); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(90, 32, 16), new THREE.MeshBasicMaterial({ map: tex, fog: false }));
+    earth.position.set(hill.top.x + 500, 520, -1900); earth.rotation.set(0.3, 1.2, 0.2);
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(97, 32, 16), new THREE.MeshBasicMaterial({ color: '#6fb6ff', transparent: true, opacity: 0.25, side: THREE.BackSide, fog: false, blending: THREE.AdditiveBlending, depthWrite: false }));
+    halo.position.copy(earth.position);
+    group.add(earth, halo);
   }
 
   return { group, recordLine, gateBars, setGate, terrainAt, crowdAnchor, snowPts, lines };

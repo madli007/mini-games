@@ -931,3 +931,54 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 
 - Tekma z več igralci, replay v živo, boti kot tekmeci, dnevni izziv, letalnica; svetovni pokal, kariera, trgovina z opremo
   (videz skakalca je že parameter `skin`).
+
+## 2. faza — tekma, dnevni izziv, nove skakalnice (`prompts/12-skoki-tekma.md`)
+
+Stanje: **končano** (24. 11. 2026), razen Supabase dela (glej »Ni bilo preverjeno«).
+
+### Načrt
+- [x] `sport/competition.js` (serije, vrstni red iz seeda, obratni po rezultatu, rez z izenačenji, DNS/DSQ/DNF, ekipe, nagrade-vtičniki, `restore`) in `sport/live-replay.js` (sender/receiver, vmesni pomnilnik 300 ms, luknje, `need`, `verify`) + `sport/README.md`
+- [x] `contest.js` (simulacija iz vnosov, veter serije, žirija, za vodstvo, nagrade, dnevni izbor, odklepi, XP), `jumpers.js` (Moji skakalci, koda/JSON, statistika, 43 izmišljenih imen), značaji bota (`bot.js`, privzeti bot nespremenjen)
+- [x] `match.js`: soba + lobby (nastavitve, boti, TV), host (stanje, preverjanje, časovne omejitve, prenos hosta, ponovitev skoka), gledanje v živo, reakcije, lower-third, razglasitev, rezultati; lokalna tekma; Moji skakalci
+- [x] `game.js`: »motor skoka« za tekmo (človek / bot / tok), dnevni izziv (3 poskusi, lestvica dneva, ghost vodilnega, pogoji dneva), odklepanje skakalnic kot dosežki, skupine v meniju, 9 novih dosežkov
+- [x] 5 novih skakalnic (Zajček, Sipina, Reflektor, Orlovo gnezdo, Mirno morje) + parametri fizike skakalnice (`physics`) + izris novih okolij (noč, puščava, Luna, pomlad, plišasta publika)
+- [x] Testi `tests/skoki2.js` (16), fiksture prvih treh skakalnic, cilji uravnoteženja za letalnico/Luno, `games.json` (turn, 1–10, party/daily, 3 naloge)
+- [x] SQL `supabase/games/skoki.sql`: nove skakalnice v `skoki_hills`, ghost dnevnega izziva (`d-YYYYMMDD`) v `skoki_save_ghost`
+- [ ] SQL poganjanje v produkcijski bazi in test s Supabase (`?igralec=1/2/3`) — zavrnjeno, glej spodaj
+
+### Dnevnik
+- Fizika prvih treh skakalnic je **nespremenjena** (`paramsVersion` 3): pred spremembami je posnetih 9 referenčnih skokov
+  (`tests/fixtures/skoki-ref.json`), test jih ponovi bit za bit. Novi parametri (`gravity`, `airDensity`, `liftScale`,
+  `pushScale`, `noAir`, `thermals`) se uporabijo le, če jih skakalnica ima; meje pristanka ostanejo v zemeljskih metrih.
+- Letalnica: model 1. faze brez sprememb da le ~155 m; z `liftScale` 1,045 in strmino `beta` 36° do `lArc` 235 se let
+  podaljša na ~8 s (bot 1,0: 244 m). Pri večjem vzgonu se let »utrga« (jadranje vzporedno s strmino), zato je razpon med
+  spretnostmi velik (0,3: 130 m, 0,7: 197 m, 1,0: 244 m) — cilji za letalnico so zato širši (`balanceTarget`).
+- Luna: brez zraka je daljava odvisna le od odriva, zato so boti 141 / 149 / 151 m (cilj za 1,0: K … HS + 2).
+- Sipina: toplotni stebri podaljšajo skok za ~4 m; zalet `e2` uglašen na 31,5.
+- Lokalna tekma: brez XP (kot trening), `reportGame` s številom ljudi; ne gre na lestvice in ne daje ghostov.
+- Sprotna lestvica razvršča po seštevku (kot na TV), izločeni po 1. seriji so pod finalisti, DNF/DSQ/DNS na dnu.
+- **Zamik replaya v živo:** gledalec začne, ko ima ≥ 300 ms vnosov; v offline testu (BroadcastChannel) je bil zaostanek ob
+  koncu skoka 0 ms (izpis `Skoki: replay v živo, zamik …` v konzoli). S Supabase ni bil izmerjen (glej spodaj).
+
+### Preverjeno
+- `node tests/run-node.mjs`: 182/182; `tests.html`: 182/182 (s čisto lokalno shrambo — stari »lokalno: …« testi padejo,
+  če v `localStorage` ostanejo podatki prejšnjega zagona; tako je bilo že prej).
+- Offline multiplayer v 4 zavihkih (host, 2 igralca, TV): ustvari sobo, pridruži se s kodo in prek `?room=`, tekma z dvema
+  serijama in boti do konca; gledalci in TV vidijo iste daljave kot skakalec (brez opozoril o neujemanju pri hostu);
+  reakcije pri skakalcu in na TV-ju; odhod hosta sredi skoka (nov host sprejel skok); osvežitev igralca na vrsti (dobi skok znova);
+  pridružitev med tekmo (gledalec z reakcijami); odšli igralec = DNS »odšel«; zamuda 10 s = DSQ; »Nazaj v sobo« / »Nova tekma«.
+- Lokalna tekma (`?bots=5&fast=1`, `?bots=2`): DSQ ob zamudi, človeški skok, razglasitev, posebne nagrade, statistika.
+- Dnevni izziv: trije poskusi (porabi se ob štartu), nato trening, lestvica dneva, poročilo hubu, odštevanje do polnoči.
+- Posnetki: meni, dnevni izziv, TV 1920×1080 (lestvica, lower-third z »za vodstvo potrebuje«, trak), telefon 375×812
+  (gledalec: slika, kartica, lestvica, reakcije), Reflektor, Sipina, Mirno morje, Orlovo gnezdo. Konzola brez napak (igra, dashboard).
+
+### Ni bilo preverjeno
+- **Supabase:** `apply_migration` za posodobljen `supabase/games/skoki.sql` je zavrnil samodejni varnostni klasifikator
+  (sprememba produkcijske baze brez izrecne potrditve). Dokler SQL ni pognan, se na Supabase rekord/ghost novih skakalnic
+  in ghost dnevnega izziva ne shranita (`unknown_level`, opozorilo v konzoli); vse drugo deluje. Zato tudi ni bilo
+  testa s `?igralec=1/2/3`, meritve zamika na Supabase in brisanja testnih vrstic (nobena ni bila ustvarjena).
+- Ročni skoki z miško (vsaj 5 na skakalnico) — brskalniško okno je teklo pri ~1,5 sličice/s, zato so skoki preverjeni z botom
+  in razvojnimi pomočniki (`?test=1`); »občutek« letalnice in Lune naj preveri človek.
+- Žirija v brskalniku (pokrita s testi; v testnih tekmah nihče ni preskočil 95 % HS).
+- Ekipna tekma: le seštevek ekip v rezultatih (vrstni red »po skupinah« ni narejen).
+- Zastave (emoji) se na Windows prikažejo kot črki (npr. »SI«) — omejitev sistemske pisave.

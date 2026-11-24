@@ -2,8 +2,11 @@
    SMUČARSKI SKOKI — game.js: meni, stanja igre (zaletno mesto, skok,
    počasni posnetek, rezultat, replay, pavza), trening z ghosti, rekord
    skakalnice (3 skoki, najboljši na lestvico), hub (lestvice, ghosti, XP,
-   dosežki, naloge), namigi, komentator, zvok.
+   dosežki, naloge), namigi, komentator, zvok; dnevni izziv; odklepanje
+   skakalnic; »motor skoka« za tekmo (match.js): skok človeka, bota ali
+   gledanje toka vnosov v živo.
    Razvojni parametri: ?hill=<id> ?debug=1 ?bot=0.7 ?q=low|med|high ?offline=1
+   ?tv=1 ?bots=9 ?fast=1 ?room=KODA (tekma, glej match.js)
    ===================================================================== */
 import { hub, ui } from '../../shared/hub.js';
 import * as S from '../../shared/storage.js';
@@ -20,6 +23,8 @@ import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { Renderer, detectQuality, QUALITY, QUALITY_ORDER, reducedMotion } from './render/scene.js';
 import { DEFAULT_SKIN } from './render/jumper.js';
+import { resultOf, dailyPick, DAILY_TRIES, msToMidnight, isOpen, unlocksBy, unlockKey, unlockText } from './contest.js';
+import { flagOf } from './jumpers.js';
 
 const GAME = 'skoki';
 const $ = s => document.querySelector(s);
@@ -45,11 +50,24 @@ const ACH = [
   { key: 'zavora', title: 'Zavora', icon: '🪂', desc: 'Pristani pred polovico K-točke' },
   { key: 'veter-v-hrbet', title: 'Veter v hrbet', icon: '🌬️', desc: 'Čez K s hrbtnim vetrom vsaj 2 m/s' },
   { key: 'stotica', title: 'Stotica', icon: '💯', desc: 'Skoči 100 skokov' },
+  // 2. faza: tekma, letalnica, Luna, dnevni izziv
+  { key: 'zmaga', title: 'Zmaga', icon: '🥇', desc: 'Prva zmaga na tekmi' },
+  { key: 'deset', title: 'Deseterica', icon: '🔟', desc: 'Zmaga na tekmi z 10 ljudmi' },
+  { key: 'obrat', title: 'Obrat', icon: '🔄', desc: 'Zmaga iz 4. mesta ali nižje po 1. seriji' },
+  { key: 'letalec', title: 'Letalec', icon: '🦅', desc: 'Skok čez 200 m' },
+  { key: 'orlovo-gnezdo', title: 'Orlovo gnezdo', icon: '🪺', desc: 'Čez HS na letalnici brez padca' },
+  { key: 'luna', title: 'Mali korak', icon: '🌕', desc: 'Skok na Luni' },
+  { key: 'zirija', title: 'Žirija!', icon: '🚩', desc: 'Skok, po katerem je žirija znižala zalet' },
+  { key: 'dnevni-7', title: 'Teden izzivov', icon: '📅', desc: 'Dnevni izziv 7 dni zapored' },
+  { key: 'zvoncek', title: 'Kravji zvonec', icon: '🔔', desc: 'Pošlji 100 reakcij' },
 ];
-const achDef = k => ACH.find(a => a.key === k);
+// odklepi skakalnic so dosežki (veljajo na vseh napravah): odklep-<id>
+const achDef = k => ACH.find(a => a.key === k) || (k.startsWith('odklep-') ? { key: k, title: 'Odklenjena: ' + (hillOf(k.slice(7))?.def.name || k.slice(7)), icon: '🔓' } : { key: k, title: k, icon: '🏅' });
 // že odklenjeni (brez ponovnih vpisov → 409 v konzoli na Supabase)
 const unlocked = new Set();
 const unlock = k => { if (unlocked.has(k)) return; unlocked.add(k); return hub.unlock(k, { title: achDef(k).title, icon: achDef(k).icon }); };
+/** Ali je skakalnica odprta za tega igralca. */
+const hillOpen = id => { const h = hillOf(id); return !!h && isOpen(h.def, unlocked); };
 
 /* ------------------------------------------------------------ nastavitve in statistika */
 const DEF_SETTINGS = { quality: 'auto', sound: true, music: true, post: true, fps: false, tilt: false, wind: 'random', windSpeed: 1, ghostMine: true };
@@ -68,6 +86,7 @@ const localBest = id => { const b = S.load(bestKey(id), null); return b && b.pv 
 /* ------------------------------------------------------------ globalno */
 let P = null;             // parametri fizike
 let HILLS = [];           // [{ def, hill }]
+let GROUPS = [];          // skupine v meniju (hills/index.json → groups), privzeto »trening«
 let renderer = null, input = null;
 const audio = new Audio();
 audio.setMuted(!settings.sound);
@@ -93,11 +112,13 @@ async function loadData() {
   P = await (await fetch(new URL('physics-params.json', base), { cache: 'no-cache' })).json();
   if (DEBUG) { const saved = S.load('skoki:params', null); if (saved && saved.paramsVersion === P.paramsVersion) P = saved; }
   const idx = await (await fetch(new URL('hills/index.json', base), { cache: 'no-cache' })).json();
+  GROUPS = Array.isArray(idx.groups) && idx.groups.length ? idx.groups : [{ id: 'trening', name: 'Trening' }];
   const defs = await Promise.all(idx.hills.map(async f => (await fetch(new URL('hills/' + f, base), { cache: 'no-cache' })).json()));
   HILLS = [];
   for (const def of defs) {
     const errs = validateHill(def);
     if (errs.length) { console.warn('Skakalnica ' + def.id + ':', errs); continue; }
+    if (!def.group) def.group = 'trening';
     HILLS.push({ def, hill: buildHill(def) });
   }
 }
@@ -108,6 +129,10 @@ async function loadData() {
 
 function showMenu() {
   G.state = 'menu';
+  if (G.ext && !G.ext.done) engine.abort();
+  G.ext = null;
+  matchApi?.onMenu?.();
+  clearInterval(dailyTimer);
   document.body.classList.remove('sk-playing');
   $('#play').classList.add('mg-hidden');
   $('#menu').classList.remove('mg-hidden');
@@ -116,10 +141,10 @@ function showMenu() {
   renderMenu();
 }
 
-const THEME_COLORS = { brezova: ['#3f7a5c', '#10261d'], bistra: ['#2f78d0', '#0d2140'], orlova: ['#a0524a', '#1c1838'] };
+const THEME_COLORS = { brezova: ['#3f7a5c', '#10261d'], bistra: ['#2f78d0', '#0d2140'], orlova: ['#a0524a', '#1c1838'], zajcek: ['#e58fb5', '#3a2040'], sipina: ['#d4a04f', '#3b2410'], reflektor: ['#3b4fa8', '#05081c'], 'orlovo-gnezdo': ['#4f8f6a', '#13283a'], 'mirno-morje': ['#6c6c78', '#050508'] };
 
 function renderMenu() {
-  if (!G.hillId) G.hillId = HILLS[Math.min(2, HILLS.length - 1)]?.def.id || HILLS[0].def.id;
+  if (!G.hillId || !hillOpen(G.hillId)) G.hillId = (hillOf('bistra') ? 'bistra' : HILLS[0].def.id);
   const H = hillOf(G.hillId).def;
   const gateOpts = Array.from({ length: H.gates.count }, (_, i) => i + 1).map(g => `<option value="${g}" ${g === (G.trainGate?.[H.id] ?? H.gates.default) ? 'selected' : ''}>${g}${g === H.gates.default ? ' (privzeto)' : ''}</option>`).join('');
   const mb = localBest(H.id);
@@ -131,13 +156,21 @@ function renderMenu() {
         <div><h1 class="mg-title">Smučarski skoki</h1>
           <p class="mg-muted">Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Prava pravila točkovanja, veter in ghosti prijateljev.</p></div>
       </div>
-      <div class="sk-hills" role="list">${HILLS.map(({ def }) => {
+      <div class="sk-modes sk-modes--4">
+        <button class="sk-modecard" id="mOnline"><span>🏆</span><b>Tekma</b><em>2–10 prijateljev, vsak s svojega zaslona, replay v živo</em></button>
+        <button class="sk-modecard" id="mLocal"><span>🖥️</span><b>Lokalna tekma</b><em>Tvoji skakalci na eni napravi, tudi brez povezave</em></button>
+        <button class="sk-modecard" id="mDaily"><span>📅</span><b>Dnevni izziv</b><em>${esc(dailyLine())}</em></button>
+        <button class="sk-modecard" id="mJumpers"><span>🎽</span><b>Moji skakalci</b><em>Sestavi svojo ekipo, statistika tvoje lige</em></button>
+      </div>
+      ${GROUPS.map(gr => `<h2 class="mg-title sk-group">${esc(gr.name)}</h2>
+      <div class="sk-hills" role="list">${HILLS.filter(h => (h.def.group || 'trening') === gr.id).map(({ def }) => {
         const b = localBest(def.id);
+        const open = isOpen(def, unlocked);
         const [c1, c2] = THEME_COLORS[def.id] || ['#24356e', '#0f1530'];
-        return `<button class="sk-hillcard" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
-          <span class="kh">K${def.k} · HS${def.hs}</span><b>${esc(def.name)}</b><span class="desc">${esc(def.desc || '')}</span>
+        return `<button class="sk-hillcard ${open ? '' : 'locked'}" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
+          <span class="kh">K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
           <span class="pb">${b ? '🏅 ' + fmtDist(b.dist) + ' · ' + fmt1(b.total) + ' t' : ''}</span></button>`;
-      }).join('')}</div>
+      }).join('')}</div>`).join('')}
       <div class="sk-modes">
         <div class="mg-card">
           <h2 class="mg-title">Trening</h2>
@@ -180,7 +213,15 @@ function renderMenu() {
       </div>
     </div>`;
   // dogodki
-  $('#menu').querySelectorAll('[data-hill]').forEach(b => b.onclick = () => { audio.unlock(); G.hillId = b.dataset.hill; renderMenu(); });
+  $('#menu').querySelectorAll('[data-hill]').forEach(b => b.onclick = () => {
+    audio.unlock();
+    if (!hillOpen(b.dataset.hill)) { ui.toast(unlockText(hillOf(b.dataset.hill).def, HILLS.map(x => x.def)), { icon: '🔒' }); return; }
+    G.hillId = b.dataset.hill; renderMenu();
+  });
+  $('#mOnline').onclick = () => { audio.unlock(); matchApi?.openOnline(); };
+  $('#mLocal').onclick = () => { audio.unlock(); matchApi?.openLocal(); };
+  $('#mJumpers').onclick = () => { audio.unlock(); matchApi?.openJumpers(); };
+  $('#mDaily').onclick = () => { audio.unlock(); startDaily(); };
   $('#selGate').onchange = e => { G.trainGate = { ...(G.trainGate || {}), [H.id]: +e.target.value }; };
   $('#selWind').onchange = e => { settings.wind = e.target.value; saveSettings(); $('#windVal').classList.toggle('mg-hidden', settings.wind !== 'const'); };
   $('#selWindSpeed').oninput = e => { settings.windSpeed = +e.target.value; $('#windValTxt').textContent = sign(settings.windSpeed) + ' m/s'; saveSettings(); };
@@ -268,9 +309,29 @@ function ensureRenderer() {
 /* ===================================================================== */
 
 async function startSession(hillId, mode) {
-  const H = hillOf(hillId);
+  G.ext = null;
   G.hillId = hillId; G.mode = mode;
   G.record = mode === 'record' ? { tries: [], best: null } : null;
+  await enterPlay(hillId, { theme: mode === 'daily' ? G.daily?.theme : null });
+  $('#hudMode').textContent = mode === 'record' ? 'Rekord skakalnice' : mode === 'daily' ? 'Dnevni izziv' : 'Trening';
+  $('#barWho').innerHTML = hub.profile ? ui.who(hub.profile) : '';
+  G.hintsOn = (stats.hints || 0) < 3;
+  newJump();
+}
+
+/** Teme za pogoje dneva (noč, sneženje) — kopija skakalnice z drugačno temo za izris. */
+function themedHill(H, theme) {
+  if (!theme) return H.hill;
+  const key = H.def.id + ':' + theme.id;
+  if (!themedHill.cache) themedHill.cache = new Map();
+  if (!themedHill.cache.has(key)) themedHill.cache.set(key, { ...H.hill, def: { ...H.def, theme } });
+  return themedHill.cache.get(key);
+}
+
+/** Pokaži igralno površino s skakalnico (brez skoka). */
+async function enterPlay(hillId, { skin = null, theme = null } = {}) {
+  const H = hillOf(hillId);
+  G.hillId = hillId;
   audio.menuMusic(false);
   audio.setLoops(true);
   $('#menu').classList.add('mg-hidden');
@@ -281,15 +342,13 @@ async function startSession(hillId, mode) {
   ensureRenderer();
   getInput();
   if (settings.tilt && IS_TOUCH) input.enableTilt();
-  if (renderer.hill !== H.hill) renderer.load(H.hill, DEFAULT_SKIN);
+  const hv = themedHill(H, theme);
+  if (renderer.hill !== hv) renderer.load(hv, skin || DEFAULT_SKIN);
+  else renderer.setSkin(skin || DEFAULT_SKIN);
   renderer.resize();
   $('#loader').classList.add('mg-hidden');
   $('#hudHill').textContent = `${H.def.name} · K${H.def.k}`;
-  $('#hudMode').textContent = mode === 'record' ? 'Rekord skakalnice' : 'Trening';
-  $('#barWho').innerHTML = hub.profile ? ui.who(hub.profile) : '';
-  G.hintsOn = (stats.hints || 0) < 3;
   if (!loopOn) { loopOn = true; last = performance.now(); requestAnimationFrame(loop); }
-  newJump();
 }
 
 function windForJump() {
@@ -308,27 +367,35 @@ function prepGhosts(H) {
     }
     if (G.friendGhost && G.friendGhost.hill === H.def.id) list.push({ g: G.friendGhost.g, name: G.friendGhost.name });
   }
-  return list.map(o => { const r = ghostJump(o.g, H.hill, P); return { ...o, J: r.J, input: r.input, snap: gateSnapshot(H.hill, o.g.gate) }; });
+  if (G.mode === 'daily') for (const o of G.daily.ghosts || []) if (o.on) list.push(o);
+  const mods = G.mode === 'daily' ? G.daily.mods : null;
+  return list.map(o => { const r = ghostJump(o.g, H.hill, P, 0, mods); return { ...o, J: r.J, input: r.input, snap: gateSnapshot(H.hill, o.g.gate) }; });
 }
 
 function newJump() {
   const H = hillOf(G.hillId);
+  const X = G.ext;
   hideResult();
-  G.gate = G.mode === 'record' ? H.def.gates.default : (G.trainGate?.[H.def.id] ?? H.def.gates.default);
-  G.wind = windForJump();
-  G.windObj = createWind(G.wind, P);
-  G.J = createJump({ hill: H.hill, P, gate: G.gate, wind: G.wind, record: DEBUG ? 2 : 0 });
+  if (X) G.gate = X.gate;
+  else if (G.mode === 'daily') G.gate = G.daily.gate;
+  else G.gate = G.mode === 'record' ? H.def.gates.default : (G.trainGate?.[H.def.id] ?? H.def.gates.default);
+  G.wind = X ? X.wind : G.mode === 'daily' ? G.daily.wind : windForJump();
+  G.mods = X ? X.mods || null : G.mode === 'daily' ? G.daily.mods : null;
+  G.windObj = createWind(H.def.physics?.noAir ? { mode: 'off', seed: 0 } : G.wind, G.mods?.gust ? { ...P, wind: { ...P.wind, gustAmp: P.wind.gustAmp * G.mods.gust } } : P);
+  G.J = createJump({ hill: H.hill, P, gate: G.gate, wind: G.wind, record: DEBUG ? 2 : 0, mods: G.mods });
   G.rec = new InputRecorder();
   G.hist = [];
-  G.ghosts = prepGhosts(H);
-  G.slow = null; G.replay = null; G.landShown = false; G.flags = {};
-  G.bot = BOT_SKILL != null ? createBot({ skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 }) : null;
+  G.ghosts = X ? [] : prepGhosts(H);
+  G.slow = null; G.replay = null; G.landShown = false; G.flags = {}; G.stall = false;
+  G.stream = X?.source === 'stream' ? X.stream : null;
+  G.bot = X ? (X.source === 'bot' ? createBot(X.bot) : null) : BOT_SKILL != null ? createBot({ skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 }) : null;
   renderer.setGate(G.gate);
   renderer.setGhosts(G.ghosts.length);
-  const rec = Math.max(localBest(H.def.id)?.dist || 0, ...G.ghosts.map(g => g.g.dist));
+  const rec = X ? X.recordLine || 0 : Math.max(localBest(H.def.id)?.dist || 0, ...G.ghosts.map(g => g.g.dist));
   renderer.setRecord(rec || null);
   $('#barRec').textContent = rec ? fmtDist(rec) : '—';
-  $('#barRecLbl').textContent = G.ghosts.length ? 'Rekord / ghost' : 'Rekord';
+  $('#barRecLbl').textContent = X ? (X.recordLabel || 'Vodilni') : G.ghosts.length ? 'Rekord / ghost' : 'Rekord';
+  if (X) { $('#hudMode').textContent = X.label || 'Tekma'; $('#barWho').innerHTML = X.whoHtml || esc(X.who?.name || ''); }
   $('#hudGhost').classList.toggle('mg-hidden', !G.ghosts.length);
   $('#hudGhost').textContent = '👻 ' + G.ghosts.map(g => g.name).join(', ');
   $('#barGate').textContent = G.gate;
@@ -338,10 +405,12 @@ function newJump() {
   $('#lean').classList.add('mg-hidden');
   $('#replayBar').classList.add('mg-hidden');
   if (G.record) $('#hudMode').textContent = `Rekord skakalnice · skok ${G.record.tries.length + 1}/3`;
+  if (G.mode === 'daily' && !X) $('#hudMode').textContent = dailyHud();
   input.reset(); input.mode = 'gate'; input.resetPitch(0);
   G.state = 'gate'; G.gateT = 0; G.view = gateSnapshot(H.hill, G.gate); G.view.snap = true;
   renderer.setCheer(0.1);
-  showLight(true);
+  showLight(!G.stream);
+  if (G.stream) hint('Čakam na skok …');
   clock.reset();
   dbgHook?.onNewJump?.();
 }
@@ -350,6 +419,12 @@ function newJump() {
 const RED_TIME = 1.2, GATE_TIME = 10;
 function showLight(on) { $('#light').classList.toggle('mg-hidden', !on); }
 function updateGate(dt) {
+  // gledalec: ni semaforja, skok se začne, ko je v vmesnem pomnilniku dovolj vnosov
+  if (G.stream) {
+    const a = G.stream.advance(0);
+    if (!a.waiting) { G.state = 'jump'; input.mode = 'other'; hint(''); audio.whoosh(); G.ext?.onStart?.(); }
+    return;
+  }
   const was = G.gateT;
   G.gateT += dt;
   const green = G.gateT >= RED_TIME;
@@ -360,12 +435,16 @@ function updateGate(dt) {
   $('#light').classList.toggle('late', green && left <= 3);
   if (was < RED_TIME && green) audio.beep(true);
   else if (green && Math.ceil(GATE_TIME - (was - RED_TIME)) !== left && left <= 3 && left > 0) audio.beep(false);
-  if (green && G.bot && G.gateT > RED_TIME + 0.6) startJump();
+  if (green && G.bot && G.gateT > RED_TIME + (G.ext ? 0.9 : 0.6)) startJump();
+  // tekma: 10 s po zeleni luči za štart, sicer diskvalifikacija (ali »preskoči« v sproščenem načinu)
+  if (green && G.ext && !G.bot && G.ext.startLimit && G.gateT - RED_TIME > GATE_TIME) { extFinish({ status: G.ext.relaxed ? 'skip' : 'dsq' }); return; }
   if (G.hintsOn) hint(green ? (IS_TOUCH ? 'Tapni za štart' : 'Klikni za štart') : 'Pripravi se …');
 }
 
 function startJump() {
-  if (G.state !== 'gate' || G.gateT < RED_TIME) return;
+  if (G.state !== 'gate' || G.gateT < RED_TIME || G.stream) return;
+  if (G.mode === 'daily' && !G.ext) dailyUseTry();
+  G.ext?.onStart?.();
   showLight(false);
   G.state = 'jump';
   input.mode = 'inrun';
@@ -376,8 +455,15 @@ function startJump() {
 /* ---------------- tick simulacije */
 function tick() {
   const J = G.J, s = J.s;
-  const inp = G.bot ? G.bot.input(s) : input.sample();
+  let inp;
+  if (G.stream) {
+    const v = G.stream.inputAt(s.tick);
+    if (!v && !G.stream.ready(s.tick)) { G.stall = true; return false; }   // ni še vnosa: počakaj, ne ugibaj
+    G.stall = false;
+    inp = v ? { btn: v[0], pitch: v[1] / 2 } : { btn: 0, pitch: 0 };
+  } else inp = G.bot ? G.bot.input(s) : input.sample();
   G.rec.push(s.tick, inp);
+  if (G.ext?.onInput && !G.stream) G.ext.onInput(s.tick, [inp.btn >= 2 ? 2 : inp.btn ? 1 : 0, Math.round(inp.pitch * 2)]);
   J.step(inp);
   for (const e of J.ev) onEvent(e);
   J.ev.length = 0;
@@ -386,7 +472,8 @@ function tick() {
     if (!gh.J.done) { gh.J.step(gh.input(gh.J.s, gh.J.s.tick)); gh.J.ev.length = 0; }
     gh.snap = snapshot(gh.J.s, P);
   }
-  if (!G.bot) input.mode = s.phase === 'inrun' ? 'inrun' : s.phase === 'air' ? 'air' : 'other';
+  if (!G.bot && !G.stream) input.mode = s.phase === 'inrun' ? 'inrun' : s.phase === 'air' ? 'air' : 'other';
+  return true;
 }
 
 function onEvent(e) {
@@ -394,7 +481,7 @@ function onEvent(e) {
   const s = G.J.s;
   switch (e.type) {
     case 'takeoff': {
-      if (!G.bot) input.resetPitch(0);
+      if (!G.bot && !G.stream) input.resetPitch(0);
       audio.takeoff(e.perfect);
       audio.silence();
       $('#barSpeed').textContent = fmt1(s.tableSpeed) + ' km/h';
@@ -417,7 +504,7 @@ function onEvent(e) {
       audio.cheer(L.kind === 'fall' ? 0.3 : 0.4 + lvl);
       const pb = G.mode === 'record' && (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && (localBest(H.id) != null);
       comment(say(landingGroup({ type: L.kind, fallen: s.fallen, dist: L.dist, k: H.k, hs: H.hs, wind: L.windAvg, pb })));
-      if (!reducedMotion() && L.dist >= H.k && L.kind !== 'fall' && G.hist.length > TPS) {
+      if (!reducedMotion() && !G.stream && !G.ext?.noSlowmo && L.dist >= H.k && L.kind !== 'fall' && G.hist.length > TPS) {
         const to = G.hist.length - 1;
         G.slow = { from: Math.max(0, to - Math.round(1.4 * TPS)), to: to + Math.round(0.25 * TPS), pos: Math.max(0, to - Math.round(1.4 * TPS)) };
         G.state = 'slowmo';
@@ -512,11 +599,66 @@ function updateHud(v) {
 /*  Konec skoka: točke, shranjevanje, hub                                */
 /* ===================================================================== */
 
+/** Skok pod nadzorom tekme je končan (ali diskvalificiran/preskočen): vrni rezultat klicatelju (match.js). */
+function extFinish(out) {
+  const X = G.ext;
+  if (!X || X.done) return;
+  X.done = true;
+  showLight(false); hint('');
+  G.state = 'result';
+  X.resolve({ status: 'ok', ...out, changes: G.stream ? G.stream.full() : G.rec.changes, hist: G.hist });
+}
+
+/** Statistika, naloge, dosežki in odklepi za MOJ skok (trening, rekord, dnevni, tekma). */
+function myJumpProgress(Hd, s, L, res, judges) {
+  stats.jumps = (stats.jumps || 0) + 1;
+  if (res.fall) stats.falls = (stats.falls || 0) + 1;
+  else if (G.hintsOn) { stats.hints = (stats.hints || 0) + 1; if (stats.hints >= 3) G.hintsOn = false; }
+  if (!res.fall && L.dist >= Hd.k) stats.overK = { ...(stats.overK || {}), [Hd.id]: true };
+  saveStats();
+  if (!res.fall) hub.reportEvent('skoki:skok', 1);
+  if (L.dist >= Hd.k) hub.reportEvent('skoki:k', 1);
+  if (!res.fall && L.dist >= Hd.hs) hub.reportEvent('skoki:hs', 1);
+  hub.reportEvent('skoki:tocke', Math.round(res.total));
+  if (L.type === 'tele') hub.reportEvent('skoki:telemark', 1);
+  if (Hd.k >= 170 && L.dist >= Hd.k) hub.reportEvent('skoki:letalnica', 1);
+  const ach = ['prvi-skok'];
+  if (L.dist >= Hd.k) ach.push('k-tocka');
+  if (!res.fall && L.dist >= Hd.hs) ach.push('hs');
+  if (s.takeoff?.perfect) ach.push('popoln-odriv');
+  if (judges.filter(j => j >= 19).length >= 4) ach.push('telemark-19');
+  if (res.fall) ach.push('snezni-angel');
+  if (['brezova', 'bistra', 'orlova'].every(id => stats.overK?.[id])) ach.push('vse-tri');
+  if (!res.fall && L.dist < Hd.k / 2) ach.push('zavora');
+  if (!res.fall && L.dist >= Hd.k && L.windAvg <= -2) ach.push('veter-v-hrbet');
+  if (stats.jumps >= 100) ach.push('stotica');
+  if (L.dist >= 200) ach.push('letalec');
+  if (Hd.k >= 170 && !res.fall && L.dist >= Hd.hs) ach.push('orlovo-gnezdo');
+  if (Hd.physics?.noAir) ach.push('luna');
+  // odklepi skakalnic
+  for (const d of unlocksBy(HILLS.map(h => h.def), { hill: Hd, dist: L.dist, fall: res.fall })) {
+    if (!unlocked.has(unlockKey(d.id))) { ach.push(unlockKey(d.id)); setTimeout(() => ui.toast('Odklenjena skakalnica: ' + d.name, { icon: '🔓', duration: 4000 }), 1500); }
+  }
+  for (const k of ach) unlock(k);
+}
+
 async function finishJump() {
   const Hd = hillOf(G.hillId).def;
   const s = G.J.s, L = s.landing;
-  const judges = judgeScores(s, P, (G.wind.seed ^ s.tick) >>> 0);
-  const res = scoreJump(Hd, { dist: L.dist, judges, wind: L.windAvg, gate: G.gate });
+  if (G.ext) {
+    const X = G.ext;
+    const res = resultOf(s, Hd, P, { gate: G.gate, refGate: X.refGate, judgeSeed: X.judgeSeed, teleOnly: !!X.teleOnly });
+    G.lastJump = { res, changes: G.stream ? G.stream.full() : G.rec.changes, wind: G.wind, gate: G.gate, hill: Hd.id, hist: G.hist, s: structuredClone(s) };
+    if (X.mine) myJumpProgress(Hd, s, L, res, res.judges);
+    if (!G.landShown) showBig();
+    await sleep(X.holdMs ?? 900);
+    extFinish({ res });
+    return;
+  }
+  let res;
+  if (G.mode === 'daily') res = resultOf(s, Hd, P, { gate: G.gate, refGate: G.daily.refGate, judgeSeed: (G.wind.seed ^ s.tick) >>> 0, teleOnly: !!G.daily.cond.mods.teleOnly });
+  else res = scoreJump(Hd, { dist: L.dist, judges: judgeScores(s, P, (G.wind.seed ^ s.tick) >>> 0), wind: L.windAvg, gate: G.gate });
+  const judges = res.judges;
   res.type = L.type; res.fall = L.type === 'fall'; res.speed = s.tableSpeed; res.takeoff = s.takeoff;
   const jump = { hill: Hd.id, dist: L.dist, total: res.total, fall: res.fall, mode: G.mode };
   G.session.jumps.push(jump);
@@ -530,38 +672,13 @@ async function finishJump() {
   const isPb = G.mode === 'record' && !res.fall && better(res, prev);
   if (isPb && ghostData.length < GHOST_MAX) S.save(bestKey(Hd.id), { total: res.total, dist: L.dist, data: ghostData, pv: P.paramsVersion, at: Date.now() });
 
-  // statistika in namigi
-  stats.jumps = (stats.jumps || 0) + 1;
-  if (res.fall) stats.falls = (stats.falls || 0) + 1;
-  else if (G.hintsOn) { stats.hints = (stats.hints || 0) + 1; if (stats.hints >= 3) G.hintsOn = false; }
-  if (!res.fall && L.dist >= Hd.k) stats.overK = { ...(stats.overK || {}), [Hd.id]: true };
-  saveStats();
-
-  // dogodki za naloge
-  if (!res.fall) hub.reportEvent('skoki:skok', 1);
-  if (L.dist >= Hd.k) hub.reportEvent('skoki:k', 1);
-  if (!res.fall && L.dist >= Hd.hs) hub.reportEvent('skoki:hs', 1);
-  hub.reportEvent('skoki:tocke', Math.round(res.total));
-  if (L.type === 'tele') hub.reportEvent('skoki:telemark', 1);
-
-  // dosežki
-  const ach = [];
-  ach.push('prvi-skok');
-  if (L.dist >= Hd.k) ach.push('k-tocka');
-  if (!res.fall && L.dist >= Hd.hs) ach.push('hs');
-  if (s.takeoff?.perfect) ach.push('popoln-odriv');
-  if (judges.filter(j => j >= 19).length >= 4) ach.push('telemark-19');
-  if (res.fall) ach.push('snezni-angel');
-  if (HILLS.every(h => stats.overK?.[h.def.id])) ach.push('vse-tri');
-  if (!res.fall && L.dist < Hd.k / 2) ach.push('zavora');
-  if (!res.fall && L.dist >= Hd.k && L.windAvg <= -2) ach.push('veter-v-hrbet');
-  if (stats.jumps >= 100) ach.push('stotica');
-  for (const k of ach) unlock(k);
+  myJumpProgress(Hd, s, L, res, judges);
 
   // XP za skok čez HS (enkrat na skakalnico na sejo)
   if (!res.fall && L.dist >= Hd.hs && !G.session.xpHs[Hd.id]) { G.session.xpHs[Hd.id] = true; hub.awardXp(10, 'skoki: čez HS'); }
 
-  if (G.mode === 'record') {
+  if (G.mode === 'daily') await dailyAfterJump(res, ghostData);
+  else if (G.mode === 'record') {
     G.record.tries.push({ ...res, ghost: ghostData });
     if (!res.fall && better(res, G.record.best)) { G.record.best = { ...res, ghost: ghostData }; G.record.bestIdx = G.record.tries.length - 1; }
     if (G.record.tries.length >= 3) await finishRecord();
@@ -615,7 +732,7 @@ function showResult(res, isPb) {
   const tries = rec ? `<div class="sk-tries">${rec.tries.map((t, i) => `<span class="${i === rec.bestIdx ? 'best' : ''}">${i + 1}. ${fmtDist(t.dist)} · ${fmt1(t.total)} t</span>`).join('')}</div>` : '';
   const done = rec?.done;
   el.innerHTML = `
-    <div class="sk-card__head"><b>${esc(Hd.name)} · K${Hd.k}</b><span>${G.mode === 'record' ? `Skok ${rec.tries.length}/3` : 'Trening'}</span></div>
+    <div class="sk-card__head"><b>${esc(Hd.name)} · K${Hd.k}</b><span>${G.mode === 'record' ? `Skok ${rec.tries.length}/3` : G.mode === 'daily' ? esc(G.daily.cond.icon + ' ' + G.daily.cond.name) : 'Trening'}</span></div>
     <div class="sk-card__body"><table><tbody>
       <tr><td>Daljava <b>${fmtDist(res.dist)}</b>${isPb ? ' 🏅' : ''}</td><td>${fmtPts(res.distPts)}</td></tr>
       <tr><td colspan="2"><div class="sk-row" style="justify-content:space-between"><span>Sodniki</span><span class="sk-judges">${res.judges.map((j, i) => `<i class="${res.dropped.includes(i) ? 'x' : ''}">${fmt1(j)}</i>`).join('')}</span></div></td></tr>
@@ -626,14 +743,21 @@ function showResult(res, isPb) {
     </tbody></table></div>
     <div class="sk-card__rank">${res.speed ? 'Hitrost na mizi ' + fmt1(res.speed) + ' km/h · ' : ''}${res.takeoff?.perfect ? '✨ popoln odriv · ' : ''}${rankText(res)}</div>
     ${tries}
+    ${G.mode === 'daily' ? dailyCardLine() : ''}
     ${done ? (done.none ? `<div class="sk-card__rank">🏁 Vsi trije skoki s padcem — ni veljavnega rekorda. +${done.xp} XP</div>` : `<div class="sk-card__rank">🏁 Rekord: <b>${fmtDist(rec.best.dist)}</b> (${fmt1(rec.best.total)} t) → lestvica. ${done.newPb ? '<b style="color:var(--mg-green)">Nov osebni rekord!</b>' : ''} +${done.xp} XP</div>`) : ''}
     <div class="sk-card__btns">
       ${rec && done ? `<button class="mg-btn mg-btn--pink" data-a="again">Nov poskus (R)</button>` : `<button class="mg-btn mg-btn--primary" data-a="next">${rec ? 'Naslednji skok' : 'Nov skok'} (R)</button>`}
       <button class="mg-btn" data-a="replay">Replay (Enter)</button>
+      ${G.mode === 'daily' ? '<button class="mg-btn mg-btn--ghost" data-a="daily">Lestvica dneva</button>' : ''}
       <button class="mg-btn mg-btn--ghost" data-a="menu">Meni</button>
     </div>`;
   el.classList.remove('mg-hidden');
   el.querySelectorAll('[data-a]').forEach(b => b.onclick = e => { e.stopPropagation(); action(b.dataset.a); });
+}
+function dailyCardLine() {
+  const st = dailyState();
+  const left = DAILY_TRIES - st.used;
+  return `<div class="sk-card__rank">📅 Najboljši danes: <b>${st.best ? fmt1(st.best.total) + ' t' : '—'}</b> · ${left > 0 ? 'ostali poskusi: ' + left : st.reported ? 'izziv opravljen (+20 XP) — naprej je trening' : 'poskusi porabljeni'}</div>`;
 }
 function hideResult() { $('#card').classList.add('mg-hidden'); }
 
@@ -643,6 +767,150 @@ function action(a) {
   else if (a === 'again') { G.record = { tries: [], best: null }; newJump(); }
   else if (a === 'replay') startReplay();
   else if (a === 'menu') { hideResult(); showMenu(); }
+  else if (a === 'daily') { hideResult(); startDaily(); }
+}
+
+/* ===================================================================== */
+/*  Dnevni izziv                                                         */
+/* ===================================================================== */
+
+const dailyKey = () => 'skoki:daily:' + (hub.userId || 'anon');
+const dailyLevel = day => 'd-' + day.replace(/-/g, '');
+function dailyConfig() {
+  const day = hub.dailySeed();
+  if (G.daily?.seed === day) return G.daily;
+  const pick = dailyPick(day, HILLS.map(h => h.def), sd => hub.rng(sd));
+  const H = hillOf(pick.hill);
+  let theme = null;
+  if (pick.cond.id === 'noc' && !H.def.theme.spotlights) {
+    theme = { ...H.def.theme, id: H.def.theme.id + '-noc', sky: { ...H.def.theme.sky, zenith: '#03061a', horizon: '#1b2550', ground: '#10142a', sunColor: '#9fb6ff', stars: 0.7, clouds: 0.1 },
+      fog: { color: '#1c2448', density: 0.004 }, sunIntensity: 0.55, hemi: ['#4a5a9a', '#141828', 0.42], bloom: [0.85, 0.5, 0.78], spotlights: 8, phoneLights: 1 };
+  } else if (pick.cond.id === 'sneg') {
+    theme = { ...H.def.theme, id: H.def.theme.id + '-sneg', snowfall: 0.9, fog: { ...H.def.theme.fog, density: H.def.theme.fog.density * pick.cond.mods.fog }, sky: { ...H.def.theme.sky, clouds: 0.9 } };
+  }
+  G.daily = { ...pick, theme, ghosts: [] };
+  return G.daily;
+}
+function dailyState() {
+  const day = hub.dailySeed();
+  const st = S.load(dailyKey(), null);
+  const base = { day, used: 0, best: null, reported: false, done: st?.done || [] };
+  return st && st.day === day ? { ...base, ...st } : base;
+}
+const saveDaily = st => S.save(dailyKey(), st);
+function dailyLine() {
+  try {
+    const D = dailyConfig(), st = dailyState();
+    const H = hillOf(D.hill).def;
+    return `${D.cond.icon} ${H.name} · ${D.cond.name} · ${st.used >= DAILY_TRIES ? 'opravljeno' : (DAILY_TRIES - st.used) + ' poskusi'}`;
+  } catch { return 'Ista skakalnica in veter za vse.'; }
+}
+function dailyHud() {
+  const st = dailyState();
+  return st.used >= DAILY_TRIES && !G.dailyTry ? 'Dnevni izziv · trening (ne šteje)' : `Dnevni izziv · poskus ${Math.min(DAILY_TRIES, st.used + (G.dailyTry ? 0 : 1))}/${DAILY_TRIES}`;
+}
+/** Poskus se porabi ob štartu (zelena luč), ne ob odprtju igre. */
+function dailyUseTry() {
+  const st = dailyState();
+  if (st.used >= DAILY_TRIES) { G.dailyTry = null; return; }
+  st.used++; saveDaily(st);
+  G.dailyTry = st.used;
+  $('#hudMode').textContent = `Dnevni izziv · poskus ${st.used}/${DAILY_TRIES}`;
+}
+
+async function dailyAfterJump(res, ghostData) {
+  const D = G.daily;
+  const tryNo = G.dailyTry; G.dailyTry = null;
+  if (!tryNo) return;   // trening po porabljenih poskusih
+  const st = dailyState();
+  const enc = Math.round(res.total * 10);
+  if (!st.best || res.total > st.best.total) {
+    st.best = { total: res.total, dist: res.dist, fall: res.fall };
+    saveDaily(st);
+    await hub.submitScore(enc, { seed: D.seed, meta: { hill: D.hill, dist: res.dist, cond: D.cond.id } });
+    if (ghostData.length < GHOST_MAX) await hub.saveGhost({ level: dailyLevel(D.seed), timeMs: encodeBoard(res.total, res.dist), data: ghostData, order: 'desc' });
+  }
+  if (st.used >= DAILY_TRIES && !st.reported) await dailyReport(st);
+}
+
+/** Konec dneva za igralca: hub (kovanci, niz, naloge »daily:skoki«), XP, dosežek 7 dni zapored. */
+async function dailyReport(st) {
+  st.reported = true;
+  const day = hub.dailySeed();
+  st.done = [...new Set([...(st.done || []), day])].sort().slice(-30);
+  saveDaily(st);
+  await hub.reportGame({ won: false, players: 1, score: Math.round(st.best?.total || 0), daily: true });
+  G.lastReport = Date.now();
+  hub.awardXp(20, 'skoki: dnevni izziv');
+  // 7 dni zapored (po ljubljanskih datumih)
+  let n = 0;
+  for (let i = 0; i < 7; i++) { const d = hub.dailySeed(new Date(Date.now() - i * 86400000)); if (st.done.includes(d)) n++; else break; }
+  if (n >= 7) unlock('dnevni-7');
+}
+
+let dailyTimer = 0;
+async function startDaily() {
+  const D = dailyConfig();
+  const H = hillOf(D.hill).def;
+  const st = dailyState();
+  clearInterval(dailyTimer);
+  document.body.classList.remove('sk-playing');
+  $('#play').classList.add('mg-hidden');
+  $('#menu').classList.remove('mg-hidden');
+  G.state = 'menu';
+  const left = DAILY_TRIES - st.used;
+  const fmtLeft = () => { const ms = msToMidnight(); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s2 = Math.floor(ms / 1000) % 60; return `${h} h ${String(m).padStart(2, '0')} min ${String(s2).padStart(2, '0')} s`; };
+  $('#menu').innerHTML = `<div class="mg-stack">
+    <div class="sk-hero"><div class="sk-hero__icon" aria-hidden="true">📅</div>
+      <div><h1 class="mg-title">Dnevni izziv</h1><p class="mg-muted">Ista skakalnica, isti veter in isti pogoj za vse. Trije poskusi, šteje najboljši.</p></div></div>
+    <div class="mg-grid mg-grid--2">
+      <div class="mg-card mg-stack">
+        <h2 class="mg-title">${esc(H.name)} · K${H.k} / HS${H.hs}</h2>
+        <div class="sk-daily">
+          <div><span class="mg-muted mg-small">Pogoj dneva</span><b>${D.cond.icon} ${esc(D.cond.name)}</b><span class="mg-small">${esc(D.cond.desc)}</span></div>
+          <div><span class="mg-muted mg-small">Veter dneva</span><b>${H.physics?.noAir ? 'brez zraka' : sign(D.windMean) + ' m/s'}</b><span class="mg-small">${D.mods.gust ? 'močni sunki' : 'z rahlimi sunki'}</span></div>
+          <div><span class="mg-muted mg-small">Zaletno mesto</span><b>${D.gate}</b><span class="mg-small">ref. ${D.refGate}</span></div>
+          <div><span class="mg-muted mg-small">Poskusi</span><b class="sk-tries-left">${'●'.repeat(Math.max(0, left))}${'○'.repeat(DAILY_TRIES - Math.max(0, left))}</b><span class="mg-small">${left > 0 ? 'ostali še ' + left : 'porabljeni'}</span></div>
+        </div>
+        <p class="sk-note">Najboljši danes: <b>${st.best ? fmt1(st.best.total) + ' t · ' + fmtDist(st.best.dist) : '—'}</b> · do polnoči še <b id="dLeft">${fmtLeft()}</b></p>
+        <div class="sk-ghostsel" id="dGhosts">Nalagam ghosta vodilnega …</div>
+        <button class="mg-btn ${left > 0 ? 'mg-btn--pink' : 'mg-btn--ghost'} mg-btn--big mg-btn--block" id="dGo" ${isOpen(H, unlocked) || true ? '' : 'disabled'}>${left > 0 ? `Skoči (poskus ${st.used + 1}/${DAILY_TRIES})` : 'Trening na skakalnici dneva (ne šteje)'}</button>
+        <button class="mg-btn mg-btn--ghost" id="dBack">← Meni</button>
+      </div>
+      <div class="mg-card" id="dBoard"></div>
+    </div></div>`;
+  dailyTimer = setInterval(() => { const el = $('#dLeft'); if (!el) { clearInterval(dailyTimer); return; } el.textContent = fmtLeft(); if (msToMidnight() < 1500) { clearInterval(dailyTimer); setTimeout(startDaily, 2500); } }, 1000);
+  $('#dBack').onclick = () => { clearInterval(dailyTimer); showMenu(); };
+  $('#dGo').onclick = () => { clearInterval(dailyTimer); audio.unlock(); startSession(D.hill, 'daily'); };
+  ui.leaderboard($('#dBoard'), {
+    title: 'Lestvica dneva', format: v => fmt1(v / 10) + ' t',
+    tabs: [{ label: 'Danes', seed: D.seed, period: 'today' }],
+    onRow: row => dailyFriendGhost(row), rowHint: () => ' 👻',
+  });
+  // ghost vodilnega dneva
+  try {
+    const top = await hub.getGhosts({ level: dailyLevel(D.seed), order: 'desc', limit: 1 });
+    if (top?.[0] && top[0].user_id !== hub.userId) await dailyFriendGhost({ user_id: top[0].user_id, nickname: top[0].nickname }, true);
+  } catch (e) { console.warn(e); }
+  renderDailyGhosts();
+}
+function renderDailyGhosts() {
+  const el = $('#dGhosts'); if (!el) return;
+  const list = G.daily.ghosts || [];
+  el.innerHTML = list.length ? list.map((o, i) => `<label class="mg-check"><input type="checkbox" data-dg="${i}" ${o.on ? 'checked' : ''}> 👻 ${esc(o.name)} (${fmtDist(o.g.dist)})</label>`).join('') : 'Še ni ghosta vodilnega. Klikni vrstico na lestvici dneva za ghosta prijatelja.';
+  el.querySelectorAll('[data-dg]').forEach(c => c.onchange = () => { list[+c.dataset.dg].on = c.checked; });
+}
+async function dailyFriendGhost(row, leader = false) {
+  const D = G.daily;
+  const g = await hub.getGhost({ level: dailyLevel(D.seed), userId: row.user_id });
+  if (!g?.data) { if (!leader) ui.toast('Ta igralec še nima posnetka skoka.', { icon: '👻' }); return; }
+  try {
+    const gh = decodeGhost(g.data);
+    if (gh.pv !== P.paramsVersion || gh.hill !== D.hill) throw new Error('napačen ghost');
+    D.ghosts = (D.ghosts || []).filter(o => o.userId !== row.user_id).slice(-2);
+    D.ghosts.push({ g: gh, name: (leader ? 'Vodilni: ' : '') + (row.nickname || '???'), userId: row.user_id, on: true });
+    renderDailyGhosts();
+  } catch (e) { console.warn(e); }
 }
 
 /* ===================================================================== */
@@ -674,6 +942,7 @@ function stopReplay() {
 function onAction(a) {
   audio.unlock();
   if (G.state === 'menu') return;
+  if (G.ext) { if (a === 'press' && G.state === 'gate' && !G.bot && !G.stream) startJump(); return; }
   if (a === 'pause') { if (G.state === 'replay') stopReplay(); else togglePause(); return; }
   if (G.paused) { if (a === 'press') return; }
   if (a === 'press') {
@@ -691,6 +960,7 @@ function onAction(a) {
 }
 
 function togglePause(force) {
+  if (G.ext) return;   // tekma ne čaka (drugi gledajo)
   const on = force ?? !G.paused;
   if (on === G.paused) return;
   if (on && !['gate', 'jump', 'slowmo'].includes(G.state)) return;
@@ -741,12 +1011,21 @@ function currentView() {
 }
 
 function loop(now) {
-  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000)) * (dbgApi.timeScale || 1);
   last = now;
   if (G.state !== 'menu' && renderer) {
     if (!G.paused) {
       if (G.state === 'gate') updateGate(dt);
-      else if (G.state === 'jump' || (G.state === 'result' && !G.J.done)) G.alpha = clock.advance(dt, tick);
+      else if (G.stream && (G.state === 'jump' || (G.state === 'result' && !G.J.done))) {
+        // gledalec: toliko tickov, kot jih dovoli vmesni pomnilnik (ustavi se, če paketov ni)
+        const a = G.stream.advance(dt * (G.ext?.speed || 1));
+        let n = 0;
+        for (; n < a.n && !G.J.done; n++) if (!tick()) break;
+        G.alpha = 0;
+        const st = a.stalled || G.stall;
+        if (st !== G.shownStall) { G.shownStall = st; hint(st ? '… čakam na podatke' : ''); }
+      }
+      else if (G.state === 'jump' || (G.state === 'result' && !G.J.done)) G.alpha = clock.advance(dt * (G.ext?.speed || 1), tick);
       else if (G.state === 'result') G.alpha = 1;
       else if (G.state === 'slowmo') {
         G.slow.pos += dt * TPS * 0.3;
@@ -812,6 +1091,9 @@ const dbgApi = {
     return J;
   },
   setHook(h) { dbgHook = h; },
+  unlock: k => unlock(k),
+  /** Testiranje: pospeši čas zanke (semafor, replay v živo). */
+  timeScale: 1,
   bestKey,
   /** Testiranje: semafor takoj zelen. */
   skipRed() { if (G.state === 'gate') G.gateT = Math.max(G.gateT, RED_TIME + 0.01); },
@@ -857,12 +1139,45 @@ for (const { def } of HILLS) {
   if (!cur || old.total > cur.total) S.save(bestKey(def.id), old);
   S.remove('skoki:best:' + def.id);
 }
+if (DEBUG || URLP.get('test') === '1') window.__skoki = dbgApi;   // ?test=1: razvojni most brez strani z drsniki
 if (DEBUG) {
-  window.__skoki = dbgApi;
   document.body.classList.add('sk-dbg');
   const m = await import('./debug.js');
   m.initDebug(dbgApi, $('#debug'));
 }
+// tekma (lobby, TV, lokalna tekma, moji skakalci) — match.js uporablja ta »motor skoka«
+const engine = {
+  get P() { return P; }, hills: () => HILLS, groups: () => GROUPS, hillOf, hillOpen, unlocked, unlock, audio, settings,
+  isTouch: IS_TOUCH, showMenu, renderMenu,
+  /**
+   * Skok pod nadzorom tekme. Vrne obljubo { status: 'ok'|'dsq'|'skip'|'abort', res, changes, hist }.
+   * o: { hillId, gate, refGate, wind, mods, teleOnly, judgeSeed, source: 'me'|'bot'|'stream', bot: { skill, style, seed },
+   *      stream: createReceiver(), speed, onInput(tick, [btn, pitch×2]), onStart(), startLimit, relaxed, mine,
+   *      skin, label, whoHtml, recordLine, recordLabel, noSlowmo, holdMs }
+   */
+  async jump(o) {
+    if (G.ext && !G.ext.done) engine.abort();
+    G.mode = 'ext'; G.record = null;
+    await enterPlay(o.hillId, { skin: o.skin, theme: o.theme });
+    return new Promise(resolve => { G.ext = { ...o, resolve, done: false }; G.paused = false; $('#overlay').classList.add('mg-hidden'); newJump(); });
+  },
+  /** Prekini skok (npr. host je preskočil skakalca). */
+  abort() { const X = G.ext; if (X && !X.done) { X.done = true; X.resolve({ status: 'abort' }); } },
+  /** Replay zadnjega skoka (zgodovina) ali iz danega zapisa. */
+  replay(hist) { startReplay(hist || G.lastJump?.hist); },
+  get state() { return G.state; },
+  get playing() { return !!G.ext && !G.ext.done; },
+  renderer: () => renderer,
+  /** Pogled TV: širša kamera. */
+  setWide(on) { if (renderer) renderer.wide = on; },
+};
+let matchApi = null;
+try {
+  const M = await import('./match.js');
+  matchApi = M.initMatch(engine);
+} catch (e) { console.error('match.js:', e); }
+
 const startHill = URLP.get('hill');
-if (startHill && hillOf(startHill)) { G.hillId = startHill; startSession(startHill, 'train'); }
+if (hub.roomFromUrl() && matchApi) matchApi.joinFromUrl();
+else if (startHill && hillOf(startHill) && hillOpen(startHill)) { G.hillId = startHill; startSession(startHill, 'train'); }
 else showMenu();

@@ -1,0 +1,95 @@
+{
+  "id": "reflektor",
+  "name": "Reflektor",
+  "size": "velika",
+  "group": "trening",
+  "k": 120,
+  "hs": 134,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.37,
+    "tail": 12.55
+  },
+  "gateFactor": 6.3,
+  "gates": {
+    "count": 24,
+    "default": 13,
+    "spacing": 1.1
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 100,
+    "t": 6.4,
+    "e2": 34.5
+  },
+  "landing": {
+    "s": 3.1,
+    "b0": 5,
+    "beta": 35,
+    "pArc": 96,
+    "lArc": 136,
+    "r2": 100,
+    "outrunAngle": 1.5,
+    "outrunLength": 95
+  },
+  "unlock": {
+    "hill": "orlova",
+    "over": "k"
+  },
+  "theme": {
+    "id": "reflektor-noc",
+    "label": "Nočna tekma pod reflektorji",
+    "sky": {
+      "sun": [
+        200,
+        32
+      ],
+      "zenith": "#03061a",
+      "horizon": "#1b2550",
+      "ground": "#10142a",
+      "sunColor": "#9fb6ff",
+      "clouds": 0.15,
+      "stars": 0.7
+    },
+    "fog": {
+      "color": "#1c2448",
+      "density": 0.0042
+    },
+    "sunIntensity": 0.55,
+    "hemi": [
+      "#4a5a9a",
+      "#141828",
+      0.42
+    ],
+    "bloom": [
+      0.85,
+      0.5,
+      0.78
+    ],
+    "grade": {
+      "tint": [
+        0.95,
+        0.98,
+        1.08
+      ],
+      "sat": 1.05,
+      "vignette": 0.42
+    },
+    "env": "noc",
+    "trees": 0.8,
+    "crowd": 1.1,
+    "snowfall": 0.4,
+    "mountains": 0.7,
+    "spotlights": 8,
+    "phoneLights": 1,
+    "boards": [
+      "MINI GAMES",
+      "Reflektor · Nočna",
+      "Rušilec",
+      "Svetlo naprej"
+    ]
+  },
+  "desc": "Nočna skakalnica pod reflektorji. Sneg se sveti v žarkih, publika maha z lučkami telefonov."
+}
