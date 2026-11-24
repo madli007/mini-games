@@ -901,8 +901,9 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
   v `skoki_ghosts`, +40 XP, `report_game`); `?igralec=2` vidi »TestSkoki1 66,0 m · 125,3 t« na lestvici, klik naloži
   njegovega ghosta v trening. Popravek: dosežki se ne vpisujejo ponovno (prej 409 v konzoli ob vsakem skoku).
 - Testna profila (TestSkoki1/2) in vsi njuni podatki so izbrisani (`auth.users` → kaskadno); baza je kot pred testom.
-- Znano: lokalni najboljši skok (`skoki:best:<id>`) je na brskalnik, ne na profil — z `?igralec=2` v istem brskalniku je
-  »Moj rekord« ghost prvega igralca.
+- Popravek (po testu): lokalni najboljši skok je bil na brskalnik, ne na profil (z `?igralec=2` je bil »Moj rekord«
+  ghost prvega igralca, prav tako zelena črta, 🏅 v meniju in »Osebni rekord!«). Zdaj `skoki:best:<userId>:<id>`; stari
+  ključi se ob prvem zagonu preselijo k trenutnemu profilu. Preverjeno offline z dvema identitetama v istem brskalniku.
 
 ## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
 

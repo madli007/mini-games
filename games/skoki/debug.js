@@ -164,7 +164,7 @@ export function initDebug(api, root) {
     history.forEach((h, i) => line(h.trace, `rgba(255,255,255,${0.15 + i * 0.12})`));
     // ghost (moj najboljši) kot črtkana črta
     if (!G._dbgGhostTrace && G.hillId) {
-      const best = S.load('skoki:best:' + G.hillId, null);
+      const best = S.load(api.bestKey(G.hillId), null);
       if (best?.data) try {
         const gh = decodeGhost(best.data);
         const r = ghostJump(gh, H, api.P, 2);

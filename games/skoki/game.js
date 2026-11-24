@@ -57,7 +57,9 @@ const settings = { ...DEF_SETTINGS, ...S.load('skoki:settings', {}) };
 const saveSettings = () => S.save('skoki:settings', settings);
 const stats = S.load('skoki:stats', { jumps: 0, falls: 0, overK: {}, hints: 0 });
 const saveStats = () => S.save('skoki:stats', stats);
-const localBest = id => S.load('skoki:best:' + id, null);
+// lokalni najboljši skok (ghost) na skakalnico — vezan na profil, da si ga dva profila v istem brskalniku ne delita
+const bestKey = id => 'skoki:best:' + (hub.userId || 'anon') + ':' + id;
+const localBest = id => S.load(bestKey(id), null);
 
 /* ------------------------------------------------------------ globalno */
 let P = null;             // parametri fizike
@@ -519,7 +521,7 @@ async function finishJump() {
   // lokalni najboljši skok (ghost) — po točkah
   const prev = localBest(Hd.id);
   const isPb = !res.fall && (!prev || res.total > prev.total);
-  if (isPb && ghostData.length < GHOST_MAX) S.save('skoki:best:' + Hd.id, { total: res.total, dist: L.dist, data: ghostData, pv: P.paramsVersion, at: Date.now() });
+  if (isPb && ghostData.length < GHOST_MAX) S.save(bestKey(Hd.id), { total: res.total, dist: L.dist, data: ghostData, pv: P.paramsVersion, at: Date.now() });
 
   // statistika in namigi
   stats.jumps = (stats.jumps || 0) + 1;
@@ -794,6 +796,7 @@ const dbgApi = {
     return J;
   },
   setHook(h) { dbgHook = h; },
+  bestKey,
   /** Testiranje: semafor takoj zelen. */
   skipRed() { if (G.state === 'gate') G.gateT = Math.max(G.gateT, RED_TIME + 0.01); },
   /** Testiranje: odigraj preostanek skoka takoj (ista pot kot zanka: tick → dogodki → konec). */
@@ -829,6 +832,14 @@ try {
   console.error(e);
   $('#menu').innerHTML = '<div class="mg-empty">Skakalnic ni bilo mogoče naložiti.</div>';
   throw e;
+}
+// enkratna selitev: stari rekordi brez profila (skoki:best:<id>) pripadejo prvemu profilu, ki igro odpre
+for (const { def } of HILLS) {
+  const old = S.load('skoki:best:' + def.id, null);
+  if (!old) continue;
+  const cur = localBest(def.id);
+  if (!cur || old.total > cur.total) S.save(bestKey(def.id), old);
+  S.remove('skoki:best:' + def.id);
 }
 if (DEBUG) {
   window.__skoki = dbgApi;

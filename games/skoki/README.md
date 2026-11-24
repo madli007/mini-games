@@ -96,7 +96,7 @@ dodaj vrstico v `skoki_hills` z `maxPoints(def)` (test preveri).
 
 `{ pv, hill, gate, wind: { mode, seed, speed }, ticks, dist, total, changes: [[tick, btn, pitch×2], …] }` — zapisane so le
 spremembe vnosa, varint + zigzag → base64 (tipično 0,3–1,5 KB, meja 4 KB). Predvajanje = nova simulacija z istimi vnosi.
-Lokalno se vedno shrani najboljši skok (po točkah) na skakalnico (`skoki:best:<id>`); »Rekord skakalnice« shrani najboljši
+Lokalno se vedno shrani najboljši skok (po točkah) na skakalnico in profil (`skoki:best:<userId>:<id>`; stari ključi brez profila se ob prvem zagonu preselijo k trenutnemu profilu); »Rekord skakalnice« shrani najboljši
 skok tudi prek `hub.saveGhost({ level, timeMs: encodeBoard(...), data, order: 'desc' })` (Supabase: `skoki_ghosts`).
 Ghost prijatelja: klik na vrstico lestvice v meniju.
 
