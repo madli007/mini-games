@@ -222,31 +222,42 @@ export function buildWorld(hill, q) {
     const tg = ribbon(inPts.map(p => ({ ...p, y: p.y + 0.01 })), () => 0.75);
     const trackM = new THREE.MeshStandardMaterial({ color: '#f2f6fb', map: tex, roughness: 0.55, metalness: 0.0, envMapIntensity: 0.5 });
     const track = new THREE.Mesh(tg, trackM); track.receiveShadow = true; group.add(track);
-    // krov (siv beton/les) pod smučino
-    const deck = ribbon(inPts.map(p => ({ ...p, y: p.y - 0.02 })), () => 2.4);
-    const dm = new THREE.MeshStandardMaterial({ color: '#5d6470', roughness: 0.8, metalness: 0.2 });
-    const dMesh = new THREE.Mesh(deck, dm); dMesh.castShadow = true; dMesh.receiveShadow = true; group.add(dMesh);
-    const deckSide = ribbon(inPts.map(p => ({ ...p, y: p.y - 0.6 })), () => 2.4);
-    const ds = new THREE.Mesh(deckSide, new THREE.MeshStandardMaterial({ color: '#3a404a', roughness: 0.7, metalness: 0.5, side: THREE.DoubleSide }));
-    group.add(ds);
-    // ograja ob smučini (rdeče-bela) in rob mize
+    // krov: zaprt kvader (zgoraj, ob straneh, spodaj) vzdolž zaleta
+    {
+      const W = 2.4, Dp = 0.6, pos = [], idx = [];
+      inPts.forEach((p, i) => {
+        const y0 = p.y - 0.02, y1 = p.y - Dp;
+        // 0: zgoraj −z, 1: zgoraj +z, 2: spodaj +z, 3: spodaj −z
+        pos.push(p.x, y0, -W, p.x, y0, W, p.x, y1, W, p.x, y1, -W);
+        if (i) {
+          const o = (i - 1) * 4, n = i * 4;
+          const quad = (a0, a1) => idx.push(o + a0, n + a0, o + a1, o + a1, n + a0, n + a1);
+          quad(1, 0); quad(2, 1); quad(0, 3); quad(3, 2);
+        }
+      });
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+      const dMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#59606c', roughness: 0.75, metalness: 0.35, side: THREE.DoubleSide }));
+      dMesh.castShadow = true; dMesh.receiveShadow = true; group.add(dMesh);
+    }
+    // ograji: nizka ob smučini (±1,15) in višja na robu krova (±2,35)
     const railM = new THREE.MeshStandardMaterial({ color: '#d9dde3', roughness: 0.35, metalness: 0.8 });
-    for (const side of [-1, 1]) {
-      const pts = inPts.map(p => new V3(p.x, p.y + 0.95, side * 2.3));
+    const RAILS = [[-1.15, 0.55], [1.15, 0.55], [-2.35, 0.95], [2.35, 0.95]];
+    for (const [z, h] of RAILS) {
+      const pts = inPts.map(p => new V3(p.x, p.y + h, z));
       const curve = new THREE.CatmullRomCurve3(pts.filter((_, i) => i % 4 === 0));
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.04, 5, false), railM);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.035, 5, false), railM);
       tube.castShadow = true; group.add(tube);
     }
-    const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, 1, 0.06), railM, Math.ceil(inPts.length / 6) * 2 + 2);
-    let k = 0; const mtx = new THREE.Matrix4();
-    for (let i = 0; i < inPts.length; i += 6) for (const side of [-1, 1]) { mtx.makeTranslation(inPts[i].x, inPts[i].y + 0.45, side * 2.3); posts.setMatrixAt(k++, mtx); }
+    const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 1, 0.05), railM, (Math.ceil(inPts.length / 6) + 1) * RAILS.length);
+    let k = 0; const mtx = new THREE.Matrix4(), sc1 = new V3(), q1 = new THREE.Quaternion(), p1 = new V3();
+    for (let i = 0; i < inPts.length; i += 6) for (const [z, h] of RAILS) { p1.set(inPts[i].x, inPts[i].y + h / 2, z); sc1.set(1, h, 1); mtx.compose(p1, q1, sc1); posts.setMatrixAt(k++, mtx); }
     posts.count = k; group.add(posts);
-    // stopnice ob zaletu
-    const stepM = new THREE.MeshStandardMaterial({ color: '#6f7783', roughness: 0.6, metalness: 0.6 });
-    const steps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.32, 0.06, 0.9), stepM, inPts.length);
+    // stopnice na krovu ob smučini (bližnja stran, med ograjama)
+    const stepM = new THREE.MeshStandardMaterial({ color: '#7a828e', roughness: 0.6, metalness: 0.6 });
+    const steps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.16, 0.9), stepM, inPts.length);
     k = 0;
-    for (let i = 8; i < inPts.length; i++) { const p = inPts[i]; mtx.makeTranslation(p.x, p.y - 0.15, 3.1); steps.setMatrixAt(k++, mtx); }
-    steps.count = k; steps.castShadow = true; group.add(steps);
+    for (let i = 4; i < inPts.length; i++) { const p = inPts[i]; if (p.th < 0.3) continue; mtx.makeTranslation(p.x, p.y + 0.06, 1.75); steps.setMatrixAt(k++, mtx); }
+    steps.count = k; steps.castShadow = true; steps.receiveShadow = true; group.add(steps);
     // jeklena konstrukcija: stebri in diagonale (rešetka)
     const steel = new THREE.MeshStandardMaterial({ color: '#8a929e', roughness: 0.4, metalness: 0.85 });
     const beams = [];
@@ -294,20 +305,32 @@ export function buildWorld(hill, q) {
     group.add(cab);
   }
 
-  /* ---------------- zaletna mesta (prečke) */
+  /* ---------------- zaletna mesta: le prečka izbranega mesta (za skakalcem) + oštevilčene oznake ob ograji */
   const gateBars = [];
+  const markers = [];
   {
-    const gm = new THREE.MeshStandardMaterial({ color: '#f2f4f7', roughness: 0.4, metalness: 0.6 });
-    const gmA = new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb000', emissiveIntensity: 0.6, roughness: 0.4 });
     for (let gi = 1; gi <= hill.def.gates.count; gi++) {
       const p = hill.inrunAt(hill.gateD(gi));
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 2.8), gm);
-      bar.position.set(p.x, p.y + 0.55, 0);
-      bar.userData = { gm, gmA };
-      group.add(bar); gateBars.push(bar);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.26), new THREE.MeshBasicMaterial({ map: label(String(gi), { color: '#ffffff', bg: '#2b3140', w: 96, h: 64, font: 'bold 46px system-ui, sans-serif' }), toneMapped: false, side: THREE.DoubleSide }));
+      m.position.set(p.x, p.y + 0.72, -1.17);
+      m.userData.base = m.material;
+      m.userData.active = new THREE.MeshBasicMaterial({ map: label(String(gi), { color: '#14141e', bg: '#ffd23f', w: 96, h: 64, font: 'bold 46px system-ui, sans-serif' }), toneMapped: false, side: THREE.DoubleSide });
+      group.add(m); markers.push(m);
     }
   }
-  const setGate = g => gateBars.forEach((b, i) => { b.material = i === g - 1 ? b.userData.gmA : b.userData.gm; });
+  const gateBar = new THREE.Group();
+  {
+    const bm = new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb000', emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.4 });
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 8), bm); bar.rotation.x = Math.PI / 2; bar.position.y = 0.38;
+    gateBar.add(bar);
+    for (const z of [-1.15, 1.15]) { const st = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.06), bm); st.position.set(0, 0.2, z); gateBar.add(st); }
+    bar.castShadow = true; group.add(gateBar); gateBars.push(gateBar);
+  }
+  const setGate = g => {
+    const p = hill.inrunAt(hill.gateD(g) + 0.45);   // prečka je za skakalcem (višje po zaletu)
+    gateBar.position.set(p.x, p.y, 0); gateBar.rotation.set(0, 0, -p.theta);
+    markers.forEach((m, i) => { m.material = i === g - 1 ? m.userData.active : m.userData.base; });
+  };
 
   /* ---------------- iztečišče: ograja in reklamni panoji */
   {
