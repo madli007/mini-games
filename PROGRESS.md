@@ -905,6 +905,18 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
   ghost prvega igralca, prav tako zelena črta, 🏅 v meniju in »Osebni rekord!«). Zdaj `skoki:best:<userId>:<id>`; stari
   ključi se ob prvem zagonu preselijo k trenutnemu profilu. Preverjeno offline z dvema identitetama v istem brskalniku.
 
+## Popravki po igranju (24. 11. 2026)
+
+- **Kontrole samo z miško (kot pri klasičnih računalniških skokih):** odriv = dvoklik na koncu mize (šteje drugi klik,
+  okno `takeoff.dblWindow` 0,4 s), zalet brez držanja, telemark = dvoklik pred tlemi, en klik = dve nogi. Preslednica
+  in puščice ne upravljajo skoka; desni klik (meni brskalnika) onemogočen. Na telefonu dvojni tap. `paramsVersion` 2
+  (stari ghosti in lokalni rekordi ne veljajo). Bot in testi na dvoklik (+1 test), uravnoteženje praktično enako.
+- **Trening ne šteje rekordov** (lokalni rekord, 🏅, »Osebni rekord!« le v »Rekordu skakalnice«).
+- **Zvok:** zanke tišje (smuči, veter, publika), vzklik publike po pristanku izzveni (prej je »šumelo« naprej), v meniju
+  in v skritem zavihku tišina.
+- **Oznake:** črte daljave čez doskočišče prej niso bile vidne (trikotniki so bili obrnjeni navzdol) — popravljeno; dodani
+  P-točka, debelejši K in HS s količki in tablami na obeh straneh, barvni pasovi ob robovih območja pristanka.
+
 ## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
 
 - Tekma z več igralci, replay v živo, boti kot tekmeci, dnevni izziv, letalnica; svetovni pokal, kariera, trgovina z opremo

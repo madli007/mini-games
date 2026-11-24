@@ -6,18 +6,29 @@ Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Determi
 
 ## Kontrole
 
-| Faza | Miška | Tipkovnica | Telefon |
-|---|---|---|---|
-| Štart (zelena luč) | klik | preslednica | tap |
-| Zalet (nizka drža) | držanje | držanje preslednice | prst na zaslonu |
-| Odriv (konec mize) | spust | spust | dvig prsta |
-| Let (nagib) | premik gor (nazaj) / dol (naprej) | ↑/↓ ali W/S | vlečenje gor/dol (relativno na dotik), neobvezno nagib telefona |
-| Telemark | klik tik pred tlemi | pritisk preslednice | tap |
-| Dve nogi | držanje čez stik | držanje | mirno držanje prsta |
+Skok se upravlja **samo z miško** (na telefonu z dotikom), kot pri klasičnih računalniških skokih: dvoklik se zgodi
+med vodenjem nagiba, zato šteje tudi ravnotežje v tistem trenutku. Preslednica in puščice skoka ne upravljajo, desni
+gumb ni potreben (meni brskalnika je na igralni površini onemogočen).
 
-`R` = nov skok, `Enter` = replay, `Esc`/`P`/⏸ = pavza (tudi samodejno, ko zavihek ni viden).
+| Faza | Miška | Telefon |
+|---|---|---|
+| Štart (zelena luč) | klik | tap |
+| Zalet | — (skakalec se sam spusti v nizko držo) | — |
+| Odriv (konec mize) | **dvoklik** (šteje drugi klik, okno 0,4 s) | dvojni tap |
+| Let (nagib) | premik gor (nazaj) / dol (naprej) | vlečenje gor/dol (relativno na dotik), neobvezno nagib telefona |
+| Telemark | **dvoklik** tik pred tlemi (tajming = prvi klik) | dvojni tap |
+| Dve nogi | en klik | en tap |
+
+`R` = nov skok, `Enter` = replay, `Esc`/`P`/⏸ = pavza (tudi samodejno, ko zavihek ni viden; tedaj utihne tudi zvok).
 Merilnik desno pokaže napadni kot (bela črtica) in zeleno okno; rumena puščica je ciljni nagib (telo mu sledi z zamikom).
 Prvi trije uspešni skoki na napravi imajo namige na zaslonu.
+
+**Trening ne šteje rekordov:** lokalni rekord (ghost »Moj rekord«, zelena črta, 🏅 v meniju, »Osebni rekord!«) in
+lestvica se posodobijo le v »Rekordu skakalnice«.
+
+**Oznake na doskočišču:** črte vsakih 5 m (vsakih 10 m debelejše, s številkami ob obeh robovih), P-točka (zelena),
+K-točka (rdeča), HS (modra) — vse čez celo širino, s količki in tablami na obeh straneh; barvni pasovi ob robovih
+(P → K zelen, K → HS rdeč, za HS moder) in zelena črta tvojega rekorda.
 
 ## Moduli
 
@@ -43,7 +54,7 @@ spremeni skoke, ga povečaj (stari ghosti se potem ne predvajajo).
 
 - **Zalet** (`inrun`): 1D po profilu smučine: gravitacija, trenje (`mu`, tudi centripetalno v prehodu), zračni upor
   (`cdaCrouch` ob držanju, `cdaUp` brez), malo vpliva vetra. Vsako zaletno mesto ≈ 0,55–0,75 km/h.
-- **Odriv** (`takeoff`): napaka tajminga `err` (s, − = prezgodaj) → kakovost: ±25 ms ✨ (q = 1), ±60 ms dobro, nato do `minQ`.
+- **Odriv** (`takeoff`): dvoklik (`dblWindow`), napaka tajminga drugega klika `err` (s, − = prezgodaj) → kakovost: ±25 ms ✨ (q = 1), ±60 ms dobro, nato do `minQ`.
   Navpični impulz `vPush × q` pravokotno na mizo in vrtenje naprej (`spin`, prepozno še `spinLate × err`).
   Brez odriva čez rob = »padeš z mize« (šibek odriv po `lateLimit`).
 - **Let**: stanje (x, y, vx, vy, nagib, kotna hitrost). Relativni veter: čelni veter piha **vzdolž pobočja** (zato ima tudi
@@ -106,14 +117,15 @@ Brez vetra:
 
 | Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
 |---|---|---|---|---|---|---|---|---|
-| Brezova (K60/HS68) | 0.3 | 56.6 m | 2 % | 24 % | 0 % | 56 % | 104.7 | 70.7 km/h |
-| Brezova (K60/HS68) | 0.7 | 62.7 m | 0 % | 90 % | 0 % | 82 % | 120.4 | 70.8 km/h |
+| Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
+| Brezova (K60/HS68) | 0.3 | 56.9 m | 2 % | 30 % | 0 % | 56 % | 105.2 | 70.8 km/h |
+| Brezova (K60/HS68) | 0.7 | 62.9 m | 0 % | 90 % | 0 % | 82 % | 120.8 | 70.8 km/h |
 | Brezova (K60/HS68) | 1.0 | 65.3 m | 0 % | 100 % | 0 % | 100 % | 125.9 | 70.9 km/h |
-| Bistra (K95/HS106) | 0.3 | 85.2 m | 2 % | 12 % | 0 % | 60 % | 94.7 | 86.7 km/h |
-| Bistra (K95/HS106) | 0.7 | 98.0 m | 0 % | 86 % | 0 % | 80 % | 121.5 | 86.7 km/h |
+| Bistra (K95/HS106) | 0.3 | 85.7 m | 2 % | 16 % | 0 % | 60 % | 95.7 | 86.7 km/h |
+| Bistra (K95/HS106) | 0.7 | 98.3 m | 0 % | 86 % | 0 % | 80 % | 122.0 | 86.8 km/h |
 | Bistra (K95/HS106) | 1.0 | 102.9 m | 0 % | 100 % | 0 % | 100 % | 131.6 | 86.8 km/h |
-| Orlova (K125/HS140) | 0.3 | 107.1 m | 2 % | 12 % | 0 % | 60 % | 84.5 | 95.1 km/h |
-| Orlova (K125/HS140) | 0.7 | 128.3 m | 0 % | 78 % | 0 % | 80 % | 122.0 | 95.2 km/h |
+| Orlova (K125/HS140) | 0.3 | 107.6 m | 2 % | 16 % | 0 % | 60 % | 85.6 | 95.2 km/h |
+| Orlova (K125/HS140) | 0.7 | 128.7 m | 0 % | 78 % | 0 % | 82 % | 122.9 | 95.2 km/h |
 | Orlova (K125/HS140) | 1.0 | 136.6 m | 0 % | 100 % | 0 % | 100 % | 136.9 | 95.2 km/h |
 
 Z naključnim vetrom (`--wind`) se povprečja premaknejo za +1–3 m, spretnost 1,0 pa preskoči HS v ~36 % skokov in pade v
