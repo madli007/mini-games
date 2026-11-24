@@ -54,7 +54,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 26 | [lane-wars](26-lane-wars.md) | Lane wars skozi dobe | — | ⬜ | | 01 ✅ |
 | 27 | [tarce](27-tarce.md) | Tarče (aim trainer) | — | ⬜ | | 01 ✅ |
 | 28 | [ustavi-uro](28-ustavi-uro.md) | Ustavi uro | — | ⬜ | | 01 ✅ |
-| 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ✅ | @@C@@ | 12 ✅ |
+| 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ✅ | `1b3a8ba` | 12 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
 **Naslednja prosta številka: 30.**

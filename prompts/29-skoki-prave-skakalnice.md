@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Smučarski skoki — prave skakalnice (imena krajev, profili po FIS-ovih certifikatih)
 
-> **Stanje:** ✅ narejeno (24. 11. 2026) — predpogoj: 12 ✅
+> **Stanje:** ✅ narejeno (24. 11. 2026, `1b3a8ba`) — predpogoj: 12 ✅
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/29-skoki-prave-skakalnice.md in ga v celoti izvedi.«**
