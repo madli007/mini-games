@@ -839,7 +839,7 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 - [x] Načina Trening (zaletno mesto, veter, ghosti) in Rekord skakalnice (3 skoki, najboljši na lestvico + ghost)
 - [x] Hub: lestvice (seed `hill:<id>`), `reportGame`, `reportEvent`, XP, 10 dosežkov, 4 naloge; `hub.saveGhost/getGhosts` z `order: 'desc'`
 - [x] Stran z drsniki (`?debug=1`): drsniki po skupinah, urejevalnik krivulj, grafi, ponovitev z novimi parametri, izvoz, boti
-- [x] `supabase/games/skoki.sql` (napisan, **ni pognan** — glej spodaj), `games.json` (live), dokumentacija
+- [x] `supabase/games/skoki.sql` (pognan kot migracija `skoki_ghosts`, 24. 11. 2026), `games.json` (live), dokumentacija
 
 ## Dnevnik
 
@@ -888,16 +888,21 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 - **FPS** na namizju in telefonski emulaciji — meritve v skritem zavihku niso merodajne; samodejno nižanje kakovosti
   se je v skritem zavihku sprožilo.
 - **Zvok** ni bil poslušan. **Počasni posnetek** pristanka je preverjen le v kodi (v testih previjanja se preskoči).
-- **Supabase** (`?igralec=1/2`, tuj ghost na lestvici, zavrnitve RPC) — migracija ni bila pognana (glej spodaj).
 - Nagib telefona (`deviceorientation`) in realne naprave.
 
-## Kaj mora uporabnik narediti v Supabaseu
+## Supabase
 
-Pognati `supabase/games/skoki.sql` (SQL editor ali migracija; idempotentno). Brez tega v Supabase načinu lestvica in
-`reportGame` delujeta (skupne tabele), shranjevanje in branje ghostov pa le izpišeta opozorilo v konzolo. Nato preveri
-advisors (security + performance) in preizkusi: tuj zapis v `skoki_ghosts` (zavrnjen, ni insert pravil), prevelik `data`
-(`ghost_too_big`), slabši rezultat (`saved: false`), nemogoče točke (`impossible_time`, meja `max_points × 10000 + 999`).
-Testnih profilov/ghostov v produkcijski bazi nisem ustvaril.
+- Migracija `skoki_ghosts` (= `supabase/games/skoki.sql`) pognana. Advisors: pri novih tabelah le splošno opozorilo
+  »anonymous sign-ins« (enako kot pri vseh tabelah, namerno) in INFO »unused index« za nov indeks.
+- Lažni JWT v transakciji z rollbackom (10 scenarijev): shrani ✓, slabši rezultat → `saved: false`, boljši ✓,
+  nemogoče točke → `impossible_time`, prevelik `data` → `ghost_too_big`, neznana skakalnica → `unknown_level`,
+  neposreden insert/update v `skoki_ghosts` → `permission denied`, drug igralec bere ghosta ✓, anon → `permission denied`.
+- Brskalnik: `?igralec=1` Rekord skakalnice na Brezovi (3 skoki → `game_scores` seed `hill:brezova`, ghost 388 znakov
+  v `skoki_ghosts`, +40 XP, `report_game`); `?igralec=2` vidi »TestSkoki1 66,0 m · 125,3 t« na lestvici, klik naloži
+  njegovega ghosta v trening. Popravek: dosežki se ne vpisujejo ponovno (prej 409 v konzoli ob vsakem skoku).
+- Testna profila (TestSkoki1/2) in vsi njuni podatki so izbrisani (`auth.users` → kaskadno); baza je kot pred testom.
+- Znano: lokalni najboljši skok (`skoki:best:<id>`) je na brskalnik, ne na profil — z `?igralec=2` v istem brskalniku je
+  »Moj rekord« ghost prvega igralca.
 
 ## Ni bilo narejeno (po načrtu za 2. in 3. fazo)
 

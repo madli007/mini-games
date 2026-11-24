@@ -47,7 +47,9 @@ const ACH = [
   { key: 'stotica', title: 'Stotica', icon: '💯', desc: 'Skoči 100 skokov' },
 ];
 const achDef = k => ACH.find(a => a.key === k);
-const unlock = k => hub.unlock(k, { title: achDef(k).title, icon: achDef(k).icon });
+// že odklenjeni (brez ponovnih vpisov → 409 v konzoli na Supabase)
+const unlocked = new Set();
+const unlock = k => { if (unlocked.has(k)) return; unlocked.add(k); return hub.unlock(k, { title: achDef(k).title, icon: achDef(k).icon }); };
 
 /* ------------------------------------------------------------ nastavitve in statistika */
 const DEF_SETTINGS = { quality: 'auto', sound: true, music: true, post: true, fps: false, tilt: false, wind: 'random', windSpeed: 1, ghostMine: true };
@@ -819,6 +821,7 @@ $('#replayPos').addEventListener('change', () => { if (G.replay) G.replay.drag =
 for (const id of ['#card', '#replayBar', '#overlay']) $(id).addEventListener('pointerdown', e => e.stopPropagation());
 
 await hub.init({ gameId: GAME });
+try { for (const a of await hub.getAchievements()) unlocked.add(a.key); } catch { /* */ }
 ui.header({ title: 'Smučarski skoki' });
 try {
   await loadData();
