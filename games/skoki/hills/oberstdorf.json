@@ -1,0 +1,109 @@
+{
+  "id": "oberstdorf",
+  "name": "Oberstdorf",
+  "size": "velika",
+  "group": "prave",
+  "k": 120,
+  "hs": 137,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.25,
+    "tail": 12.4
+  },
+  "gateFactor": 3.7,
+  "gates": {
+    "count": 54,
+    "default": 33,
+    "spacing": 0.51
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 115,
+    "t": 6.5,
+    "e2": 24.33
+  },
+  "landing": {
+    "s": 3.38,
+    "b0": 4.52,
+    "beta": 37.43,
+    "betaL": 33.56,
+    "pArc": 108.85,
+    "lArc": 137,
+    "r2": 100,
+    "outrunAngle": 0,
+    "outrunLength": 95
+  },
+  "real": {
+    "venue": "Oberstdorf",
+    "country": "GER",
+    "certYear": 2022,
+    "source": "https://www.skisprungschanzen.com/photos/ger/oberstdorf_arena/HS137_2022.pdf",
+    "record": {
+      "dist": 143.5,
+      "year": 2003
+    }
+  },
+  "theme": {
+    "id": "oberstdorf-tema",
+    "label": "Mrzel večer v Allgäuju",
+    "sky": {
+      "sun": [
+        12,
+        4
+      ],
+      "zenith": "#1c2a5c",
+      "horizon": "#ff9f6a",
+      "ground": "#59607a",
+      "sunColor": "#ff8f55",
+      "clouds": 0.45
+    },
+    "fog": {
+      "color": "#a88a8a",
+      "density": 0.0028
+    },
+    "sunIntensity": 2.2,
+    "hemi": [
+      "#8ea0d8",
+      "#4e4458",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.04,
+        0.98,
+        0.97
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1,
+    "crowd": 1.6,
+    "snowfall": 0.25,
+    "mountains": 1.3,
+    "boards": [
+      "MINI GAMES",
+      "Prva postaja",
+      "Herodle",
+      "Zimski večer"
+    ]
+  },
+  "desc": "Prva postaja turneje štirih skakalnic. Mrzel večer, sonce zahaja za grebeni, polne tribune.",
+  "unlock": {
+    "hills": [
+      "orlova",
+      "planica-velika"
+    ],
+    "over": "k"
+  },
+  "physics": {
+    "takeoffWindow": 0.6
+  }
+}

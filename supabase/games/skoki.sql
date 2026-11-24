@@ -93,6 +93,20 @@ insert into public.skoki_hills (hill, max_points, max_dist) values
   ('reflektor', 221, 159),
   ('orlova', 222, 165),
   ('orlovo-gnezdo', 288, 265),
-  ('mirno-morje', 249, 205)
+  ('mirno-morje', 249, 205),
+  ('planica-srednja', 214, 127),
+  ('planica-velika', 219, 163),
+  ('oberstdorf', 226, 162),
+  ('garmisch', 226, 167),
+  ('innsbruck', 210, 153),
+  ('bischofshofen', 226, 167),
+  ('zakopane', 222, 165),
+  ('willingen', 226, 172),
+  ('lahti', 221, 155),
+  ('engelberg', 222, 165),
+  ('planica-letalnica', 288, 265),
+  ('kulm', 282, 260),
+  ('vikersund', 288, 265),
+  ('oberstdorf-letalnica', 282, 260)
 on conflict (hill) do update set max_points = excluded.max_points, max_dist = excluded.max_dist;
 -- END HILLS

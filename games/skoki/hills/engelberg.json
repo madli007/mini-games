@@ -1,0 +1,109 @@
+{
+  "id": "engelberg",
+  "name": "Engelberg",
+  "size": "velika",
+  "group": "prave",
+  "k": 125,
+  "hs": 140,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.86,
+    "tail": 13.14
+  },
+  "gateFactor": 5.1,
+  "gates": {
+    "count": 32,
+    "default": 19,
+    "spacing": 0.71
+  },
+  "inrun": {
+    "gamma": 36,
+    "alpha": 11,
+    "r1": 101.1,
+    "t": 7,
+    "e2": 25.89
+  },
+  "landing": {
+    "s": 3.15,
+    "b0": 4.3,
+    "beta": 37.8,
+    "betaL": 32.2,
+    "pArc": 108.8,
+    "lArc": 140,
+    "r2": 105,
+    "outrunAngle": 0,
+    "outrunLength": 90
+  },
+  "real": {
+    "venue": "Engelberg",
+    "country": "SUI",
+    "certYear": 2021,
+    "source": "https://www.skisprungschanzen.com/photos/sui/engelberg/HS140_2021.pdf",
+    "record": {
+      "dist": 145,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "engelberg-tema",
+    "label": "Decembrski sneg pod ledeniki",
+    "sky": {
+      "sun": [
+        140,
+        16
+      ],
+      "zenith": "#355fa8",
+      "horizon": "#dfe8f2",
+      "ground": "#b5bfca",
+      "sunColor": "#fff0d8",
+      "clouds": 0.55
+    },
+    "fog": {
+      "color": "#d4dde8",
+      "density": 0.0024
+    },
+    "sunIntensity": 2.3,
+    "hemi": [
+      "#d0dcf0",
+      "#646c76",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        0.99,
+        1,
+        1.03
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1,
+    "crowd": 1.1,
+    "snowfall": 0.45,
+    "mountains": 2.2,
+    "boards": [
+      "MINI GAMES",
+      "Pred božičem",
+      "Rušilec",
+      "Ledenik"
+    ]
+  },
+  "desc": "Velika skakalnica pod ledeniki, tik pred prazniki. Sneži, gore so na dosegu roke.",
+  "unlock": {
+    "hills": [
+      "orlova",
+      "planica-velika"
+    ],
+    "over": "k"
+  },
+  "physics": {
+    "liftScale": 1.04
+  }
+}

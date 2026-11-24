@@ -40,7 +40,7 @@ export function skokiPhase2Tests(test, { eq, ok }) {
   test('skoki: nove skakalnice (vsaj 5, skupine, odklepanje, letalnica in Luna se razlikujeta)', ctx => {
     const ids = ctx.skokiHills.map(d => d.id);
     for (const id of ['zajcek', 'sipina', 'reflektor', 'orlovo-gnezdo', 'mirno-morje']) ok(ids.includes(id), id);
-    for (const d of ctx.skokiHills) { eq(H.validateHill(d), [], d.id); eq(d.group || 'trening', 'trening', d.id + ': skupina'); }
+    for (const d of ctx.skokiHills) { eq(H.validateHill(d), [], d.id); eq(d.group || 'trening', d.real ? 'prave' : 'trening', d.id + ': skupina'); }
     const fly = hillOf(ctx, 'orlovo-gnezdo').def;
     eq([fly.k, fly.hs, fly.base, fly.meterValue], [200, 240, 120, 1.2]);
     const moon = hillOf(ctx, 'mirno-morje').def;
@@ -64,7 +64,7 @@ export function skokiPhase2Tests(test, { eq, ok }) {
     ok(Math.abs(a.x - b2.x) < 1e-6 || Math.abs(a.dist - b2.dist) <= 0.5, `Luna: daljava neodvisna od nagiba (${a.dist} / ${b2.dist})`);
     eq(a.windSamples.every(w => w === 0), true, 'Luna: brez vetra');
     // odklepanje
-    const defs = ctx.skokiHills;
+    const defs = ctx.skokiHills.filter(d => d.group !== 'prave');   // prave skakalnice: tests/skoki3.js
     eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 126, fall: false }).map(d => d.id).sort(), ['reflektor', 'sipina']);
     eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 141, fall: false }).map(d => d.id).sort(), ['orlovo-gnezdo', 'reflektor', 'sipina']);
     eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 141, fall: true }), [], 'padec ne odklene');

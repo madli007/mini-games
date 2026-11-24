@@ -1,0 +1,109 @@
+{
+  "id": "planica-letalnica",
+  "name": "Planica, letalnica",
+  "size": "letalnica",
+  "group": "prave",
+  "k": 200,
+  "hs": 240,
+  "meterValue": 1.2,
+  "base": 120,
+  "windFactors": {
+    "head": 13.34,
+    "tail": 16.14
+  },
+  "gateFactor": 19.3,
+  "gates": {
+    "count": 30,
+    "default": 6,
+    "spacing": 0.97
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11.5,
+    "r1": 130,
+    "t": 8.55,
+    "e2": 34.73
+  },
+  "landing": {
+    "s": 3.55,
+    "b0": 13.87,
+    "beta": 35.9,
+    "betaL": 28.7,
+    "pArc": 183,
+    "lArc": 240,
+    "r2": 100,
+    "outrunAngle": 4.5,
+    "outrunLength": 128
+  },
+  "real": {
+    "venue": "Planica",
+    "country": "SLO",
+    "certYear": 2026,
+    "source": "https://www.skisprungschanzen.com/photos/slo/planica_letalnica/HS240_2026.pdf",
+    "record": {
+      "dist": 254.5,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "planica-letalnica-tema",
+    "label": "Marčni finale, polna dolina",
+    "sky": {
+      "sun": [
+        175,
+        44
+      ],
+      "zenith": "#2a6cd4",
+      "horizon": "#d8ecff",
+      "ground": "#a2b4c4",
+      "sunColor": "#fff6e6",
+      "clouds": 0.25
+    },
+    "fog": {
+      "color": "#d2e3f2",
+      "density": 0.0015
+    },
+    "sunIntensity": 3,
+    "hemi": [
+      "#cfe6ff",
+      "#7a8a70",
+      0.65
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1.02,
+        1
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.2,
+    "crowd": 2.2,
+    "snowfall": 0,
+    "mountains": 2,
+    "boards": [
+      "MINI GAMES",
+      "Finale sezone",
+      "Polet",
+      "Herodle",
+      "Dolina letenja"
+    ],
+    "spring": 1
+  },
+  "desc": "Letalnica v dolini pod stenami: finale pokala. Dolgo, ravno jadranje nad doskočiščem, ki se položi šele daleč spodaj.",
+  "unlock": {
+    "group": "prave",
+    "size": "velika",
+    "over": "hs"
+  },
+  "physics": {
+    "liftScale": 1.175
+  }
+}

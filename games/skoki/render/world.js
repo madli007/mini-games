@@ -528,6 +528,32 @@ export function buildWorld(hill, q) {
     lake.receiveShadow = true; group.add(lake);
   }
 
+  /* ---------------- mesto pod skakalnico (prave skakalnice: Innsbruck, Zakopane): hiše za iztekom, zvečer z lučmi */
+  if (T.town) {
+    const count = Math.max(1, Math.round(220 * T.town * q.decor));
+    const night = T.env === 'noc' || (T.sky?.sun?.[1] ?? 30) < 10;
+    const wallM = new THREE.MeshStandardMaterial({ roughness: 0.85, emissive: night ? '#ffc070' : '#000000', emissiveIntensity: night ? 0.18 : 0 });
+    const roofM = new THREE.MeshStandardMaterial({ color: '#7a3b2e', roughness: 0.8, flatShading: true });
+    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), wallM, count);
+    const roofs = new THREE.InstancedMesh(new THREE.ConeGeometry(0.75, 0.6, 4).rotateY(Math.PI / 4).translate(0, 0.3, 0), roofM, count);
+    const mtx = new THREE.Matrix4(), qn = new THREE.Quaternion(), sc = new V3(), ps = new V3(), c = new THREE.Color();
+    const pal = ['#efe6d6', '#e8d2b0', '#f3efe8', '#d9c4a5', '#cfd8e0', '#f0dcc8'];
+    let n = 0;
+    for (let t = 0; n < count && t < count * 8; t++) {
+      const x = endX + 40 + hash(t, 81, seed) * 380, z = -260 + hash(t, 82, seed) * 420;
+      if (z > -10 && z < 90) continue;                       // pred kamero in ob iztečišču ni hiš
+      const y = terrainAt(x, z);
+      const w = 6 + hash(t, 83, seed) * 8, d = 6 + hash(t, 84, seed) * 8, h = 5 + hash(t, 85, seed) * (hash(t, 86, seed) < 0.15 ? 16 : 7);
+      qn.setFromAxisAngle(new V3(0, 1, 0), Math.round(hash(t, 87, seed) * 4) * Math.PI / 2 + (hash(t, 88, seed) - 0.5) * 0.3);
+      sc.set(w, h, d); ps.set(x, y - 0.5, z); mtx.compose(ps, qn, sc); walls.setMatrixAt(n, mtx);
+      c.set(pal[Math.floor(hash(t, 89, seed) * pal.length)]); walls.setColorAt(n, c);
+      sc.set(w * 1.15, Math.max(w, d) * 0.55, d * 1.15); ps.set(x, y - 0.5 + h, z); mtx.compose(ps, qn, sc); roofs.setMatrixAt(n, mtx);
+      n++;
+    }
+    walls.count = n; roofs.count = n; walls.receiveShadow = true;
+    group.add(walls, roofs);
+  }
+
   /* ---------------- sneženje */
   let snowPts = null;
   if ((T.snowfall ?? 0) > 0 && q.particles > 0) {

@@ -281,3 +281,18 @@ body.sk-tv .sk-play canvas { cursor: default; }
   body.sk-match .sk-mcard { top: 38%; }
 }
 body.sk-match #btnPause { display: none; }
+
+/* prave skakalnice: zložljive skupine v meniju, zastava, rekord skakalnice in vir profila */
+.sk-groupbox { display: flex; flex-direction: column; gap: 10px; }
+.sk-groupbox > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 0;
+  touch-action: manipulation; user-select: none; }
+.sk-groupbox > summary::-webkit-details-marker { display: none; }
+.sk-groupbox > summary::before { content: '▸'; display: inline-block; transition: transform .15s; color: var(--sk-blue); }
+.sk-groupbox[open] > summary::before { transform: rotate(90deg); }
+.sk-groupbox > summary .mg-title { margin: 0; }
+.sk-groupbox + .sk-groupbox { margin-top: 6px; }
+.sk-hillcard .sk-flag { font-family: initial; font-size: 14px; }
+.sk-hillcard .sk-real { font-size: 12px; color: #c9d6ff; opacity: .9; line-height: 1.35; position: relative; z-index: 1; }
+.sk-hillcard > * { position: relative; z-index: 1; }
+@media (max-width: 480px) { .sk-hills { grid-template-columns: 1fr 1fr; gap: 8px; } .sk-hillcard { min-height: 100px; padding: 10px; }
+  .sk-hillcard b { font-size: 17px; } .sk-hillcard:not(.locked) .desc { display: none; } .sk-hillcard.locked .desc { font-size: 12px; } }

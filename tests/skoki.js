@@ -11,6 +11,7 @@ import * as GH from '../games/skoki/ghost.js';
 import * as BOT from '../games/skoki/bot.js';
 import { createWind } from '../games/skoki/wind.js';
 import { LocalBackend } from '../shared/adapters/local.js';
+import { skokiRealTests } from './skoki3.js';
 import { balanceTable, BALANCE_N, balanceTarget, meetsTarget } from '../games/skoki/balance.js';
 import { skokiPhase2Tests } from './skoki2.js';
 
@@ -76,7 +77,9 @@ export function skokiTests(test, { eq, ok }) {
     for (const def of ctx.skokiHills) {
       const h = H.buildHill(def);
       ok(h.groundAt(0.01).y < -def.landing.s + 0.1, def.id + ': tla pod robom');
-      ok(Math.abs(h.landAt(def.k).theta / D.DEG - def.landing.beta) < 1, def.id + ': K na strmini');
+      // z betaL (prave skakalnice) se naklon med P in L enakomerno zmanjša od beta do betaL
+      const L = def.landing, betaK = L.betaL == null ? L.beta : L.beta + (L.betaL - L.beta) * (def.k - L.pArc) / (L.lArc - L.pArc);
+      ok(Math.abs(h.landAt(def.k).theta / D.DEG - betaK) < 1, def.id + ': K na strmini');
       const p = h.landAt(50);
       ok(Math.abs(h.groundAt(p.x).s - 50) < 0.05, def.id + ': groundAt ↔ landAt');
       ok(h.top.y > 10, def.id + ': zalet je visoko');
@@ -111,12 +114,15 @@ export function skokiTests(test, { eq, ok }) {
       for (let g = 1; g <= def.gates.count; g++) {
         const { J } = botJump(ctx, def.id, { gate: g });
         ok(J.s.tableSpeed > prev, `${def.id} mesto ${g}: ${J.s.tableSpeed} ≤ ${prev}`);
-        if (g > 1) { const d = J.s.tableSpeed - prev; ok(d > 0.25 && d < 1.0, `${def.id}: korak mesta ${d.toFixed(2)} km/h`); }
+        if (g > 1) { const d = J.s.tableSpeed - prev; ok(d > (def.real ? 0.05 : 0.25) && d < 1.0, `${def.id}: korak mesta ${d.toFixed(2)} km/h`); }
         if (g === 1) first = J.s.tableSpeed;
         prev = J.s.tableSpeed;
       }
       const avg = (prev - first) / (def.gates.count - 1);
-      ok(avg >= 0.45 && avg <= 0.8, `${def.id}: povprečen korak ${avg.toFixed(2)} km/h (~0,5–0,7)`);
+      // prave skakalnice: razmik mest je iz certifikata (0,5–1,1 m), zato preverimo hitrost na meter zaleta (položen zalet,
+      // npr. 27° v Bischofshofnu, pospešuje počasneje)
+      if (def.real) { const perM = avg / def.gates.spacing; ok(perM >= 0.3 && perM <= 0.9, `${def.id}: ${perM.toFixed(2)} km/h na meter zaleta`); }
+      else ok(avg >= 0.45 && avg <= 0.8, `${def.id}: povprečen korak ${avg.toFixed(2)} km/h (~0,5–0,7)`);
     }
     const { J: big } = botJump(ctx, 'orlova'); const { J: small } = botJump(ctx, 'brezova');
     ok(big.s.tableSpeed > 90 && big.s.tableSpeed < 98, 'velika ~92 km/h: ' + big.s.tableSpeed);
@@ -154,10 +160,11 @@ export function skokiTests(test, { eq, ok }) {
     for (const d2 of ctx.skokiHills) {
       const h2 = H.buildHill(d2);
       const r = PH.simulate({ hill: h2, P: ctx.skokiParams, gate: d2.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01 }) }).s;
-      // letalnica: brez popravljanja ne ujameš jadranja (pristanek precej pred K, a brez padca)
+      // letalnica: brez popravljanja ne ujameš jadranja (pristanek precej pred K, a brez padca; prave letalnice
+      // imajo počasnejši zalet in več vzgona, zato brez popravka pristaneš še prej)
       // Luna: brez zraka nagib ne šteje, skok je čisto balističen (le brez padca)
       if (d2.physics?.noAir) { ok(r.landing.type === 'tele', d2.id + ': ' + r.landing.type); continue; }
-      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * (d2.k >= 170 ? 0.5 : 0.7), `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
+      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * (d2.k >= 170 ? (d2.real ? 0.4 : 0.5) : 0.7), `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
     }
   });
   test('skoki: čelni veter podaljša, hrbtni skrajša (velika ~+10–15 m pri +2 m/s)', ctx => {
@@ -302,4 +309,5 @@ export function skokiTests(test, { eq, ok }) {
   });
 
   skokiPhase2Tests(test, { eq, ok });
+  skokiRealTests(test, { eq, ok });
 }

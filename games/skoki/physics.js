@@ -59,9 +59,11 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
   const W = createWind(HP.noAir ? { mode: 'off', seed: 0 } : wind, PW);
   const therm = HP.thermals ? x => { if (x <= 5) return 0; const u = Math.max(0, sin((x - 5) / 22 * Math.PI)), u2 = u * u; return HP.thermals * 1.6 * u2 * u2 * u2; } : null;
   const A = P.aero, B = P.body, L = P.landing, IR = P.inrun;
-  // takeoffWindow: širša okna odriva (mala skakalnica: kratka miza pri majhni hitrosti, 0,1 s je le ~1 m)
+  // takeoffWindow: širša okna odriva (mala skakalnica: kratka miza pri majhni hitrosti, 0,1 s je le ~1 m);
+  // < 1 (prave skakalnice): ožji okni »popoln« in »dober« — natančen odriv šteje več; meji za »prezgodaj« in »padeš z mize«
+  // ostaneta (faktor ≥ 1 se obnaša natanko kot prej)
   const TW = HP.takeoffWindow, T0 = P.takeoff;
-  const T = TW ? { ...T0, perfect: T0.perfect * TW, good: T0.good * TW, earlyLimit: T0.earlyLimit * TW, lateLimit: T0.lateLimit * TW } : T0;
+  const T = TW ? { ...T0, perfect: T0.perfect * TW, good: T0.good * TW, earlyLimit: T0.earlyLimit * Math.max(1, TW), lateLimit: T0.lateLimit * Math.max(1, TW) } : T0;
   const g = HP.gravity != null ? HP.gravity : P.g, m = P.mass;
   const rho = HP.noAir ? 0 : HP.airDensity != null ? P.rho * HP.airDensity : P.rho;
   const liftScale = HP.liftScale != null ? A.liftScale * HP.liftScale : A.liftScale;

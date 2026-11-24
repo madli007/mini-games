@@ -32,7 +32,7 @@ export function contestSettings(o = {}, hillIds = []) {
   s.cut = Math.max(0, Math.min(60, o.cut | 0));
   if (WIND_MODES[o.wind]) s.wind = o.wind;
   s.jury = o.jury === 'manual' ? 'manual' : 'auto';
-  s.gate = o.gate == null ? null : Math.max(1, Math.min(40, o.gate | 0));
+  s.gate = o.gate == null ? null : Math.max(1, Math.min(60, o.gate | 0));
   s.relaxed = !!o.relaxed;
   s.bots = Math.max(0, Math.min(20, o.bots | 0));
   s.botLevel = ['zacetniki', 'meseno', 'svetovni'].includes(o.botLevel) ? o.botLevel : 'meseno';
@@ -202,16 +202,34 @@ export function msToMidnight(now = new Date()) {
 export const unlockKey = id => 'odklep-' + id;
 /** Ali je skakalnica odprta (brez pogoja ali odklenjena kot dosežek). */
 export const isOpen = (def, achKeys) => !def.unlock || achKeys.has(unlockKey(def.id));
+/**
+ * Ali skok na skakalnici `hill` (JSON) izpolni pogoj odklepa `u`:
+ * { hill } — ta skakalnica · { hills: [...] } — katera koli od naštetih · { group, size } — katera koli skakalnica skupine in velikosti.
+ */
+export function unlockMatches(u, hill) {
+  if (!u) return false;
+  if (u.hill) return u.hill === hill.id;
+  if (u.hills) return u.hills.includes(hill.id);
+  if (u.group) return (hill.group || 'trening') === u.group && hill.size === u.size;
+  return false;
+}
 /** Skakalnice, ki jih odklene ta skok: [def …]. */
 export function unlocksBy(defs, { hill, dist, fall }) {
   if (fall) return [];
-  return defs.filter(d => d.unlock && d.unlock.hill === hill.id && dist >= (d.unlock.over === 'hs' ? hill.hs : hill.k));
+  const H = hill.def || hill;
+  return defs.filter(d => d.unlock && d.id !== H.id && unlockMatches(d.unlock, H) && dist >= (d.unlock.over === 'hs' ? H.hs : H.k));
 }
+const SIZE_NAMES = { velika: 'veliki', srednja: 'srednji', letalnica: 'letalnici', mala: 'mali' };
+const GROUP_NAMES = { prave: 'pravi', trening: 'trening' };
 /** Opis pogoja za odklep. */
 export function unlockText(def, defs) {
-  if (!def.unlock) return '';
-  const h = defs.find(d => d.id === def.unlock.hill);
-  return `Skoči čez ${def.unlock.over === 'hs' ? 'HS' : 'K'} na ${h ? h.name : def.unlock.hill}${def.unlock.over === 'hs' ? ' (brez padca)' : ''}.`;
+  const u = def.unlock;
+  if (!u) return '';
+  const nameOf = id => defs.find(d => d.id === id)?.name || id;
+  const where = u.hill ? nameOf(u.hill)
+    : u.hills ? 'skakalnici ' + u.hills.map(id => '»' + nameOf(id) + '«').join(' ali ')
+    : `kateri koli ${GROUP_NAMES[u.group] || u.group} ${SIZE_NAMES[u.size] || u.size} skakalnici`;
+  return `Skoči čez ${u.over === 'hs' ? 'HS' : 'K'} na ${where}${u.over === 'hs' ? ' (brez padca)' : ''}.`;
 }
 
 /* ------------------------------------------------------------ XP in hub */

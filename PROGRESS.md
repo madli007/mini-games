@@ -985,3 +985,46 @@ Stanje: **končano** (24. 11. 2026); SQL pognan v Supabase, test tekme s Supabas
 ### Popravki po igranju (24. 11. 2026)
 - **Zajček:** miza je 3 m pri 41 km/h, smuči segajo čez rob že ~0,25 s prej, pritisk tik pred tem je bil prezrt (okno odriva 0,22 s). Nov parameter skakalnice `physics.takeoffWindow` (Zajček: 2 → okna odriva ×2) in manjši, otroški skakalec (`theme.jumperScale` 0,65). Uravnoteženje Zajčka ostane v ciljih.
 - **Odriv »nazaj po skakalnici« (vse skakalnice):** fizika ob odrivu nastavi nagib na smer leta + 55°; izris je to pokazal v enem okvirju, zato se je trup prevesil ~1 m nazaj. Zdaj izris (`render/jumper.js`) v prvih 0,3 s leta nagib gladko pripelje z naklona mize. Fizika, ghosti in lestvice so nespremenjeni.
+
+## Prave skakalnice (`prompts/29-skoki-prave-skakalnice.md`)
+
+Stanje: **končano** (24. 11. 2026). SQL pognan v Supabase (migracija `skoki_prave_skakalnice`), test s Supabase (`?igralec=1/2`) ni bil narejen.
+
+### Načrt
+- [x] 14 FIS-ovih certifikatov (PDF s skisprungschanzen.com) prebranih in prepisanih v `tools/skoki-real-hills.mjs` (generator JSON-ov)
+- [x] Model: `landing.betaL` (lok P → L), `unlock` z `hills`/`group`+`size`, `physics.takeoffWindow` < 1 (ožje okno dobrega odriva); trening skakalnice nespremenjene
+- [x] Validator: `group`, `real` (kraj, država, leto, vir, rekord brez imena), do 60 zaletnih mest, miza do 9 m
+- [x] 14 skakalnic v `hills/` (`group: "prave"`), skupina v `index.json`, teme po krajih (nova možnost `town`)
+- [x] Meni: zložljivi skupini, zastava, K/HS, rekord skakalnice, »po profilu skakalnice v … (certifikat …)«, moj rekord; tekma/lokalna tekma z `optgroup`
+- [x] Odklepanje (Planica srednja odprta → Planica velika → ostale velike → letalnice) in 4 dosežki
+- [x] `skoki_hills` (SQL blok, migracija, advisors), testi `tests/skoki3.js` (6) + fikstura `tests/fixtures/skoki-bot-ref.json`
+- [x] Uravnoteženje: bot izpolni cilje 1. faze na vseh 22 skakalnicah (tabela v README)
+
+### Dnevnik
+- **Certifikati:** PDF-ji so skenirani; številke so prebrane s slike (ne OCR) in so v orodju z leti izdaje. Vsi so veljavni
+  (2021–2026), Lahti (veljaven do 30. 4. 2026) je zadnji objavljen.
+- **Geometrija:** `b0` je izpeljan iz h (K-točka točno h pod robom); n se ujema na ±1 m, letalnice ±2,3 m. Certifikatski β v K
+  se ujema na ±0,7° — razen Planice, srednje, kjer certifikat sam ni skladen (β 35,17° ob βP 35,65°, βL 30,91°, rL 230 m).
+- **Fizika:** `paramsVersion` ostane 3. Vse spremembe so parametri skakalnice; skoki bota na vseh 8 trening skakalnicah so bit za
+  bit enaki kot pred spremembo (nova fikstura, posneta s kodo iz HEAD).
+- **Zakaj takeoffWindow < 1:** na pravem profilu (doskočišče se pred L položi) je razpon med botoma 0,7 in 1,0 le ~5 m;
+  `liftScale`/`pushScale` ga ne povečata, ožje okno dobrega odriva pa ga podvoji (Oberstdorf 0,6: 8 m) pri isti hitrosti.
+- **Letalnice:** pri realni hitrosti (~100–105 km/h) najboljši pristanejo ~K + 15 m. Cilj 1,0 → HS − 6 zahteva `liftScale`
+  1,13–1,185 in nizko privzeto mesto (91–95 km/h). To je kompromis: skok je občutljiv na zaletno mesto (8–19 m/mesto) in veter.
+  Bolj realna letalnica bi potrebovala spremembo aerodinamike za vse skakalnice (nov `paramsVersion`, nove fiksture).
+- **Pristanek:** na nekaterih velikih (Planica, Innsbruck, Zakopane) je 1,0 pri HS − 5 pristajal »z dotikom« (hEq > hTele na
+  βL ~31°); iskanje zdaj zahteva ≥ 50 % telemarkov, zato tam `liftScale` 1,06–1,12.
+- **Lestvica:** prompt navaja `seed: 'hill:<id>'`; ostal je obstoječi `rekord:<id>` (isti kot pri trening skakalnicah, en format za vse).
+- **Odklep velikih:** čez K na Orlovi ali Planici, veliki (Planica velika se odklene na srednji) — obe poti, da igralec ni vezan na izmišljeno skakalnico.
+
+### Preverjeno
+- `node tests/run-node.mjs`: 188/188 (6 novih, prilagojeni testi profila, zaleta in »brez popravka« za prave skakalnice).
+- Brskalnik (offline): meni na namizju in telefonu 375×812 (zložljivi skupini, kartice), 5 skokov z botom na vsaki od 14 pravih
+  skakalnic (`?test=1`, naključni veter, brez napak v konzoli), Rekord skakalnice na Planici, srednji (3 skoki, lestvica, »Moj rekord«),
+  Innsbruck z mestom, Bischofshofen ponoči.
+- Supabase: `skoki_hills` ima 22 vrstic; advisors (security, performance) brez novih opozoril.
+
+### Ni bilo preverjeno
+- Ročni skoki z miško na vseh pravih skakalnicah (brskalnik je počasen; preverjeno z botom) — občutek letalnic naj preveri človek.
+- `tests.html` v brskalniku (Node teste poganja isti `runAll`).
+- Lestvica in ghost s Supabase (`?igralec=1/2`): zahtevalo bi nov anonimni profil v produkcijski bazi.

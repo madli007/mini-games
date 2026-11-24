@@ -10,6 +10,8 @@
    Doskočišče (od točke pod robom, višina s pod mizo): grbina (naklon od b0 do beta,
    do loka pArc) → ravni del (beta) do lArc → prehod (radij r2) v iztečišče
    (naklon outrunAngle, dolžina outrunLength) → protiklanec.
+   Neobvezno betaL (prave skakalnice): med pArc (P) in lArc (L) se naklon enakomerno
+   zmanjša od beta (βP) do betaL (βL) — krožni lok rL iz certifikata; brez betaL je del raven.
    Daljava = dolžina loka po profilu doskočišča od točke pod robom.
    ===================================================================== */
 import { DEG, sin, cos, tan, clamp } from './dmath.js';
@@ -42,6 +44,7 @@ export function windFactorsFor(k) {
 export function buildHill(def) {
   const I = def.inrun, Ld = def.landing;
   const alpha = I.alpha * DEG, gamma = I.gamma * DEG, beta = Ld.beta * DEG, b0 = Ld.b0 * DEG, oa = Ld.outrunAngle * DEG;
+  const betaL = (Ld.betaL ?? Ld.beta) * DEG;   // naklon v L (lok P → L); brez betaL = beta (raven del)
 
   /* ---------- zalet: vzorci po razdalji d od roba nazaj (0 = rob) */
   const gates = def.gates;
@@ -68,13 +71,13 @@ export function buildHill(def) {
   const gateD = g => I.t + transLen + I.e2 + (clamp(g, 1, gates.count) - 1) * gates.spacing;
 
   /* ---------- doskočišče: vzorci po loku s */
-  const r2Len = Ld.r2 * (beta - oa);
+  const r2Len = Ld.r2 * (betaL - oa);
   const endS = Ld.lArc + r2Len + Ld.outrunLength;
   const land = [];   // [s, x, y, theta]
   const angleAt = s => {
     if (s <= Ld.pArc) { const u = s / Ld.pArc; return b0 + (beta - b0) * (1 - (1 - u) * (1 - u) * (1 - u * 0.35)); }
-    if (s <= Ld.lArc) return beta;
-    if (s <= Ld.lArc + r2Len) return beta - (s - Ld.lArc) / Ld.r2;
+    if (s <= Ld.lArc) return betaL === beta ? beta : beta + (betaL - beta) * (s - Ld.pArc) / (Ld.lArc - Ld.pArc);
+    if (s <= Ld.lArc + r2Len) return betaL - (s - Ld.lArc) / Ld.r2;
     return oa;
   };
   x = 0; y = -Ld.s;
@@ -150,6 +153,11 @@ export function buildHill(def) {
 /* ------------------------------------------------------------ validator */
 
 const NUM = (o, k) => typeof o?.[k] === 'number' && isFinite(o[k]);
+/** unlock: { hill } | { hills: [...] } (katera koli) | { group, size } (katera koli skakalnica skupine in velikosti), over: k|hs */
+const validUnlock = u => !!u && typeof u === 'object' && ['k', 'hs'].includes(u.over) && (
+  typeof u.hill === 'string' ||
+  (Array.isArray(u.hills) && u.hills.length > 0 && u.hills.every(h => typeof h === 'string')) ||
+  (typeof u.group === 'string' && typeof u.size === 'string'));
 
 /**
  * Preveri skakalnico. Vrne seznam napak (prazen = veljavna).
@@ -176,7 +184,7 @@ export function validateHill(def) {
   if (def.windFactors.tail <= def.windFactors.head) e.push('windFactors: hrbtni faktor mora biti večji od čelnega.');
   if (!(def.gateFactor > 0)) e.push('gateFactor mora biti pozitiven.');
   const G = def.gates;
-  if (!(G.count >= 2 && G.count <= 40 && Number.isInteger(G.count))) e.push('gates.count: 2–40.');
+  if (!(G.count >= 2 && G.count <= 60 && Number.isInteger(G.count))) e.push('gates.count: 2–60.');
   if (!(G.default >= 1 && G.default <= G.count && Number.isInteger(G.default))) e.push('gates.default mora biti med 1 in count.');
   if (!(G.spacing > 0.2 && G.spacing < 2)) e.push('gates.spacing: 0,2–2 m.');
   const I = def.inrun, L = def.landing;
@@ -184,17 +192,33 @@ export function validateHill(def) {
   if (!(I.alpha > 7 && I.alpha < 13)) e.push('inrun.alpha (naklon mize): 7°–13°.');
   if (!(I.alpha < I.gamma)) e.push('Miza mora biti položnejša od zaleta.');
   if (!(I.r1 > 30)) e.push('inrun.r1: radij prehoda vsaj 30 m.');
-  if (!(I.t >= 3 && I.t <= 8)) e.push('inrun.t (dolžina mize): 3–8 m.');
+  if (!(I.t >= 3 && I.t <= 9)) e.push('inrun.t (dolžina mize): 3–9 m.');
   if (!(L.s > 0.5 && L.s < 6)) e.push('landing.s: miza mora biti 0,5–6 m nad doskočiščem.');
   if (!(L.b0 >= 0 && L.b0 < L.beta)) e.push('landing.b0 mora biti manjši od beta.');
   if (!(L.beta > 25 && L.beta < 40)) e.push('landing.beta: 25°–40°.');
+  if (L.betaL != null && !(NUM(L, 'betaL') && L.betaL > 20 && L.betaL <= L.beta)) e.push('landing.betaL: 20° … beta.');
   if (!(L.pArc > 10 && L.pArc < def.k)) e.push('landing.pArc (konec grbine) mora biti pred K.');
   if (!(L.lArc >= def.hs - 5 && L.lArc <= def.hs + 15)) e.push('landing.lArc (konec strmine) mora biti blizu HS (HS−5 … HS+15).');
   if (!(L.outrunAngle >= -2 && L.outrunAngle < 10)) e.push('landing.outrunAngle: −2°–10°.');
   if (!(L.outrunLength >= 40)) e.push('landing.outrunLength: vsaj 40 m.');
   // neobvezno: skupina v meniju, odklepanje, parametri fizike skakalnice
   if (def.group != null && !(typeof def.group === 'string' && /^[a-z0-9-]{2,20}$/.test(def.group))) e.push('group: male črke, številke, »-« (privzeto »trening«).');
-  if (def.unlock != null && !(typeof def.unlock?.hill === 'string' && ['k', 'hs'].includes(def.unlock.over))) e.push('unlock: { hill, over: "k"|"hs" }.');
+  if (def.unlock != null && !validUnlock(def.unlock)) e.push('unlock: { hill | hills: […] | group + size, over: "k"|"hs" }.');
+  // prave skakalnice: obvezen kraj in vir (certifikat); rekord skakalnice brez imena skakalca
+  if (def.group === 'prave') {
+    const R = def.real;
+    if (!R || typeof R !== 'object') e.push('real: obvezno pri group "prave".');
+    else {
+      if (typeof R.venue !== 'string' || R.venue.length < 2) e.push('real.venue: ime kraja.');
+      if (typeof R.country !== 'string' || !/^[A-Z]{3}$/.test(R.country)) e.push('real.country: koda države (3 velike črke).');
+      if (!(Number.isInteger(R.certYear) && R.certYear >= 1990 && R.certYear <= 2100)) e.push('real.certYear: leto certifikata.');
+      if (typeof R.source !== 'string' || !/^https?:\/\//.test(R.source)) e.push('real.source: povezava do certifikata.');
+      if (R.record != null) {
+        if (!(NUM(R.record, 'dist') && R.record.dist > def.k * 0.8 && R.record.dist < def.hs + 40 && Number.isInteger(R.record.year))) e.push('real.record: { dist, year }.');
+        if (Object.keys(R.record).some(k => !['dist', 'year'].includes(k))) e.push('real.record: le dist in year (brez imena skakalca).');
+      }
+    }
+  } else if (def.real != null) e.push('real: le pri group "prave".');
   if (def.physics != null) {
     const F = def.physics, known = ['gravity', 'airDensity', 'liftScale', 'pushScale', 'noAir', 'thermals', 'takeoffWindow'];
     if (typeof F !== 'object') e.push('physics mora biti objekt.');
@@ -206,7 +230,7 @@ export function validateHill(def) {
       if (F.pushScale != null && !(F.pushScale >= 0.5 && F.pushScale <= 4)) e.push('physics.pushScale: 0,5–4.');
       if (F.thermals != null && !(F.thermals >= 0 && F.thermals <= 3)) e.push('physics.thermals: 0–3.');
       if (F.noAir != null && typeof F.noAir !== 'boolean') e.push('physics.noAir: true/false.');
-      if (F.takeoffWindow != null && !(F.takeoffWindow >= 1 && F.takeoffWindow <= 3)) e.push('physics.takeoffWindow: 1–3 (faktor oken odriva).');
+      if (F.takeoffWindow != null && !(F.takeoffWindow >= 0.5 && F.takeoffWindow <= 3)) e.push('physics.takeoffWindow: 0,5–3 (faktor oken odriva).');
     }
   }
   if (e.length) return e;

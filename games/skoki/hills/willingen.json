@@ -1,0 +1,110 @@
+{
+  "id": "willingen",
+  "name": "Willingen",
+  "size": "velika",
+  "group": "prave",
+  "k": 130,
+  "hs": 147,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 11.47,
+    "tail": 13.88
+  },
+  "gateFactor": 3.8,
+  "gates": {
+    "count": 44,
+    "default": 29,
+    "spacing": 0.55
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 6.7,
+    "e2": 27.62
+  },
+  "landing": {
+    "s": 3.25,
+    "b0": 4.86,
+    "beta": 38,
+    "betaL": 32,
+    "pArc": 111.79,
+    "lArc": 147,
+    "r2": 108,
+    "outrunAngle": 0,
+    "outrunLength": 138
+  },
+  "real": {
+    "venue": "Willingen",
+    "country": "GER",
+    "certYear": 2025,
+    "source": "https://www.skisprungschanzen.com/photos/ger/willingen_muehlenkopf/HS147_2025.pdf",
+    "record": {
+      "dist": 155.5,
+      "year": 2024
+    }
+  },
+  "theme": {
+    "id": "willingen-tema",
+    "label": "Vetrovno gričevje, megla v gozdu",
+    "sky": {
+      "sun": [
+        160,
+        16
+      ],
+      "zenith": "#5d7290",
+      "horizon": "#c8d2dc",
+      "ground": "#8f9aa6",
+      "sunColor": "#f2efe6",
+      "clouds": 0.85
+    },
+    "fog": {
+      "color": "#b9c3cd",
+      "density": 0.0034
+    },
+    "sunIntensity": 1.8,
+    "hemi": [
+      "#b6c4d4",
+      "#5a6252",
+      0.75
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        0.98,
+        1,
+        1.02
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gozd",
+    "trees": 1.6,
+    "crowd": 1.4,
+    "snowfall": 0.2,
+    "mountains": 0.25,
+    "boards": [
+      "MINI GAMES",
+      "Največja velika",
+      "Rušilec",
+      "Pazi, veter!"
+    ]
+  },
+  "desc": "Največja velika skakalnica sredi gozdnatega gričevja. Dolg let, veter pa rad obrne smer.",
+  "unlock": {
+    "hills": [
+      "orlova",
+      "planica-velika"
+    ],
+    "over": "k"
+  },
+  "physics": {
+    "liftScale": 1.02,
+    "takeoffWindow": 0.5
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "id": "garmisch",
+  "name": "Garmisch-Partenkirchen",
+  "size": "velika",
+  "group": "prave",
+  "k": 125,
+  "hs": 142,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.86,
+    "tail": 13.14
+  },
+  "gateFactor": 3.1,
+  "gates": {
+    "count": 49,
+    "default": 45,
+    "spacing": 0.5
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 103,
+    "t": 6.9,
+    "e2": 21.96
+  },
+  "landing": {
+    "s": 3.2,
+    "b0": 5.65,
+    "beta": 37.2,
+    "betaL": 31.7,
+    "pArc": 110.35,
+    "lArc": 142,
+    "r2": 114.5,
+    "outrunAngle": 0,
+    "outrunLength": 100
+  },
+  "real": {
+    "venue": "Garmisch-Partenkirchen",
+    "country": "GER",
+    "certYear": 2022,
+    "source": "https://www.skisprungschanzen.com/photos/ger/garmischpartenkirchen_olympia/HS142_2022.pdf",
+    "record": {
+      "dist": 145.5,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "garmisch-tema",
+    "label": "Novoletno sonce pod visokimi vrhovi",
+    "sky": {
+      "sun": [
+        150,
+        22
+      ],
+      "zenith": "#2c66c8",
+      "horizon": "#dceaff",
+      "ground": "#b6c2d0",
+      "sunColor": "#fff4dd",
+      "clouds": 0.2
+    },
+    "fog": {
+      "color": "#d8e3ef",
+      "density": 0.0018
+    },
+    "sunIntensity": 3,
+    "hemi": [
+      "#d6e6ff",
+      "#6a7482",
+      0.68
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.02
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.1,
+    "crowd": 1.7,
+    "snowfall": 0,
+    "mountains": 2.1,
+    "boards": [
+      "MINI GAMES",
+      "Novo leto",
+      "Rušilec",
+      "Srečno!"
+    ]
+  },
+  "desc": "Novoletna tekma pod najvišjimi vrhovi. Kratek zalet, strma miza, dolg let nad stadionom.",
+  "unlock": {
+    "hills": [
+      "orlova",
+      "planica-velika"
+    ],
+    "over": "k"
+  },
+  "physics": {
+    "liftScale": 1.02,
+    "takeoffWindow": 0.5
+  }
+}

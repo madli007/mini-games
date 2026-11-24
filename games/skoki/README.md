@@ -1,7 +1,7 @@
 # Smučarski skoki (`games/skoki/`)
 
 Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Deterministična 2D fizika, 2,5D izris
-(Three.js 0.160), prava pravila točkovanja, veter, ghosti. 1. in 2. faza od treh (`prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`; naslednja: `29-skoki-prave-skakalnice.md`, `13-skoki-pokal.md`).
+(Three.js 0.160), prava pravila točkovanja, veter, ghosti. 1. in 2. faza od treh in prave skakalnice (`prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`, `prompts/29-skoki-prave-skakalnice.md`; naslednja: `13-skoki-pokal.md`).
 
 ## Kontrole
 
@@ -237,3 +237,124 @@ Meje pristanka so v »zemeljskih« metrih (`hEq` z `P.g`). `paramsVersion` ostan
 
 Razvojni parametri: `?tv=1`, `?bots=9` (hitra lokalna tekma: ti + 9 botov), `?fast=1` (boti brez replaya), `?test=1`
 (`window.__skoki` brez strani z drsniki: `skipRed()`, `fastForward()`, `timeScale`), orodje `node tools/skoki-tune.mjs <id>`.
+
+## Prave skakalnice (`prompts/29-skoki-prave-skakalnice.md`)
+
+Druga skupina v meniju (`hills/index.json` → `groups`, `"group": "prave"`): 14 skakalnic s pravimi imeni krajev in profili,
+prepisanimi iz **FIS-ovih certifikatov skakalnic** (javni PDF-ji, objavljeni na skisprungschanzen.com; povezava je v
+`real.source` vsake skakalnice). Imena so le imena krajev (brez imen objektov, sponzorjev, tekmovanj in skakalcev); teme so
+navdihnjene s krajem in narisane po naše (nova možnost teme `town`: hiše za iztekom v Innsbrucku in Zakopanah), panoji imajo
+izmišljene napise. Rekord skakalnice je brez imena skakalca (vir: skisprungschanzen.com, november 2026; uradni rekord, kjer
+je naveden, sicer najdaljši veljavni skok na tekmi).
+
+| Skakalnica | K / HS | Certifikat | Rekord skakalnice | Privzeto mesto | liftScale | takeoffWindow | pushScale | Odklep | Vir |
+|---|---|---|---|---|---|---|---|---|---|
+| Planica, srednja | K95 / HS102 | 2023 | 105,0 m (2023) | 11/34 | 1,02 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/slo/planica_velikanka/HS102_2023.pdf) |
+| Planica, velika | K125 / HS138 | 2023 | 142,0 m (2014) | 6/27 | 1,1 | 0,9 | 1 | čez K na Planici, srednji | [PDF](https://www.skisprungschanzen.com/photos/slo/planica_velikanka/HS138_2023.pdf) |
+| Oberstdorf | K120 / HS137 | 2022 | 143,5 m (2003) | 33/54 | 1 | 0,6 | 1 | čez K na Orlovi ali Planici, veliki | [PDF](https://www.skisprungschanzen.com/photos/ger/oberstdorf_arena/HS137_2022.pdf) |
+| Garmisch-Partenkirchen | K125 / HS142 | 2022 | 145,5 m (2025) | 45/49 | 1,02 | 0,5 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/ger/garmischpartenkirchen_olympia/HS142_2022.pdf) |
+| Innsbruck | K120 / HS128 | 2024 | 138,0 m (2015) | 12/34 | 1,12 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/aut/innsbruck/HS128_2024.pdf) |
+| Bischofshofen | K125 / HS142 | 2023 | 145,0 m (2019) | 16/47 | 1,02 | 0,5 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/aut/bischofshofen/HS142_2023.pdf) |
+| Zakopane | K125 / HS140 | 2022 | 147,0 m (2020) | 19/34 | 1,06 | 0,6 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/pol/zakopane_wielka/HS140_2022.pdf) |
+| Willingen | K130 / HS147 | 2025 | 155,5 m (2024) | 29/44 | 1,02 | 0,5 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/ger/willingen_muehlenkopf/HS147_2025.pdf) |
+| Lahti | K116 / HS130 | 2022 | 138,0 m (2017) | 25/27 | 1 | 0,7 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/fin/lahti/HS130_2022.pdf) |
+| Engelberg | K125 / HS140 | 2021 | 145,0 m (2025) | 19/32 | 1,04 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/sui/engelberg/HS140_2021.pdf) |
+| **Planica, letalnica** | K200 / HS240 | 2026 | 254,5 m (2025) | 6/30 | 1,175 | 1 | 1 | čez HS na kateri koli pravi veliki | [PDF](https://www.skisprungschanzen.com/photos/slo/planica_letalnica/HS240_2026.pdf) |
+| Kulm | K200 / HS235 | 2025 | 245,5 m (2026) | 6/45 | 1,18 | 1 | 1,2 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/aut/badmitterndorf_tauplitz/HS235_2025.pdf) |
+| Vikersund | K200 / HS240 | 2022 | 253,5 m (2017) | 4/42 | 1,185 | 2 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/nor/vikersund_skiflyging/HS240_2022.pdf) |
+| Oberstdorf, letalnica | K200 / HS235 | 2023 | 242,5 m (2022) | 33/49 | 1,13 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/ger/oberstdorf_flug/HS235_2023.pdf) |
+
+JSON-e ustvari `node tools/skoki-real-hills.mjs` (certifikati so v orodju prepisani; `--check` le izpiše prileganje,
+`--search` znova poišče privzeto mesto in parametre fizike). V meniju ima kartica zastavo, K/HS, rekord skakalnice, »po profilu
+skakalnice v <kraj> (certifikat <leto>)« in moj rekord; skupini sta zložljivi (stanje se zapomni). Prave skakalnice so v treningu,
+Rekordu skakalnice (lestvica `rekord:<id>` — isti format kot pri trening skakalnicah, ghosti, vrstica v `skoki_hills`), tekmi in
+lokalni tekmi (izbira po skupinah) ter dnevnem izzivu.
+
+### Iz certifikata v model
+| Certifikat | Model (`hills/<id>.json`) |
+|---|---|
+| γ, α, t, r1 | `inrun.gamma`, `inrun.alpha`, `inrun.t`, `inrun.r1` (spremenljiv radij »225–130«, »140/107« → povprečje; kubična parabola v Bischofshofnu → 0,14·v0² = 96 m po FIS-ovi normi) |
+| e1, es, število mest | `gates.count`, `gates.spacing` = es / (mest − 1), `inrun.e2` = (e1 − es) − t − r1·(γ − α) |
+| s, P, L (= HS), βP, βL, r2, a | `landing.s`, `pArc`, `lArc`, `beta` (= βP), **`betaL`** (novo), `r2` (klotoida → najmanjši radij), `outrunLength` |
+| rL (lok P → L) | `betaL`: naklon se med P in L enakomerno zmanjša od βP do βL (to je krožni lok; v certifikatih velja (L − P)/rL ≈ βP − βL) |
+| h, n (K-točka) | **izpeljano:** `landing.b0` (začetni naklon grbine) je prilagojen tako, da K-točka leži natanko h pod robom; vodoravna razdalja se potem ujema z n na ±1 m (letalnice ±2,3 m) — test. V Innsbrucku certifikat navaja β0 = 7,5°, izpeljano je 8,0°. |
+| β (v K) | ni parameter; izračunani naklon v K se ujema na ±0,7° (izjema Planica, srednja: certifikat navaja β = 35,17°, kar ni skladno z βP 35,65°, βL 30,91° in rL 230 m — model da 32,9°) |
+| »sloping up/down after U« | `outrunAngle` 0 (navzgor) ali 4–5° (navzdol na letalnicah); protiklanec doda model sam |
+| b1, b2, bK, bU, d, q, Zu, l1, l2, v0 | model jih nima (širina doskočišča je izrisana po svoje, sodniški stolp ni na mestu iz certifikata) |
+
+Vrednost metra, `base` in faktorji vetra so po FIS-ovih tabelah glede na K (`meterValueFor`, `baseFor`, `windFactorsFor`).
+Na Planici, srednji in veliki certifikat navaja e2, ki se ne ujema z e1 − es; uporabljeno je e1 − es (kot drugje).
+
+### Kje se je moral prilagoditi model (brez spremembe profila in `paramsVersion`)
+- **`landing.betaL`** (hill.js): pravi profili se med P in L položijo (βL 28–33°), izmišljeni so bili ravni (β do HS).
+  Skakalnice brez `betaL` se gradijo natanko kot prej (fikstura skokov bota na vseh 8 trening skakalnicah, test).
+- **Ožje okno odriva `physics.takeoffWindow` < 1** (physics.js): na pravem profilu se dolgi skoki »ujamejo« na položnejšem
+  delu, zato je razpon med botoma 0,7 in 1,0 le ~5 m, cilji 1. faze pa zahtevajo ~6 m. Ožji okni »popoln/dober« odriv
+  (faktor 0,5–0,9) kaznujeta nenatančen odriv in razpon povečata, hitrost ostane realna (89–93 km/h). Meji »prezgodaj« in
+  »padeš z mize« se pri faktorju < 1 ne zmanjšata; faktor ≥ 1 deluje kot prej (Zajček).
+- **`physics.liftScale`** 1–1,12 na velikih: pristanek pri HS na položnejšem doskočišču (βL ~31°) je bil sicer pretrd
+  (dotik namesto telemarka); nekoliko položnejši let to popravi. Iskanje zahteva tudi ≥ 50 % telemarkov najboljšega bota.
+- **Letalnice:** položnejše doskočišče (βL 28–31°) ujame let najboljših že ~K + 15 m. Cilj (1,0 → HS − 6 …) je dosegljiv le
+  s položnejšim jadranjem (`liftScale` 1,13–1,185) in **počasnejšim zaletom** (privzeto nizko mesto, 91–95 km/h namesto
+  pravih ~105 km/h). Posledica: skok je zelo občutljiv na zaletno mesto (8–19 m na mesto, `gateFactor` 10–25 točk) in na veter
+  (kot Orlovo gnezdo). Kulm še `pushScale` 1,2, Vikersund `takeoffWindow` 2 (sicer bot 0,3 ne doseže K × 0,6).
+- Validator: `group`, `real` (obvezen pri »prave«: kraj, koda države, leto certifikata, vir, rekord brez imena), `betaL`,
+  `unlock` z `hills: […]` ali `group` + `size`, do 60 zaletnih mest (Oberstdorf 54), miza do 9 m, `takeoffWindow` 0,5–3.
+
+### Odklepanje in dosežki
+- Planica, srednja je odprta. **Planica, velika:** čez K na Planici, srednji. **Ostale prave velike:** čez K na Orlovi **ali**
+  Planici, veliki (izbrano: Orlova je znana pot iz 1. faze, Planica velika je »domača« pot). **Prave letalnice:** čez HS brez
+  padca na kateri koli pravi veliki. Odklepi so dosežki `odklep-<id>` (več hkrati = en toast).
+- Dosežki: `prava-k` (čez K na pravi skakalnici brez padca), `rekord-skakalnice` (daljše od pravega rekorda skakalnice, brez
+  padca), `vse-letalnice` (čez K na vseh letalnicah, tudi Orlovem gnezdu), `popotnik` (skok na vseh pravih skakalnicah).
+
+### Uravnoteženje pravih skakalnic (`node tools/skoki-balance.mjs`, brez vetra, 50 skokov na celico)
+
+| Skakalnica | Spretnost | Povp. daljava | Padci | Čez K | Čez HS | Telemark | Povp. točke | Hitrost |
+|---|---|---|---|---|---|---|---|---|
+| Planica, srednja (K95/HS102) | 0.3 | 79.6 m | 2 % | 2 % | 0 % | 54 % | 84.3 | 85.5 km/h |
+| Planica, srednja (K95/HS102) | 0.7 | 93.0 m | 0 % | 22 % | 0 % | 78 % | 110.3 | 85.6 km/h |
+| Planica, srednja (K95/HS102) | 1.0 | 96.4 m | 0 % | 100 % | 0 % | 90 % | 114.6 | 85.6 km/h |
+| Planica, velika (K125/HS138) | 0.3 | 105.8 m | 2 % | 16 % | 0 % | 54 % | 83.1 | 88.8 km/h |
+| Planica, velika (K125/HS138) | 0.7 | 128.4 m | 0 % | 82 % | 0 % | 72 % | 119.8 | 88.9 km/h |
+| Planica, velika (K125/HS138) | 1.0 | 134.0 m | 0 % | 100 % | 0 % | 76 % | 126.8 | 88.9 km/h |
+| Oberstdorf (K120/HS137) | 0.3 | 95.6 m | 2 % | 14 % | 0 % | 56 % | 77.0 | 92.2 km/h |
+| Oberstdorf (K120/HS137) | 0.7 | 122.4 m | 0 % | 70 % | 0 % | 80 % | 119.8 | 92.2 km/h |
+| Oberstdorf (K120/HS137) | 1.0 | 131.4 m | 0 % | 100 % | 0 % | 100 % | 136.3 | 92.2 km/h |
+| Garmisch-Partenkirchen (K125/HS142) | 0.3 | 102.0 m | 2 % | 12 % | 0 % | 54 % | 78.7 | 92.3 km/h |
+| Garmisch-Partenkirchen (K125/HS142) | 0.7 | 127.8 m | 0 % | 80 % | 0 % | 78 % | 119.6 | 92.4 km/h |
+| Garmisch-Partenkirchen (K125/HS142) | 1.0 | 136.0 m | 0 % | 100 % | 0 % | 76 % | 130.7 | 92.4 km/h |
+| Innsbruck (K120/HS128) | 0.3 | 95.8 m | 2 % | 6 % | 0 % | 58 % | 76.3 | 86.4 km/h |
+| Innsbruck (K120/HS128) | 0.7 | 118.3 m | 0 % | 50 % | 0 % | 80 % | 111.7 | 86.4 km/h |
+| Innsbruck (K120/HS128) | 1.0 | 123.3 m | 0 % | 100 % | 0 % | 98 % | 118.8 | 86.4 km/h |
+| Bischofshofen (K125/HS142) | 0.3 | 100.3 m | 2 % | 14 % | 0 % | 56 % | 77.6 | 92.6 km/h |
+| Bischofshofen (K125/HS142) | 0.7 | 127.8 m | 0 % | 74 % | 0 % | 78 % | 119.7 | 92.6 km/h |
+| Bischofshofen (K125/HS142) | 1.0 | 136.1 m | 0 % | 100 % | 0 % | 76 % | 130.9 | 92.6 km/h |
+| Zakopane (K125/HS140) | 0.3 | 103.1 m | 2 % | 16 % | 0 % | 54 % | 80.3 | 90.7 km/h |
+| Zakopane (K125/HS140) | 0.7 | 128.1 m | 0 % | 82 % | 0 % | 76 % | 119.9 | 90.7 km/h |
+| Zakopane (K125/HS140) | 1.0 | 135.3 m | 0 % | 100 % | 0 % | 62 % | 127.8 | 90.7 km/h |
+| Willingen (K130/HS147) | 0.3 | 104.0 m | 2 % | 12 % | 0 % | 54 % | 77.1 | 92.1 km/h |
+| Willingen (K130/HS147) | 0.7 | 132.7 m | 0 % | 76 % | 0 % | 78 % | 119.4 | 92.1 km/h |
+| Willingen (K130/HS147) | 1.0 | 141.4 m | 0 % | 100 % | 0 % | 72 % | 130.9 | 92.1 km/h |
+| Lahti (K116/HS130) | 0.3 | 94.3 m | 2 % | 14 % | 0 % | 54 % | 81.8 | 91.8 km/h |
+| Lahti (K116/HS130) | 0.7 | 119.2 m | 0 % | 84 % | 0 % | 78 % | 120.4 | 91.8 km/h |
+| Lahti (K116/HS130) | 1.0 | 125.9 m | 0 % | 100 % | 0 % | 76 % | 128.5 | 91.8 km/h |
+| Engelberg (K125/HS140) | 0.3 | 102.2 m | 2 % | 14 % | 0 % | 56 % | 81.3 | 90.8 km/h |
+| Engelberg (K125/HS140) | 0.7 | 128.2 m | 0 % | 80 % | 0 % | 80 % | 121.0 | 90.8 km/h |
+| Engelberg (K125/HS140) | 1.0 | 134.2 m | 0 % | 100 % | 0 % | 100 % | 131.0 | 90.8 km/h |
+| Planica, letalnica (K200/HS240) | 0.3 | 132.3 m | 2 % | 14 % | 0 % | 54 % | 94.6 | 93.7 km/h |
+| Planica, letalnica (K200/HS240) | 0.7 | 202.3 m | 0 % | 72 % | 0 % | 80 % | 178.1 | 93.7 km/h |
+| Planica, letalnica (K200/HS240) | 1.0 | 235.3 m | 0 % | 100 % | 0 % | 100 % | 218.2 | 93.7 km/h |
+| Kulm (K200/HS235) | 0.3 | 120.2 m | 4 % | 10 % | 0 % | 58 % | 84.4 | 90.8 km/h |
+| Kulm (K200/HS235) | 0.7 | 196.6 m | 0 % | 62 % | 0 % | 78 % | 170.8 | 90.8 km/h |
+| Kulm (K200/HS235) | 1.0 | 231.4 m | 0 % | 100 % | 0 % | 100 % | 213.3 | 90.8 km/h |
+| Vikersund (K200/HS240) | 0.3 | 122.3 m | 2 % | 24 % | 0 % | 56 % | 92.4 | 92.1 km/h |
+| Vikersund (K200/HS240) | 0.7 | 203.6 m | 0 % | 82 % | 0 % | 80 % | 180.1 | 92.1 km/h |
+| Vikersund (K200/HS240) | 1.0 | 236.6 m | 0 % | 100 % | 0 % | 100 % | 219.6 | 92.1 km/h |
+| Oberstdorf, letalnica (K200/HS235) | 0.3 | 128.6 m | 2 % | 8 % | 0 % | 56 % | 91.5 | 94.7 km/h |
+| Oberstdorf, letalnica (K200/HS235) | 0.7 | 195.6 m | 0 % | 54 % | 0 % | 80 % | 170.2 | 94.7 km/h |
+| Oberstdorf, letalnica (K200/HS235) | 1.0 | 231.1 m | 0 % | 100 % | 0 % | 100 % | 213.1 | 94.7 km/h |
+
+Vse vrstice izpolnijo cilje 1. faze (test »cilji uravnoteženja«). Z naključnim vetrom (`--wind`) so prave skakalnice strožje od
+izmišljenih: najboljši bot (1,0) pade v 24–50 % skokov na velikih (Orlova 20 %) in ~43 % na letalnicah (Orlovo gnezdo 54 %) —
+pristanek pri HS je na položnejšem doskočišču zahtevnejši.

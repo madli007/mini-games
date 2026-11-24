@@ -60,6 +60,11 @@ const ACH = [
   { key: 'zirija', title: 'Žirija!', icon: '🚩', desc: 'Skok, po katerem je žirija znižala zalet' },
   { key: 'dnevni-7', title: 'Teden izzivov', icon: '📅', desc: 'Dnevni izziv 7 dni zapored' },
   { key: 'zvoncek', title: 'Kravji zvonec', icon: '🔔', desc: 'Pošlji 100 reakcij' },
+  // prave skakalnice
+  { key: 'prava-k', title: 'Prava K-točka', icon: '📐', desc: 'Čez K na pravi skakalnici brez padca' },
+  { key: 'rekord-skakalnice', title: 'Rekord skakalnice', icon: '🏆', desc: 'Daljše od pravega rekorda skakalnice, brez padca' },
+  { key: 'vse-letalnice', title: 'Vse letalnice', icon: '🛫', desc: 'Čez K na vseh letalnicah' },
+  { key: 'popotnik', title: 'Popotnik', icon: '🧳', desc: 'Skok na vseh pravih skakalnicah' },
 ];
 // odklepi skakalnic so dosežki (veljajo na vseh napravah): odklep-<id>
 const achDef = k => ACH.find(a => a.key === k) || (k.startsWith('odklep-') ? { key: k, title: 'Odklenjena: ' + (hillOf(k.slice(7))?.def.name || k.slice(7)), icon: '🔓' } : { key: k, title: k, icon: '🏅' });
@@ -146,6 +151,13 @@ function showMenu() {
 
 const THEME_COLORS = { brezova: ['#3f7a5c', '#10261d'], bistra: ['#2f78d0', '#0d2140'], orlova: ['#a0524a', '#1c1838'], zajcek: ['#e58fb5', '#3a2040'], sipina: ['#d4a04f', '#3b2410'], reflektor: ['#3b4fa8', '#05081c'], 'orlovo-gnezdo': ['#4f8f6a', '#13283a'], 'mirno-morje': ['#6c6c78', '#050508'] };
 
+// prave skakalnice: koda države (real.country) → zastava iz jumpers.js; kraj v mestniku (»v Planici«)
+const COUNTRY_FLAG = { SLO: 'si', AUT: 'at', GER: 'de', POL: 'pl', FIN: 'fi', SUI: 'ch', NOR: 'no', ITA: 'it', CZE: 'cz', JPN: 'jp' };
+const LOCATIVE = { Planica: 'Planici', Zakopane: 'Zakopanah', 'Tauplitz / Bad Mitterndorf': 'Tauplitzu / Bad Mitterndorfu', Garmisch: 'Garmischu',
+  'Garmisch-Partenkirchen': 'Garmisch-Partenkirchnu', Oberstdorf: 'Oberstdorfu', Innsbruck: 'Innsbrucku', Bischofshofen: 'Bischofshofnu',
+  Willingen: 'Willingenu', Lahti: 'Lahtiju', Engelberg: 'Engelbergu', Vikersund: 'Vikersundu' };
+const locative = v => LOCATIVE[v] || v;
+
 function renderMenu() {
   if (!G.hillId || !hillOpen(G.hillId)) G.hillId = (hillOf('bistra') ? 'bistra' : HILLS[0].def.id);
   const H = hillOf(G.hillId).def;
@@ -165,15 +177,24 @@ function renderMenu() {
         <button class="sk-modecard" id="mDaily"><span>📅</span><b>Dnevni izziv</b><em>${esc(dailyLine())}</em></button>
         <button class="sk-modecard" id="mJumpers"><span>🎽</span><b>Moji skakalci</b><em>Sestavi svojo ekipo, statistika tvoje lige</em></button>
       </div>
-      ${GROUPS.map(gr => `<h2 class="mg-title sk-group">${esc(gr.name)}</h2>
-      <div class="sk-hills" role="list">${HILLS.filter(h => (h.def.group || 'trening') === gr.id).map(({ def }) => {
+      ${GROUPS.map(gr => {
+        const list = HILLS.filter(h => (h.def.group || 'trening') === gr.id);
+        if (!list.length) return '';
+        const nOpen = list.filter(h => isOpen(h.def, unlocked)).length;
+        const closed = (settings.groupsClosed || []).includes(gr.id) && !list.some(h => h.def.id === H.id);
+        return `<details class="sk-groupbox" data-group="${gr.id}" ${closed ? '' : 'open'}>
+        <summary class="sk-group"><span class="mg-title">${esc(gr.name)}</span> <span class="mg-muted mg-small">${nOpen}/${list.length} odprtih${gr.desc ? ' · ' + esc(gr.desc) : ''}</span></summary>
+        <div class="sk-hills" role="list">${list.map(({ def }) => {
         const b = localBest(def.id);
         const open = isOpen(def, unlocked);
-        const [c1, c2] = THEME_COLORS[def.id] || ['#24356e', '#0f1530'];
-        return `<button class="sk-hillcard ${open ? '' : 'locked'}" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
-          <span class="kh">K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
-          <span class="pb">${b ? '🏅 ' + fmtDist(b.dist) + ' · ' + fmt1(b.total) + ' t' : ''}</span></button>`;
-      }).join('')}</div>`).join('')}
+        const [c1, c2] = THEME_COLORS[def.id] || [def.theme?.sky?.zenith || '#24356e', '#0f1530'];
+        const R = def.real;
+        return `<button class="sk-hillcard ${open ? '' : 'locked'} ${R ? 'sk-hillcard--real' : ''}" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
+          <span class="kh">${R ? `<span class="sk-flag" aria-label="${esc(R.country)}">${flagOf(COUNTRY_FLAG[R.country])}</span> ` : ''}K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
+          ${R ? `<span class="sk-real">${R.record ? `Rekord skakalnice: ${fmtDist(R.record.dist)} (${R.record.year})<br>` : ''}po profilu skakalnice v ${esc(locative(R.venue))} (certifikat ${R.certYear})</span>` : ''}
+          <span class="pb">${b ? '🏅 Moj rekord: ' + fmtDist(b.dist) + ' · ' + fmt1(b.total) + ' t' : ''}</span></button>`;
+      }).join('')}</div></details>`;
+      }).join('')}
       <div class="sk-modes">
         <div class="mg-card">
           <h2 class="mg-title">Trening</h2>
@@ -221,6 +242,11 @@ function renderMenu() {
     if (!hillOpen(b.dataset.hill)) { ui.toast(unlockText(hillOf(b.dataset.hill).def, HILLS.map(x => x.def)), { icon: '🔒' }); return; }
     G.hillId = b.dataset.hill; renderMenu();
   });
+  $('#menu').querySelectorAll('details[data-group]').forEach(d => d.addEventListener('toggle', () => {
+    const set = new Set(settings.groupsClosed || []);
+    if (d.open) set.delete(d.dataset.group); else set.add(d.dataset.group);
+    settings.groupsClosed = [...set]; saveSettings();
+  }));
   $('#mOnline').onclick = () => { audio.unlock(); matchApi?.openOnline(); };
   $('#mLocal').onclick = () => { audio.unlock(); matchApi?.openLocal(); };
   $('#mJumpers').onclick = () => { audio.unlock(); matchApi?.openJumpers(); };
@@ -638,10 +664,20 @@ function myJumpProgress(Hd, s, L, res, judges) {
   if (L.dist >= 200) ach.push('letalec');
   if (Hd.k >= 170 && !res.fall && L.dist >= Hd.hs) ach.push('orlovo-gnezdo');
   if (Hd.physics?.noAir) ach.push('luna');
-  // odklepi skakalnic
-  for (const d of unlocksBy(HILLS.map(h => h.def), { hill: Hd, dist: L.dist, fall: res.fall })) {
-    if (!unlocked.has(unlockKey(d.id))) { ach.push(unlockKey(d.id)); setTimeout(() => ui.toast('Odklenjena skakalnica: ' + d.name, { icon: '🔓', duration: 4000 }), 1500); }
+  // prave skakalnice
+  if (Hd.group === 'prave') {
+    stats.visited = { ...(stats.visited || {}), [Hd.id]: true }; saveStats();
+    if (!res.fall && L.dist >= Hd.k) ach.push('prava-k');
+    if (!res.fall && Hd.real?.record && L.dist > Hd.real.record.dist) ach.push('rekord-skakalnice');
+    const real = HILLS.filter(h => h.def.group === 'prave').map(h => h.def.id);
+    if (real.length && real.every(id => stats.visited[id])) ach.push('popotnik');
   }
+  const flying = HILLS.filter(h => h.def.size === 'letalnica').map(h => h.def.id);
+  if (flying.length && flying.every(id => stats.overK?.[id])) ach.push('vse-letalnice');
+  // odklepi skakalnic (več hkrati = en toast)
+  const fresh = unlocksBy(HILLS.map(h => h.def), { hill: Hd, dist: L.dist, fall: res.fall }).filter(d => !unlocked.has(unlockKey(d.id)));
+  for (const d of fresh) ach.push(unlockKey(d.id));
+  if (fresh.length) setTimeout(() => ui.toast(fresh.length === 1 ? 'Odklenjena skakalnica: ' + fresh[0].name : `Odklenjenih ${fresh.length} skakalnic: ${fresh.map(d => d.name).join(', ')}`, { icon: '🔓', duration: 5000 }), 1500);
   for (const k of ach) unlock(k);
 }
 
@@ -1077,7 +1113,7 @@ function loop(now) {
 let dbgHook = null;
 const dbgApi = {
   get P() { return P; }, set P(v) { P = v; },
-  hills: () => HILLS, hillOf, current: () => G, renderer: () => renderer,
+  hills: () => HILLS, groups: () => GROUPS, hillOf, current: () => G, renderer: () => renderer,
   /** Ponovi zadnji skok z istimi vnosi in trenutnimi parametri; vrne novo stanje. */
   rerun() {
     const LJ = G.lastJump; if (!LJ) return null;

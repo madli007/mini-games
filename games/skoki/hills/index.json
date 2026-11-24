@@ -1,6 +1,12 @@
 {
   "groups": [
-    { "id": "trening", "name": "Trening", "desc": "Izmišljene skakalnice za trening in tekme s prijatelji." }
+    { "id": "trening", "name": "Trening", "desc": "Izmišljene skakalnice za trening in tekme s prijatelji." },
+    { "id": "prave", "name": "Prave skakalnice", "desc": "Skakalnice s pravimi imeni krajev, profili po FIS-ovih certifikatih." }
   ],
-  "hills": ["zajcek.json", "brezova.json", "bistra.json", "sipina.json", "reflektor.json", "orlova.json", "orlovo-gnezdo.json", "mirno-morje.json"]
+  "hills": [
+    "zajcek.json", "brezova.json", "bistra.json", "sipina.json", "reflektor.json", "orlova.json", "orlovo-gnezdo.json", "mirno-morje.json",
+    "planica-srednja.json", "planica-velika.json", "oberstdorf.json", "garmisch.json", "innsbruck.json", "bischofshofen.json",
+    "zakopane.json", "willingen.json", "lahti.json", "engelberg.json",
+    "planica-letalnica.json", "kulm.json", "vikersund.json", "oberstdorf-letalnica.json"
+  ]
 }

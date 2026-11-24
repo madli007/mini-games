@@ -352,6 +352,12 @@ function roomHills() {
   for (const [id, p] of peers) if (ids.has(id)) for (const h of p.un || []) un.add(h);
   return E.hills().filter(h => !h.def.unlock || E.hillOpen(h.def.id) || un.has(h.def.id)).map(h => h.def);
 }
+/** Možnosti skakalnic po skupinah (Trening / Prave skakalnice). */
+function hillOptions(hills, cur, opt) {
+  const groups = E.groups ? E.groups() : [{ id: 'trening', name: 'Trening' }];
+  return groups.map(g => { const l = hills.filter(d => (d.group || 'trening') === g.id); return l.length ? `<optgroup label="${esc(g.name)}">${l.map(d => opt(d.id, cur, `${d.name} (K${d.k})`)).join('')}</optgroup>` : ''; }).join('');
+}
+
 function renderSettings(el) {
   settingsEl = el;
   const s = contestSettings(lastSettings || room?.settings || {}, E.hills().map(h => h.def.id));
@@ -359,12 +365,12 @@ function renderSettings(el) {
   const hills = roomHills();
   const mine = myJumpers().filter(j => j.type === 'bot');
   el.innerHTML = `<div class="sk-form" id="cf">
-    <label>Skakalnica<select class="mg-select" name="hill">${opt('random', s.hill, '🎲 Naključna')}${hills.map(d => opt(d.id, s.hill, `${d.name} (K${d.k})`)).join('')}</select></label>
+    <label>Skakalnica<select class="mg-select" name="hill">${opt('random', s.hill, '🎲 Naključna')}${hillOptions(hills, s.hill, opt)}</select></label>
     <label>Format<select class="mg-select" name="format">${Object.entries(FORMATS).map(([k, f]) => opt(k, s.format, f.name)).join('')}</select></label>
     <label>V 2. serijo<select class="mg-select" name="cut">${opt(0, s.cut, 'vsi')}${[3, 5, 10, 15, 20, 30].map(v => opt(v, s.cut, 'najboljših ' + v)).join('')}</select></label>
     <label>Veter<select class="mg-select" name="wind">${Object.entries(WIND_MODES).map(([k, n]) => opt(k, s.wind, n)).join('')}</select></label>
     <label>Zaletno mesto<select class="mg-select" name="jury">${opt('auto', s.jury, 'Samodejno (žirija)')}${opt('manual', s.jury, 'Ročno (host)')}</select></label>
-    <label>Ročni zalet<input class="mg-input" type="number" name="gate" min="1" max="40" value="${s.gate ?? ''}" placeholder="privzeto"></label>
+    <label>Ročni zalet<input class="mg-input" type="number" name="gate" min="1" max="60" value="${s.gate ?? ''}" placeholder="privzeto"></label>
     <label class="mg-check"><input type="checkbox" name="relaxed" ${s.relaxed ? 'checked' : ''}> Sproščeno (zamuda = preskoči, ne diskvalifikacija)</label>
     <h3>Boti</h3>
     <label>Število botov<select class="mg-select" name="bots">${[0, 1, 2, 3, 5, 8, 10, 15, 20].map(v => opt(v, s.bots, v)).join('')}</select></label>
@@ -811,7 +817,7 @@ function openLocal(preset = null) {
         <div class="sk-pick" id="lPick">${list.map(j => `<label class="mg-check"><input type="checkbox" value="${esc(j.id)}" ${opts.sel?.includes(j.id) ? 'checked' : ''}> ${JP.flagOf(j.flag)} ${esc(j.name)} <span class="mg-badge ${j.type === 'bot' ? '' : 'mg-badge--cyan'}">${j.type === 'bot' ? 'bot ' + Math.round(j.skill * 100) + ' %' : 'človek'}</span></label>`).join('') || '<p class="mg-muted">Seznam je prazen.</p>'}</div>
         <button class="mg-btn mg-btn--ghost" id="lEdit">🎽 Uredi Moje skakalce</button></div>
       <div class="mg-card"><div class="sk-form" id="lf">
-        <label>Skakalnica<select class="mg-select" name="hill">${opt('random', opts.hill, '🎲 Naključna')}${hills.map(d => opt(d.id, opts.hill, `${d.name} (K${d.k})`)).join('')}</select></label>
+        <label>Skakalnica<select class="mg-select" name="hill">${opt('random', opts.hill, '🎲 Naključna')}${hillOptions(hills, opts.hill, opt)}</select></label>
         <label>Format<select class="mg-select" name="format">${Object.entries(FORMATS).map(([k, f]) => opt(k, opts.format, f.name)).join('')}</select></label>
         <label>V 2. serijo<select class="mg-select" name="cut">${opt(0, opts.cut, 'vsi')}${[3, 5, 10, 15, 20, 30].map(v => opt(v, opts.cut, 'najboljših ' + v)).join('')}</select></label>
         <label>Veter<select class="mg-select" name="wind">${Object.entries(WIND_MODES).map(([k, n]) => opt(k, opts.wind, n)).join('')}</select></label>

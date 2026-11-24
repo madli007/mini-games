@@ -1,0 +1,103 @@
+{
+  "id": "planica-srednja",
+  "name": "Planica, srednja",
+  "size": "srednja",
+  "group": "prave",
+  "k": 95,
+  "hs": 102,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 8,
+    "tail": 9.68
+  },
+  "gateFactor": 3.5,
+  "gates": {
+    "count": 34,
+    "default": 11,
+    "spacing": 0.63
+  },
+  "inrun": {
+    "gamma": 34,
+    "alpha": 11,
+    "r1": 90,
+    "t": 6.4,
+    "e2": 31.52
+  },
+  "landing": {
+    "s": 2.4,
+    "b0": 6.33,
+    "beta": 35.65,
+    "betaL": 30.91,
+    "pArc": 85,
+    "lArc": 102,
+    "r2": 101,
+    "outrunAngle": 0,
+    "outrunLength": 96.15
+  },
+  "real": {
+    "venue": "Planica",
+    "country": "SLO",
+    "certYear": 2023,
+    "source": "https://www.skisprungschanzen.com/photos/slo/planica_velikanka/HS102_2023.pdf",
+    "record": {
+      "dist": 105,
+      "year": 2023
+    }
+  },
+  "theme": {
+    "id": "planica-srednja-tema",
+    "label": "Sončen marec pod Poncami",
+    "sky": {
+      "sun": [
+        160,
+        40
+      ],
+      "zenith": "#2a6fd8",
+      "horizon": "#d4ecff",
+      "ground": "#a9bccd",
+      "sunColor": "#fff6e2",
+      "clouds": 0.25
+    },
+    "fog": {
+      "color": "#d6e6f4",
+      "density": 0.0018
+    },
+    "sunIntensity": 2.9,
+    "hemi": [
+      "#cfe6ff",
+      "#7c8a74",
+      0.65
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1.01,
+        1
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.2,
+    "crowd": 1.2,
+    "snowfall": 0,
+    "mountains": 1.9,
+    "boards": [
+      "MINI GAMES",
+      "Dolina pod Poncami",
+      "Herodle",
+      "Skok v pomlad"
+    ],
+    "spring": 1
+  },
+  "desc": "Srednja skakalnica v dolini pod strmimi stenami. Krajši zalet, nizek let — dobra za začetek na pravih profilih.",
+  "physics": {
+    "liftScale": 1.02
+  }
+}
