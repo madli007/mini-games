@@ -934,7 +934,7 @@ Naslednja prompta: `prompts/12-skoki-tekma.md`, `prompts/13-skoki-pokal.md`.
 
 ## 2. faza — tekma, dnevni izziv, nove skakalnice (`prompts/12-skoki-tekma.md`)
 
-Stanje: **končano** (24. 11. 2026), razen Supabase dela (glej »Ni bilo preverjeno«).
+Stanje: **končano** (24. 11. 2026); SQL pognan v Supabase, test tekme s Supabase še ni bil narejen.
 
 ### Načrt
 - [x] `sport/competition.js` (serije, vrstni red iz seeda, obratni po rezultatu, rez z izenačenji, DNS/DSQ/DNF, ekipe, nagrade-vtičniki, `restore`) in `sport/live-replay.js` (sender/receiver, vmesni pomnilnik 300 ms, luknje, `need`, `verify`) + `sport/README.md`
@@ -944,7 +944,8 @@ Stanje: **končano** (24. 11. 2026), razen Supabase dela (glej »Ni bilo preverj
 - [x] 5 novih skakalnic (Zajček, Sipina, Reflektor, Orlovo gnezdo, Mirno morje) + parametri fizike skakalnice (`physics`) + izris novih okolij (noč, puščava, Luna, pomlad, plišasta publika)
 - [x] Testi `tests/skoki2.js` (16), fiksture prvih treh skakalnic, cilji uravnoteženja za letalnico/Luno, `games.json` (turn, 1–10, party/daily, 3 naloge)
 - [x] SQL `supabase/games/skoki.sql`: nove skakalnice v `skoki_hills`, ghost dnevnega izziva (`d-YYYYMMDD`) v `skoki_save_ghost`
-- [ ] SQL poganjanje v produkcijski bazi in test s Supabase (`?igralec=1/2/3`) — zavrnjeno, glej spodaj
+- [x] SQL pognan v produkcijski bazi (migracija `skoki_faza2_skakalnice_dnevni_ghost`, z uporabnikovo potrditvijo): 8 skakalnic v `skoki_hills`, `private.skoki_save_ghost` sprejme `d-YYYYMMDD`; advisors brez novih opozoril
+- [ ] Test tekme s Supabase (`?igralec=1/2/3`) in meritev zamika replaya
 
 ### Dnevnik
 - Fizika prvih treh skakalnic je **nespremenjena** (`paramsVersion` 3): pred spremembami je posnetih 9 referenčnih skokov
@@ -973,10 +974,8 @@ Stanje: **končano** (24. 11. 2026), razen Supabase dela (glej »Ni bilo preverj
   (gledalec: slika, kartica, lestvica, reakcije), Reflektor, Sipina, Mirno morje, Orlovo gnezdo. Konzola brez napak (igra, dashboard).
 
 ### Ni bilo preverjeno
-- **Supabase:** `apply_migration` za posodobljen `supabase/games/skoki.sql` je zavrnil samodejni varnostni klasifikator
-  (sprememba produkcijske baze brez izrecne potrditve). Dokler SQL ni pognan, se na Supabase rekord/ghost novih skakalnic
-  in ghost dnevnega izziva ne shranita (`unknown_level`, opozorilo v konzoli); vse drugo deluje. Zato tudi ni bilo
-  testa s `?igralec=1/2/3`, meritve zamika na Supabase in brisanja testnih vrstic (nobena ni bila ustvarjena).
+- **Supabase:** SQL je pognan (glej načrt), ni pa bilo cele tekme s `?igralec=1/2/3` in meritve zamika replaya na Supabase;
+  testnih vrstic v produkciji ni bilo ustvarjenih (ni kaj brisati).
 - Ročni skoki z miško (vsaj 5 na skakalnico) — brskalniško okno je teklo pri ~1,5 sličice/s, zato so skoki preverjeni z botom
   in razvojnimi pomočniki (`?test=1`); »občutek« letalnice in Lune naj preveri človek.
 - Žirija v brskalniku (pokrita s testi; v testnih tekmah nihče ni preskočil 95 % HS).
