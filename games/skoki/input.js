@@ -151,7 +151,12 @@ export class Input {
    * pošljemo 2 (telemark), sicer ostane 1 (dve nogi).
    */
   _landBtn(btn, cur) {
-    const lg = this.lg || (this.lg = { st: 'idle', t: 0, out: 0 });
+    // 'arm': gumba, ki sta še držana od odriva, ne štejeta — pristanek začne šele nov pritisk
+    const lg = this.lg || (this.lg = { st: 'arm', t: 0, out: 0 });
+    if (lg.st === 'arm') {
+      if (btn) return 0;
+      lg.st = 'idle';
+    }
     if (lg.st === 'idle') {
       if (!btn) return 0;
       if (btn >= 2) { lg.st = 'done'; lg.out = 1; return 1; }        // oba hkrati = dve nogi
