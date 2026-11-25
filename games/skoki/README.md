@@ -451,3 +451,9 @@ Cilj: odriv, ki ga zadene tudi človek, gladek prehod v let in let, v katerem se
   skoči na izbiro.
 - **Drugi načini** v eni vrsti: Tekma s prijatelji, Lokalna tekma, Dnevni izziv, Moji skakalci.
 - **Spodaj zavihki** Lestvice (najdaljši skoki, top 10, lestvica skakalnice) / Dosežki / Kako igrati / Nastavitve (`settings.menuTab`).
+
+## Zastava na vrhu skakalnice
+Nad štartno hiško je drog z veliko zastavo (`countryFlag` v `render/tex.js`, `world.js`): prave skakalnice zastavo države
+(`real.country`: Slovenija z grbom, Avstrija, Nemčija, Poljska, Finska, Švica, Norveška; pripravljene še Italija, Češka, Japonska),
+plapola v vetru (senčilnik kot pri zastavicah publike). Luna: temno modra zastava z Luno in zvezdami na vodoravni prečki, ne plapola
+(ni zraka). Izmišljene skakalnice: zastava MINI GAMES.

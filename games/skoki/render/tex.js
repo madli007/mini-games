@@ -134,6 +134,71 @@ export function flag(colors) {
   });
 }
 
+/**
+ * Državna zastava za drog na vrhu skakalnice (koda kot v real.country), 'MOON' (Luna) ali 'MG' (izmišljene skakalnice).
+ * Narisana poenostavljeno (barve in razdelitev; grb Slovenije shematsko).
+ */
+export function countryFlag(code) {
+  return once('cflag:' + code, () => {
+    const W = 192, H = 128;
+    const c = canvas(W, H, (g) => {
+      const stripesH = cols => cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(0, i * H / cols.length, W, H / cols.length + 1); });
+      const stripesV = cols => cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * W / cols.length, 0, W / cols.length + 1, H); });
+      const nordic = (bg, outer, inner) => {
+        g.fillStyle = bg; g.fillRect(0, 0, W, H);
+        const x = W * 0.36, t = H * 0.22;
+        if (outer) { g.fillStyle = outer; g.fillRect(x - t / 2 - 8, 0, t + 16, H); g.fillRect(0, H / 2 - t / 2 - 8, W, t + 16); }
+        g.fillStyle = inner; g.fillRect(x - t / 2, 0, t, H); g.fillRect(0, H / 2 - t / 2, W, t);
+      };
+      switch (code) {
+        case 'SLO': {
+          stripesH(['#ffffff', '#0b4ea2', '#ed1c24']);
+          // grb: modri ščit z belo goro, valovi in tremi zlatimi zvezdami, rdeč rob
+          const x = 34, y = 18, w = 40, h = 52;
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x + w, y); g.lineTo(x + w, y + h * 0.62); g.quadraticCurveTo(x + w / 2, y + h * 1.08, x, y + h * 0.62); g.closePath();
+          g.fillStyle = '#ed1c24'; g.fill();
+          g.save(); g.translate(x + w / 2, y + h / 2); g.scale(0.84, 0.86); g.translate(-(x + w / 2), -(y + h / 2));
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x + w, y); g.lineTo(x + w, y + h * 0.62); g.quadraticCurveTo(x + w / 2, y + h * 1.08, x, y + h * 0.62); g.closePath();
+          g.fillStyle = '#0b4ea2'; g.fill(); g.restore();
+          g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x + 6, y + 40); g.lineTo(x + 14, y + 28); g.lineTo(x + 20, y + 20); g.lineTo(x + 26, y + 28); g.lineTo(x + 34, y + 40); g.closePath(); g.fill();
+          g.strokeStyle = '#fff'; g.lineWidth = 2; for (const yy of [y + 44, y + 49]) { g.beginPath(); for (let i = 0; i <= 24; i++) { const xx = x + 8 + i; g.lineTo(xx, yy + Math.sin(i / 2) * 1.2); } g.stroke(); }
+          g.fillStyle = '#ffdd00'; for (const [sx, sy] of [[x + 14, y + 9], [x + 26, y + 9], [x + 20, y + 15]]) { g.beginPath(); g.arc(sx, sy, 2.6, 0, Math.PI * 2); g.fill(); }
+          break;
+        }
+        case 'AUT': stripesH(['#ed2939', '#ffffff', '#ed2939']); break;
+        case 'GER': stripesH(['#000000', '#dd0000', '#ffce00']); break;
+        case 'POL': stripesH(['#ffffff', '#dc143c']); break;
+        case 'ITA': stripesV(['#009246', '#ffffff', '#ce2b37']); break;
+        case 'FIN': nordic('#ffffff', null, '#002f6c'); break;
+        case 'NOR': nordic('#ba0c2f', '#ffffff', '#00205b'); break;
+        case 'SUI': g.fillStyle = '#da291c'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.fillRect(W / 2 - 12, H / 2 - 40, 24, 80); g.fillRect(W / 2 - 40, H / 2 - 12, 80, 24); break;
+        case 'CZE': stripesH(['#ffffff', '#d7141a']); g.fillStyle = '#11457e'; g.beginPath(); g.moveTo(0, 0); g.lineTo(W * 0.5, H / 2); g.lineTo(0, H); g.fill(); break;
+        case 'JPN': g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#bc002d'; g.beginPath(); g.arc(W / 2, H / 2, H * 0.3, 0, Math.PI * 2); g.fill(); break;
+        case 'MOON': {
+          g.fillStyle = '#0b1236'; g.fillRect(0, 0, W, H);
+          g.fillStyle = '#fff'; for (let i = 0; i < 26; i++) { const sx = hash(i, 1, 7) * W, sy = hash(i, 2, 7) * H; g.globalAlpha = 0.4 + hash(i, 3, 7) * 0.6; g.fillRect(sx, sy, 2, 2); }
+          g.globalAlpha = 1;
+          const mx = W * 0.56, my = H * 0.5, r = H * 0.32;
+          const gr = g.createRadialGradient(mx - r * 0.3, my - r * 0.3, r * 0.2, mx, my, r);
+          gr.addColorStop(0, '#fbf6e3'); gr.addColorStop(1, '#c9c2a8');
+          g.fillStyle = gr; g.beginPath(); g.arc(mx, my, r, 0, Math.PI * 2); g.fill();
+          g.fillStyle = 'rgba(120,112,90,.45)'; for (const [cx, cy, cr] of [[-0.3, -0.2, 0.18], [0.25, 0.1, 0.22], [-0.05, 0.35, 0.12], [0.3, -0.35, 0.1]]) { g.beginPath(); g.arc(mx + cx * r, my + cy * r, cr * r, 0, Math.PI * 2); g.fill(); }
+          g.fillStyle = '#ffd23f'; g.font = 'bold 16px system-ui, sans-serif'; g.fillText('MIRNO MORJE', 10, H - 12);
+          break;
+        }
+        default: {   // MG: izmišljene skakalnice — zastava zbirke MINI GAMES
+          g.fillStyle = '#15183a'; g.fillRect(0, 0, W, H);
+          g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(0, H); g.lineTo(W * 0.55, 0); g.lineTo(W * 0.75, 0); g.lineTo(W * 0.2, H); g.fill();
+          g.fillStyle = '#ff4fd8'; g.beginPath(); g.moveTo(W * 0.25, H); g.lineTo(W * 0.8, 0); g.lineTo(W * 0.88, 0); g.lineTo(W * 0.33, H); g.fill();
+          g.fillStyle = '#fff'; g.font = 'bold 30px system-ui, sans-serif'; g.textAlign = 'center'; g.fillText('MINI', W * 0.5, H * 0.42); g.fillText('GAMES', W * 0.5, H * 0.72);
+        }
+      }
+    });
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    return t;
+  });
+}
+
 /** Mehka pika (delci snega). */
 export function dot() {
   return once('dot', () => {

@@ -7,7 +7,7 @@
    jezero, sneženje. Kakovost (q) določa gostoto.
    ===================================================================== */
 import * as THREE from 'three';
-import { snow, inrunTrack, label, board, flag, dot, fbm, hash } from './tex.js';
+import { snow, inrunTrack, label, board, flag, dot, fbm, hash, countryFlag } from './tex.js';
 
 const V3 = THREE.Vector3;
 export const WAVE = { uTime: { value: 0 }, uCheer: { value: 0 } };
@@ -324,6 +324,37 @@ export function buildWorld(hill, q) {
     hut.position.set(top.x - 1.5, top.y + 1.5, 0); hut.castShadow = true; group.add(hut);
     const roof = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.3, 6.6), new THREE.MeshStandardMaterial({ color: '#2b2f38', roughness: 0.5 }));
     roof.position.set(top.x - 1.5, top.y + 3.2, 0); group.add(roof);
+    // drog z zastavo nad štartno hiško: država prave skakalnice, Luna (brez vetra: na prečki, ne plapola), sicer MINI GAMES
+    {
+      const moon = !!hill.def.physics?.noAir;
+      const code = moon ? 'MOON' : hill.def.real?.country || 'MG';
+      const FW = 4.2, FH = 2.8, PH = 9;
+      const px = top.x - 3.6, py = top.y + 3.3, pz = -2.6;
+      const poleM = new THREE.MeshStandardMaterial({ color: '#d9dde3', metalness: 0.8, roughness: 0.35 });
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, PH, 8), poleM);
+      pole.position.set(px, py + PH / 2, pz); pole.castShadow = true; group.add(pole);
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshStandardMaterial({ color: '#e8c341', metalness: 0.9, roughness: 0.25 }));
+      knob.position.set(px, py + PH + 0.1, pz); group.add(knob);
+      const fg = new THREE.PlaneGeometry(FW, FH, 16, 8); fg.translate(FW / 2 + 0.08, -FH / 2, 0);
+      const fm = new THREE.MeshStandardMaterial({ map: countryFlag(code), side: THREE.DoubleSide, roughness: 0.75 });
+      if (!moon) {
+        fm.onBeforeCompile = sh => {
+          sh.uniforms.uTime = WAVE.uTime;
+          sh.vertexShader = sh.vertexShader.replace('void main() {', 'uniform float uTime;\nvoid main() {')
+            .replace('#include <begin_vertex>', `#include <begin_vertex>
+              float k = clamp(position.x / ${FW.toFixed(1)}, 0.0, 1.0);
+              transformed.z += (sin(position.x * 1.9 - uTime * 4.2) * 0.32 + sin(position.x * 3.7 - uTime * 6.3 + position.y) * 0.1) * k;
+              transformed.y += sin(position.x * 1.3 - uTime * 3.1) * 0.12 * k * k;`);
+        };
+        fm.customProgramCacheKey = () => 'bigflag';
+      } else {
+        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, FW + 0.2, 6), poleM);
+        bar.rotation.z = Math.PI / 2; bar.position.set(px + FW / 2 + 0.08, py + PH - 0.05, pz); group.add(bar);
+      }
+      const fl = new THREE.Mesh(fg, fm);
+      fl.position.set(px, py + PH - 0.08, pz); fl.castShadow = true;
+      group.add(fl);
+    }
     // kabina trenerjev ob mizi
     const cab = new THREE.Group();
     const cb = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 3), new THREE.MeshStandardMaterial({ color: '#e8edf3', roughness: 0.4, metalness: 0.2 }));
