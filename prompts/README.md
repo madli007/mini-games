@@ -16,7 +16,6 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [19-krogla-dirka](19-krogla-dirka.md) | Hrčkova krogla: dirka v multiplayerju | veliko |
 | [20-krogla-okras](20-krogla-okras.md) | Hrčkova krogla: okolica prog | srednje |
 | [10-minigolf](10-minigolf.md) | Hrčkov minigolf (nova igra) | veliko |
-| [13-skoki-pokal](13-skoki-pokal.md) | Smučarski skoki: pokal, kariera, trgovina | veliko |
 | [22-pinball-motor](22-pinball-motor.md) | Pinball motor (osnova za Božični pinball) | veliko |
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
@@ -38,7 +37,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 10 | [minigolf](10-minigolf.md) | Hrčkov minigolf | — | ⬜ | | 03, 07 ✅ |
 | 11 | [skoki](11-skoki.md) | Smučarski skoki | 1/3 | ✅ | `6e7824c` | — |
 | 12 | [skoki-tekma](12-skoki-tekma.md) | Smučarski skoki: tekma | 2/3 | ✅ | `ab9c933`, `ce81cbf` | 11 ✅ |
-| 13 | [skoki-pokal](13-skoki-pokal.md) | Smučarski skoki: pokal | 3/3 | ⬜ | | 12 ✅, 29 ✅ |
+| 13 | [skoki-pokal](13-skoki-pokal.md) | Smučarski skoki: pokal | 3/3 | ✅ | `8936bc0` | 12 ✅, 29 ✅ |
 | 14 | [herodle-nacini](14-herodle-nacini.md) | Herodle, 2. faza | 2/3 | ✅ | `e3f8d5a` | 09 |
 | 15 | [herodle-dvoboj](15-herodle-dvoboj.md) | Herodle, 3. faza | 3/3 | ⬜ | | 14 ✅ |
 | 16 | [frnikole](16-frnikole.md) | Dirka frnikol: solo Dirkalni dan | 1 | ✅ | `59eb0ba` | 03, 07 |
