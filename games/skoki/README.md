@@ -27,8 +27,8 @@ Prvi trije uspešni skoki na napravi imajo namige na zaslonu.
 **Trening ne šteje rekordov:** lokalni rekord (ghost »Moj rekord«, zelena črta, 🏅 v meniju, »Osebni rekord!«) in
 lestvica se posodobijo le v »Rekordu skakalnice«.
 
-**Oznake na doskočišču:** črte vsakih 5 m (vsakih 10 m debelejše, s številkami ob obeh robovih), P-točka (zelena),
-K-točka (rdeča), HS (modra) — vse čez celo širino, s količki in tablami na obeh straneh; barvni pasovi ob robovih
+**Oznake na doskočišču:** črtkane črte čez doskočišče vsakih 5 m (vsakih 10 m debelejše in temnejše, s številkami ob obeh robovih), P-točka (zelena),
+K-točka (rdeča), HS (modra) — debela črta čez celo širino s črtkanima spremljevalnima črtama ±1,5 m (vidno od daleč), s količki in tablami na obeh straneh; barvni pasovi ob robovih
 (P → K zelen, K → HS rdeč, za HS moder) in zelena črta tvojega rekorda.
 
 ## Moduli

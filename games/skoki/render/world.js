@@ -79,6 +79,23 @@ function lineAt(hill, s, w, color, emissive = 0, opacity = 1) {
   return mesh;
 }
 
+/** Črtkan pas čez doskočišče (črtice dash, presledki gap, v metrih čez širino) — vidnejše od daleč, kot na pravih skakalnicah. */
+function dashedLineAt(hill, s, w, color, emissive = 1, { dash = 1.4, gap = 0.9 } = {}) {
+  const a = hill.landAt(s - w / 2), b = hill.landAt(s + w / 2);
+  const hw = hillHalfWidth(hill, s) - 1.2, lift = 0.036;
+  const pos = [], idx = [];
+  const n = Math.max(1, Math.floor((2 * hw + gap) / (dash + gap)));
+  const z0 = -((n * dash + (n - 1) * gap) / 2);
+  for (let i = 0; i < n; i++) {
+    const za = z0 + i * (dash + gap), zb = za + dash, k = i * 4;
+    pos.push(a.x, a.y + lift, za, a.x, a.y + lift, zb, b.x, b.y + lift, za, b.x, b.y + lift, zb);
+    idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  return new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(emissive), depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+}
+
 /* =====================================================================
    Gradnja sveta
    ===================================================================== */
@@ -165,7 +182,8 @@ export function buildWorld(hill, q) {
   const s0 = Math.ceil(hill.k * 0.45 / 5) * 5;
   for (let s = s0; s <= hill.hs + 15; s += 5) {
     if (Math.abs(s - hill.k) < 0.01 || Math.abs(s - hill.hs) < 0.01 || s === Math.round(hill.def.landing.pArc * 0.85)) continue;
-    lines.add(lineAt(hill, s, s % 10 === 0 ? 0.22 : 0.12, s % 10 === 0 ? '#1c46c4' : '#3a66d8', 1.0));   // vsakih 5 m (vsakih 10 m debelejša)
+    // vsakih 5 m črtkana črta čez doskočišče (vsakih 10 m debelejša in temnejša) — vidna tudi od daleč
+    lines.add(dashedLineAt(hill, s, s % 10 === 0 ? 0.5 : 0.35, s % 10 === 0 ? '#0f2f8f' : '#2a4fb8', 1.0, s % 10 === 0 ? { dash: 1.8, gap: 0.8 } : { dash: 1.1, gap: 1.1 }));
     if (s % 10 === 0) {
       const p = hill.landAt(s), hw = hillHalfWidth(hill, s);
       for (const side of [1, -1]) {
@@ -179,7 +197,11 @@ export function buildWorld(hill, q) {
   // P-točka (začetek doskočišča), K-točka in HS: debele črte čez celo doskočišče, oznake in količki na obeh straneh
   const P_S = Math.round(hill.def.landing.pArc * 0.85);
   const MARKS = [[P_S, 'P ' + P_S, '#1fb86b'], [hill.k, 'K ' + hill.k, '#e3263a'], [hill.hs, 'HS ' + hill.hs, '#2f6bff']];
-  for (const [s, , colr] of MARKS) lines.add(lineAt(hill, s, s === P_S ? 0.3 : 0.6, colr, 1.8));
+  for (const [s, , colr] of MARKS) {
+    lines.add(lineAt(hill, s, s === P_S ? 0.4 : 0.9, colr, 2.0));
+    // K in HS: še črtkani spremljevalni črti 1,5 m pred in za — debela »vrata«, ki jih vidiš že iz zraka
+    if (s !== P_S) for (const d of [-1.5, 1.5]) lines.add(dashedLineAt(hill, s + d, 0.3, colr, 1.6, { dash: 0.9, gap: 0.7 }));
+  }
   const poleG = new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6); poleG.translate(0, 1.3, 0);
   for (const [s, txt, colr] of MARKS) {
     const p = hill.landAt(s), hw = hillHalfWidth(hill, s);
