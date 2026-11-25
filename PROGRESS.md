@@ -1028,3 +1028,74 @@ Stanje: **končano** (24. 11. 2026). SQL pognan v Supabase (migracija `skoki_pra
 - Ročni skoki z miško na vseh pravih skakalnicah (brskalnik je počasen; preverjeno z botom) — občutek letalnic naj preveri človek.
 - `tests.html` v brskalniku (Node teste poganja isti `runAll`).
 - Lestvica in ghost s Supabase (`?igralec=1/2`): zahtevalo bi nov anonimni profil v produkcijski bazi.
+
+---
+
+# Ustavi uro (`games/ustavi-uro/`)
+
+Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
+
+## Načrt
+
+- [x] `logic.js` — generator runde iz seeda (prosta igra po težavnosti, dnevni izziv s 7 modifikatorji, dvoboj in Zadnji stoji),
+      odstopanje, prekoračitev (5000 ms), bonus za popoln krog (−20 ms, ne pod 0), ocene (10/50/150/400 ms), povzetek in smer,
+      izpadanje z izenačenji, razvrstitev, krone, nagrade, notranja ura, XP, dosežki, niz dni, prikaz časa, komentator (24 vrstic)
+- [x] Testi `tests/ustavi-uro.js` (12) — registrirani v `tests/tests.js`
+- [x] Ura: velika številčnica s tabelarnimi številkami in slovensko vejico, obroč s kazalcem proti cilju, izginjanje (300 ms) v
+      utripajoč »?«, razkritje z vrtenjem številk, odstopanje in ocena, trak −1 s … +1 s, zlati blisk + konfeti / shake
+- [x] STOP: ogromen gumb, dotik kjerkoli na polju, preslednica; `pointerdown`/`keydown`, čas iz `event.timeStamp`/`performance.now()`
+      od izrisa »Start!« (rAF), 150 ms zaščita po startu in med stopoma; prikaz z rAF, čas vedno iz časovnih žigov
+- [x] Zvok (`audio.js`, WebAudio): tiktak (vklop v meniju), pisk ob startu, klik ob STOP, zvoki ocen, fanfara; utišanje se zapomni
+- [x] Prosta igra (5 krogov, Lahko/Srednje/Težko, osebni rekord po težavnosti), dnevni izziv (prvi poskus na lestvico, ostalo vaja)
+- [x] Pavza (`Esc`/gumb) → krog se ponovi, runda ne šteje za lestvico in rekord; zavihek v ozadju → solo krog se ponovi
+- [x] Dvoboj in Zadnji stoji (2–10): host vodi kroge, vsak meri lokalno, `stop {key, taps}`, kljukice brez časa, skupno razkritje
+      (trak z avatarji, krona 👑), izpadanje, emoji odzivi izpadlih, prenos hosta, ponovna povezava, revanša, TV pogled
+- [x] Konec: povzetek (skupaj, povprečje, najboljši krog, smer, graf odstopanj po krogih, ocene), »tvoja notranja ura«, nagrade v MP
+- [x] 10 dosežkov, XP po promptu, 8 nalog v `games.json` (vnos `live`, `asc`, `ms`)
+
+## Dnevnik
+
+- **Modifikatorji dneva (7):** Klasika, Čudni cilji (6–15 s na stotinko, nikoli cela sekunda), Metronom (tiktak 0,88–1,12 s
+  ves krog, tudi na slepo), Lažna ura (vidni prikaz ×0,9 ali ×1,1; razkritje pokaže pravi čas), Odštevanje (od cilja do 0,00),
+  Dvojni stop (5 s in 10 s; odstopanji se seštejeta, manjkajoč stop = 5000), Dolga pot (en krog 30 s, ura izgine po ≤ 8 s).
+  Časi izginotja v dnevnem izzivu so iz seeda: krog 2 po 4–6 s, krog 3 po 2–4 s, krog 4 po 0,5–1,5 s, krog 5 na slepo.
+- **Težavnost:** Lahko = vedno 10 s; Srednje = krogi 4–5 naključno 7–15 s (cele sekunde); Težko = od 2. kroga 8–30 s, zadnji 20–30 s.
+- **Zadnji stoji:** čas izginotja 6 s → 4,5 s → 3 s → 1,5 s → na slepo; ob izenačenju na dnu ne izpade nihče.
+  *Švicarska ura* se tu računa po povprečju na krog (sicer bi jo dobil tisti, ki je izpadel prvi — najdel brskalniški test).
+- **Merjenje:** `t0` = trenutek prvega rAF po izrisu »Start!«; če rAF ne pride v 150 ms (zavihek v ozadju), krog začne vseeno —
+  v MP bi sicer igralec v ozadnjem zavihku izgubil krog (najdeno v 3-zavihčnem testu: dva sta dobila 5000 ms).
+- **Skupni start v MP:** host pošlje `round {gid, r, key}`; vsak klient odšteje 3-2-1 (`ui.countdown`) in meri od **lokalnega**
+  starta (izravnava zakasnitve omrežja, ni potrebe po sinhronizaciji ur). Host oceni krog, ko so oddali vsi živi prisotni
+  ali po odštevanju + cilj + 5 s + rezerva; manjkajoči (odsotni, osveženi sredi kroga) dobijo prekoračitev.
+  Host taps sam ovrednoti z `scoreRound` (klient pošlje le čase stopov). Stanje (`d`) gre vsem ob vsakem `roundEnd`,
+  zato nov host nadaljuje z naslednjim krogom; prekinjen krog se odigra znova z novim ključem.
+- **Naloge:** `ustavi-uro:round` sporoči najboljši krog runde (en dogodek — dovolj za naloge s `target: 1`),
+  `ustavi-uro:total` skupni rezultat (le cela, neprekinjena runda; v MP le dvoboj s 5 krogi), `ustavi-uro:rounds` število krogov
+  (`times`), `ustavi-uro:mp-win` zmaga. `cmp: 'lte'` deluje kot pri Reakciji (test v `tests/ustavi-uro.js`).
+- **Notranja ura:** krogi, kjer je bila ura ob stopu skrita (brez Lažne ure in Metronoma), zadnjih 60 v `storage` na igralca.
+- **Debug:** `?debug=1` skrajša cilje na 30 % (10 s → 3 s; rekordi se ne shranjujejo, lestvica le offline), `&auto=1` samodejni
+  stop ±60 ms, `&mod=<id>` preizkus modifikatorja v dnevnem izzivu (vedno vaja).
+- **Postavitev:** igralni zaslon ima višino okna (JS `fitPlay`), številčnica se prilagaja prostoru (container query `cqmin`),
+  zato je STOP viden tudi na nizkih zaslonih (preizkušeno 800×600 in 375×812). Na ozkih zaslonih je stranski panel skrit,
+  zgornja vrstica ostane v eni vrsti.
+- Lastne tabele niso potrebne (lestvica = `game_scores` s seedom dneva) → nič za pognati v Supabase.
+
+## Preverjeno
+
+- `node tests/run-node.mjs`: 200/200 (12 novih); `tests.html` 200/200 (prej 5 padcev trgovine/ghostov zaradi ostankov `mg-test:`
+  v `localStorage` iz starega zagona — po čiščenju vse uspešno; ni povezano s to igro).
+- Brskalnik (offline, `?debug=1&auto=1`): cela prosta runda (razkritja, ocene, graf, bonus, »Še enkrat«), dnevni izziv
+  (Odštevanje, mesto 1. na lestvici, nato »vaja«), Dvojni stop (`?mod=double`), pavza z `Esc` (krog se ponovi), zaščita 150 ms.
+- Multiplayer v 3 zavihkih: soba s kodo (obrazec) in prek `?room=`, dvoboj Srednje do konca (stopničke, 4 nagrade, povzetek),
+  Zadnji stoji s 3 (izpad po krogu, zmagovalec), odhod hosta sredi dvoboja (nov host nadaljuje 5. krog, odsotni dobi 5000 ms),
+  revanša, osvežitev igralca sredi igre (vrnitev + sinhronizacija, igra naprej).
+- Telefon 375×812 (meni, igra z razkritjem) in namizje; konzola brez novih napak (vibriranje le po dotiku uporabnika).
+
+## Ni bilo preverjeno
+
+- **Natančnost časa pri 60 Hz:** okolje je imelo rAF ~2/s (okno ni bilo v ospredju), zato občutek, tiktak in razkritje
+  naj preveri človek na telefonu. Merjenje je iz časovnih žigov dogodkov, zato ga nizek FPS ne pokvari (le zakasni `t0`).
+- **Zvok** (WebAudio) — v okolju ni bil slišen.
+- **TV pogled** (`?tv=1` / gumb v lobbyju) in emoji odzivi izpadlih — implementirano, a ne preizkušeno v več zavihkih.
+- Multiplayer s Supabase (različne naprave, zakasnitev) in lestvica na Supabase.
+- `prefers-reduced-motion` (brez shakea, konfetov in vrtenja) — le v kodi.

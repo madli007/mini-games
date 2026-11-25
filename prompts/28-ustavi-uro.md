@@ -1,6 +1,6 @@
 # Prompt: Ustavi uro
 
-> **Stanje:** ⬜ čaka — lahko takoj (predpogoj 01 je narejen)
+> **Stanje:** ✅ narejeno (25. 11. 2026) — predpogoj: 01 ✅
 
 > V novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši:
 > **»Preberi prompts/28-ustavi-uro.md in ga v celoti izvedi.«**

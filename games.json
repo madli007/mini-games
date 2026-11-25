@@ -190,6 +190,30 @@
     ]
   },
   {
+    "id": "ustavi-uro",
+    "name": "Ustavi uro",
+    "description": "Ustavi štoparico točno pri 10,00 s, potem pa ura izgine in šteješ v glavi. Dnevni izziv za vse ali dvoboj do 10 igralcev.",
+    "icon": "⏱️",
+    "path": "games/ustavi-uro/",
+    "players": { "min": 1, "max": 10 },
+    "mode": "realtime",
+    "tags": ["občutek", "daily", "party", "rekordi"],
+    "status": "live",
+    "scoreOrder": "asc",
+    "scoreUnit": "ms",
+    "color": "#4dd4ff",
+    "quests": [
+      { "id": "play", "tier": "e", "text": "Odigraj rundo Ustavi uro", "event": "play:ustavi-uro", "target": 1 },
+      { "id": "round-100", "tier": "e", "text": "V Ustavi uro ustavi krog na manj kot 100 ms natančno", "event": "ustavi-uro:round", "target": 1, "cmp": "lte", "goal": 99 },
+      { "id": "daily", "tier": "m", "text": "Odigraj dnevni Ustavi uro", "event": "daily:ustavi-uro", "target": 1 },
+      { "id": "total-600", "tier": "m", "text": "V Ustavi uro doseži skupno odstopanje pod 600 ms", "event": "ustavi-uro:total", "target": 1, "cmp": "lte", "goal": 599 },
+      { "id": "round-10", "tier": "h", "text": "V Ustavi uro ustavi krog na 10 ms natančno", "event": "ustavi-uro:round", "target": 1, "cmp": "lte", "goal": 10 },
+      { "id": "mp-win", "tier": "h", "text": "Zmagaj dvoboj ali Zadnji stoji v Ustavi uro", "event": "ustavi-uro:mp-win", "target": 1 },
+      { "id": "w-rounds", "tier": "w", "text": "Odigraj 25 krogov Ustavi uro ta teden", "event": "ustavi-uro:rounds", "target": 25 },
+      { "id": "w-total-400", "tier": "w", "text": "V Ustavi uro 3-krat doseži skupno odstopanje pod 400 ms", "event": "ustavi-uro:total", "target": 3, "cmp": "lte", "goal": 399 }
+    ]
+  },
+  {
     "id": "bomba-arena",
     "name": "Bomba arena",
     "description": "Postavljaj bombe, ruši zidove, poberi powerupe in ostani zadnji na areni.",

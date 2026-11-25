@@ -29,6 +29,7 @@ import { herodleTests } from './herodle.js';
 import { herodle2Tests } from './herodle2.js';
 import { frnikoleTests } from './frnikole.js';
 import { skokiTests } from './skoki.js';
+import { ustaviUroTests } from './ustavi-uro.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1488,6 +1489,8 @@ herodle2Tests(test, { eq, ok });
 frnikoleTests(test, { eq, ok });
 /* ------------------------------------------------------- Smučarski skoki (tests/skoki.js) */
 skokiTests(test, { eq, ok });
+/* ------------------------------------------------------- Ustavi uro (tests/ustavi-uro.js) */
+ustaviUroTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

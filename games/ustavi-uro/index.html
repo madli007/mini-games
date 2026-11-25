@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Ustavi uro — ustavi štoparico točno pri 10,00 s, nato ura izgine in šteješ v glavi. Dnevni izziv in dvoboj do 10 igralcev.">
+<title>Ustavi uro · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='9' r='6.2' fill='none' stroke='%234dd4ff' stroke-width='1.8'/%3E%3Crect x='6.5' y='0.5' width='3' height='2' fill='%234dd4ff'/%3E%3Cpath d='M8 9V5.2' stroke='%23fff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body class="mg uu-body">
+  <main class="mg-container uu">
+
+    <!-- MENI -->
+    <section id="menu" class="uu-screen">
+      <div class="uu-hero mg-card mg-card--glow">
+        <div class="uu-hero__icon" aria-hidden="true">⏱️</div>
+        <div>
+          <h1 class="mg-title" style="margin:0 0 8px">Ustavi uro</h1>
+          <p class="mg-muted" style="margin:0">Štoparica teče, ti jo ustaviš <b class="uu-acc">točno pri 10,00 s</b>.
+            Potem ura <b>izgine</b> — in šteješ v glavi. Šteje skupno odstopanje v milisekundah, manj je bolje.</p>
+        </div>
+      </div>
+
+      <div class="uu-modes">
+        <div class="mg-card mg-stack uu-mode">
+          <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Prosta igra</h2><span class="mg-badge" id="freeBest"></span></div>
+          <p class="mg-muted mg-small" style="margin:0">5 krogov: ura vidna ves čas, nato izgine po 5 s, 3 s, 1 s, v zadnjem krogu je sploh ni.</p>
+          <div class="uu-seg" role="radiogroup" aria-label="Težavnost" id="diffSeg"></div>
+          <p class="mg-small mg-muted" style="margin:0" id="diffDesc"></p>
+          <button class="mg-btn mg-btn--cyan mg-btn--big mg-btn--block" id="btnFree">Igraj</button>
+        </div>
+
+        <div class="mg-card mg-stack uu-mode uu-mode--daily">
+          <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Dnevni izziv</h2><span class="mg-badge mg-badge--yellow" id="dailyState"></span></div>
+          <div class="uu-mod" id="dailyMod"></div>
+          <p class="mg-muted mg-small" style="margin:0">Vsi imajo danes <b>iste cilje</b> in isti modifikator. Na lestvico šteje <b>prvi poskus</b>.</p>
+          <div class="uu-best" id="dailyBest"></div>
+          <button class="mg-btn mg-btn--green mg-btn--big mg-btn--block" id="btnDaily">Igraj dnevni izziv</button>
+        </div>
+
+        <div class="mg-card mg-stack uu-mode">
+          <h2 class="mg-title" style="margin:0">Z družbo</h2>
+          <p class="mg-muted mg-small" style="margin:0"><b>Dvoboj</b>: vsi hkrati, ista runda, zmaga najmanjše skupno odstopanje.
+            <b>Zadnji stoji</b>: vsak krog izpade najslabši. 2–10 igralcev.</p>
+          <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnCreate">Ustvari sobo</button>
+          <form class="mg-row" id="joinForm" autocomplete="off">
+            <input class="mg-input mg-input--code" id="joinCode" maxlength="4" placeholder="KODA" aria-label="Koda sobe" style="flex:1;min-width:0;font-size:20px">
+            <button class="mg-btn mg-btn--cyan" type="submit">Pridruži se</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mg-card mg-row mg-row--between uu-opts">
+        <label class="mg-check"><input type="checkbox" id="optTick"> <span>Tiktak med vidnim delom ure</span></label>
+        <span class="mg-small mg-muted" id="innerClock"></span>
+      </div>
+
+      <div class="mg-grid mg-grid--2">
+        <div class="mg-card" id="board"></div>
+        <div class="mg-card">
+          <h2 class="mg-title">Dosežki</h2>
+          <div id="achList" class="uu-ach"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="uu-screen mg-hidden"></section>
+
+    <!-- IGRA -->
+    <section id="play" class="uu-screen uu-play mg-hidden">
+      <div class="uu-top">
+        <span class="mg-badge mg-badge--cyan" id="modeLbl">Prosta igra</span>
+        <span class="mg-badge" id="modLbl"></span>
+        <span class="uu-dots" id="dots"></span>
+        <span class="mg-spacer"></span>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnMute" aria-label="Utišaj zvok">🔊</button>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnPause" aria-label="Pavza">⏸</button>
+        <button class="mg-btn mg-btn--ghost mg-btn--small" id="btnQuit">Prekini</button>
+      </div>
+      <div class="uu-players mg-hidden" id="players"></div>
+      <div class="uu-layout">
+        <div class="uu-field" id="field">
+          <div class="uu-info"><span id="roundLbl">Krog 1/5</span><b id="targetLbl">Cilj 10,00 s</b><span id="hideLbl"></span></div>
+          <div class="uu-dialwrap"><div class="uu-dial" id="dial">
+            <svg class="uu-ring" viewBox="0 0 200 200" aria-hidden="true">
+              <circle class="uu-ring__track" cx="100" cy="100" r="92"></circle>
+              <g class="uu-ring__ticks" id="ticks"></g>
+              <circle class="uu-ring__bar" id="ring" cx="100" cy="100" r="92" pathLength="1000"></circle>
+            </svg>
+            <div class="uu-clock" id="clock" aria-live="off">0,00</div>
+            <div class="uu-blind" id="blind" aria-hidden="true">?</div>
+            <div class="uu-marks" id="marks"></div>
+          </div></div>
+          <div class="uu-reveal" id="reveal" aria-live="polite">
+            <div class="uu-dev" id="devLbl"></div>
+            <div class="uu-grade" id="gradeLbl"></div>
+            <div class="uu-say" id="sayLbl"></div>
+          </div>
+          <div class="uu-strip" id="strip" aria-hidden="true">
+            <div class="uu-strip__axis"><span>−1 s</span><span>0</span><span>+1 s</span></div>
+            <div class="uu-strip__track" id="stripTrack"></div>
+          </div>
+          <div class="uu-react mg-hidden" id="react"></div>
+          <button type="button" class="uu-stop" id="btnStop">STOP</button>
+          <div class="uu-hint mg-small mg-muted" id="hint"><span class="mg-kbd">preslednica</span> = STOP · <span class="mg-kbd">Esc</span> = pavza</div>
+        </div>
+        <aside class="uu-side mg-card mg-hidden" id="side"></aside>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
