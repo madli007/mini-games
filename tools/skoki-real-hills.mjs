@@ -78,12 +78,8 @@ const CERTS = [
 const TUNE = {"planica-srednja":{g: 4, lift: 1.12, tw: 1, push: 1}, "planica-velika":{g: 5, lift: 1.12, tw: 1, push: 1}, oberstdorf: {g: 36, lift: 0.98, tw: 1, push: 1}, garmisch: {g: 34, lift: 1.1, tw: 1, push: 1}, innsbruck: {g: 5, lift: 1.22, tw: 1, push: 1}, bischofshofen: {g: 4, lift: 1.08, tw: 1, push: 1}, zakopane: {g: 11, lift: 1.14, tw: 1, push: 1}, willingen: {g: 19, lift: 1.1, tw: 1, push: 1}, lahti: {g: 19, lift: 1.06, tw: 1, push: 1}, engelberg: {g: 16, lift: 1.08, tw: 1, push: 1}, "planica-letalnica":{g: 17, lift: 1.14, tw: 1, push: 1}, kulm: {g: 32, lift: 1.1, tw: 1, push: 1}, vikersund: {g: 11, lift: 1.18, tw: 1, push: 1}, "oberstdorf-letalnica":{g: 47, lift: 1.12, tw: 1, push: 1}};
 
 /* ------------------------------------------------------------ odklepi, teme, opisi */
-const UNLOCK = {
-  'planica-srednja': null,
-  'planica-velika': { hill: 'planica-srednja', over: 'k' },
-  velika: { hills: ['orlova', 'planica-velika'], over: 'k' },
-  letalnica: { group: 'prave', size: 'velika', over: 'hs' },
-};
+// vse prave skakalnice so od začetka odprte (prej verige odklepov; napredek zdaj kažejo dosežki in oznake na karticah)
+const UNLOCK = {};
 
 const sky = (zenith, horizon, ground, sun, sunColor, clouds) => ({ sun, zenith, horizon, ground, sunColor, clouds });
 const THEMES = {

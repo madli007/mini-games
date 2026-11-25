@@ -97,10 +97,6 @@
     "spring": 1
   },
   "desc": "Velika skakalnica tik ob letalnici. Strme stene doline, pomladni sneg, glasna domača publika.",
-  "unlock": {
-    "hill": "planica-srednja",
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.12
   }

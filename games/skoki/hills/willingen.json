@@ -96,13 +96,6 @@
     ]
   },
   "desc": "Največja velika skakalnica sredi gozdnatega gričevja. Dolg let, veter pa rad obrne smer.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.1
   }

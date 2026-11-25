@@ -1135,3 +1135,8 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 - Pristanek (paramsVersion 5): pozen klik = dve nogi, le skrajno pozen = dotik; klik po refleksu = trd pristanek; mehkejše meje.
 - Naš rekord skakalnice / svetovni rekord iz lestvice, pravi rekordi ob strani; »Moj« rekord z vseh naprav; osebni rekord v traku.
 - Preverjeno: testi 202/202, simulacija pristankov (Orlova, Planica, Zakopane, Willingen, letalnici), meni in trak v brskalniku.
+
+# Smučarski skoki — vse skakalnice odprte (25. 11. 2026)
+
+- Vse skakalnice odprte, Luna po skoku čez K na kateri koli letalnici; oznake ✓ K / ⭐ HS na karticah, dosežka »Zbiratelj K-točk« in »Do HS povsod«.
+- Preverjeno: testi 202/202, meni v brskalniku (21/22 odprtih, Luna zaklenjena s pravim besedilom).

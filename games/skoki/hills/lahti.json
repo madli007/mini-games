@@ -96,13 +96,6 @@
     ]
   },
   "desc": "Strm zalet (38,6°) nad ravnino in jezeri. Nizko sonce, breze in smreke, mraz.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.06
   }

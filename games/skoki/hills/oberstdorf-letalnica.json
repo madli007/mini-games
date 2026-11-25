@@ -96,11 +96,6 @@
     ]
   },
   "desc": "Letalnica v ozki stranski dolini. Najstrmejši zalet (38,7°) in kratek, navzgor nagnjen iztek.",
-  "unlock": {
-    "group": "prave",
-    "size": "velika",
-    "over": "hs"
-  },
   "physics": {
     "liftScale": 1.12
   }

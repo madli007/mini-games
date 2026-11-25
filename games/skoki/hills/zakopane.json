@@ -97,13 +97,6 @@
     "town": 0.6
   },
   "desc": "Velika skakalnica pod Tatrami in največja množica sezone. Tribune pojejo od prvega do zadnjega skoka.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.14
   }

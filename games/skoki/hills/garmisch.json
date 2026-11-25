@@ -96,13 +96,6 @@
     ]
   },
   "desc": "Novoletna tekma pod najvišjimi vrhovi. Kratek zalet, strma miza, dolg let nad stadionom.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.1
   }

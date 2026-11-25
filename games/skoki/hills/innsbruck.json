@@ -97,13 +97,6 @@
     "town": 1
   },
   "desc": "Skakalnica nad mestom: iztek se konča tik nad strehami. Kratko doskočišče, HS je blizu — pristani pravočasno.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.22
   }

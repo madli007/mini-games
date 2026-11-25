@@ -37,10 +37,6 @@
   "physics": {
     "thermals": 1
   },
-  "unlock": {
-    "hill": "orlova",
-    "over": "k"
-  },
   "theme": {
     "id": "sipina-puscava",
     "label": "Umeten sneg sredi puščave",

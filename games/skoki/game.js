@@ -65,6 +65,8 @@ const ACH = [
   { key: 'rekord-skakalnice', title: 'Rekord skakalnice', icon: '🏆', desc: 'Daljše od pravega rekorda skakalnice, brez padca' },
   { key: 'vse-letalnice', title: 'Vse letalnice', icon: '🛫', desc: 'Čez K na vseh letalnicah' },
   { key: 'popotnik', title: 'Popotnik', icon: '🧳', desc: 'Skok na vseh pravih skakalnicah' },
+  { key: 'vse-k', title: 'Zbiratelj K-točk', icon: '🗺️', desc: 'Čez K na vseh skakalnicah (brez Lune), brez padca' },
+  { key: 'vse-hs', title: 'Do HS povsod', icon: '⭐', desc: 'Čez HS brez padca na vseh pravih velikih skakalnicah' },
 ];
 // odklepi skakalnic so dosežki (veljajo na vseh napravah): odklep-<id>
 const achDef = k => ACH.find(a => a.key === k) || (k.startsWith('odklep-') ? { key: k, title: 'Odklenjena: ' + (hillOf(k.slice(7))?.def.name || k.slice(7)), icon: '🔓' } : { key: k, title: k, icon: '🏅' });
@@ -97,6 +99,11 @@ const localBest = id => S.load(bestKey(id), null);
 // Lestvice se naložijo ob meniju (predpomnilnik 60 s).
 const recs = { at: 0, hills: {}, mine: {}, loading: null };   // id → { dist, total, who } · mine: id → { dist, total }
 const realRec = def => def.real?.record ? { dist: def.real.record.dist, year: def.real.record.year, real: true } : null;
+/** Ali sem na skakalnici že skočil čez K / HS brez padca (statistika te naprave ali moj rekord na lestvici). */
+function passed(def) {
+  const d = myBest(def.id)?.dist || 0;
+  return { k: !!stats.overK?.[def.id] || d >= def.k, hs: !!stats.overHS?.[def.id] || d >= def.hs };
+}
 /** Moj najboljši skok na skakalnici (lokalno ali na lestvici) ali null. */
 function myBest(id) {
   const a = localBest(id), b = recs.mine[id];
@@ -242,12 +249,12 @@ function renderMenu() {
         return `<details class="sk-groupbox" data-group="${gr.id}" ${closed ? '' : 'open'}>
         <summary class="sk-group"><span class="mg-title">${esc(gr.name)}</span> <span class="mg-muted mg-small">${nOpen}/${list.length} odprtih${gr.desc ? ' · ' + esc(gr.desc) : ''}</span></summary>
         <div class="sk-hills" role="list">${list.map(({ def }) => {
-        const b = myBest(def.id), hr = hillRecord(def);
+        const b = myBest(def.id), hr = hillRecord(def), ps = passed(def);
         const open = isOpen(def, unlocked);
         const [c1, c2] = THEME_COLORS[def.id] || [def.theme?.sky?.zenith || '#24356e', '#0f1530'];
         const R = def.real;
         return `<button class="sk-hillcard ${open ? '' : 'locked'} ${R ? 'sk-hillcard--real' : ''}" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
-          <span class="kh">${R ? `<span class="sk-flag" aria-label="${esc(R.country)}">${flagOf(COUNTRY_FLAG[R.country])}</span> ` : ''}K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
+          <span class="kh">${R ? `<span class="sk-flag" aria-label="${esc(R.country)}">${flagOf(COUNTRY_FLAG[R.country])}</span> ` : ''}K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}${ps.hs ? ' <span class="sk-badge hs" title="Čez HS brez padca">⭐ HS</span>' : ps.k ? ' <span class="sk-badge" title="Čez K brez padca">✓ K</span>' : ''}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
           ${hr ? `<span class="sk-ourrec">🏆 Rekord: ${fmtDist(hr.dist)}${hr.who?.nickname ? ' · ' + esc(hr.who.nickname) : ''}</span>` : ''}
           ${R ? `<span class="sk-real">${R.record ? `Pravi rekord: ${fmtDist(R.record.dist)} (${R.record.year})<br>` : ''}po profilu skakalnice v ${esc(locative(R.venue))} (certifikat ${R.certYear})</span>` : ''}
           <span class="pb">${b ? '🏅 Moj rekord: ' + fmtDist(b.dist) + (b.total ? ' · ' + fmt1(b.total) + ' t' : '') : ''}</span></button>`;
@@ -863,6 +870,7 @@ function myJumpProgress(Hd, s, L, res, judges) {
   if (res.fall) stats.falls = (stats.falls || 0) + 1;
   else if (G.hintsOn) { stats.hints = (stats.hints || 0) + 1; if (stats.hints >= 3) G.hintsOn = false; }
   if (!res.fall && L.dist >= Hd.k) stats.overK = { ...(stats.overK || {}), [Hd.id]: true };
+  if (!res.fall && L.dist >= Hd.hs) stats.overHS = { ...(stats.overHS || {}), [Hd.id]: true };
   saveStats();
   if (!res.fall) hub.reportEvent('skoki:skok', 1);
   if (L.dist >= Hd.k) hub.reportEvent('skoki:k', 1);
@@ -891,6 +899,10 @@ function myJumpProgress(Hd, s, L, res, judges) {
     const real = HILLS.filter(h => h.def.group === 'prave').map(h => h.def.id);
     if (real.length && real.every(id => stats.visited[id])) ach.push('popotnik');
   }
+  // napredek po skakalnicah (namesto verig odklepov): K povsod, HS na vseh pravih velikih
+  if (HILLS.filter(h => !h.def.physics?.noAir).every(h => passed(h.def).k)) ach.push('vse-k');
+  const realBig = HILLS.filter(h => h.def.group === 'prave' && h.def.size === 'velika');
+  if (realBig.length && realBig.every(h => passed(h.def).hs)) ach.push('vse-hs');
   const flying = HILLS.filter(h => h.def.size === 'letalnica').map(h => h.def.id);
   if (flying.length && flying.every(id => stats.overK?.[id])) ach.push('vse-letalnice');
   // odklepi skakalnic (več hkrati = en toast)

@@ -96,11 +96,6 @@
     ]
   },
   "desc": "Letalnica, ki sledi naravnemu pobočju: doskočišče je bolj zavito, grbina dvigne let visoko nad sneg.",
-  "unlock": {
-    "group": "prave",
-    "size": "velika",
-    "over": "hs"
-  },
   "physics": {
     "liftScale": 1.1
   }

@@ -40,7 +40,7 @@
     "takeoffWindow": 0.6
   },
   "unlock": {
-    "hill": "orlovo-gnezdo",
+    "size": "letalnica",
     "over": "k"
   },
   "noCup": true,

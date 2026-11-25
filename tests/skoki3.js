@@ -81,24 +81,18 @@ export function skokiRealTests(test, { eq, ok }) {
     }
   });
 
-  test('skoki: odklepanje pravih skakalnic (Planica srednja odprta, velike, letalnice)', ctx => {
+  test('skoki: prave skakalnice so vse odprte; pogoji odklepa (hill / hills / size + group) še delujejo', ctx => {
     const defs = ctx.skokiHills, by = id => defs.find(d => d.id === id);
-    ok(!by('planica-srednja').unlock, 'Planica srednja je odprta');
-    const ids = (hill, dist, fall = false) => K.unlocksBy(defs, { hill: by(hill), dist, fall }).map(d => d.id).sort();
-    eq(ids('planica-srednja', 95), ['planica-velika'], 'čez K na srednji → Planica velika');
-    eq(ids('planica-srednja', 94.5), [], 'pod K nič');
-    const big = defs.filter(d => d.group === 'prave' && d.size === 'velika' && d.id !== 'planica-velika').map(d => d.id).sort();
-    eq(ids('orlova', 125).filter(id => big.includes(id)), big, 'čez K na Orlovi → vse prave velike');
-    eq(ids('planica-velika', 125).filter(id => big.includes(id)), big, 'čez K na Planici veliki → vse prave velike');
-    eq(ids('orlova', 140, true).length, 0, 'padec ne odklene');
-    const fly = defs.filter(d => d.group === 'prave' && d.size === 'letalnica').map(d => d.id).sort();
-    eq(ids('zakopane', 140).filter(id => fly.includes(id)), fly, 'čez HS na kateri koli pravi veliki → letalnice');
-    eq(ids('zakopane', 139.5).filter(id => fly.includes(id)), [], 'pod HS ne');
-    eq(ids('sipina', 117).filter(id => fly.includes(id)), [], 'trening velika ne odklene pravih letalnic');
-    ok(/skakalnici »Orlova« ali »Planica, velika«/.test(K.unlockText(by('zakopane'), defs)), K.unlockText(by('zakopane'), defs));
-    ok(/kateri koli pravi veliki/.test(K.unlockText(by('kulm'), defs)), K.unlockText(by('kulm'), defs));
-    // odprtost prek dosežka
-    ok(!K.isOpen(by('kulm'), new Set()) && K.isOpen(by('kulm'), new Set([K.unlockKey('kulm')])), 'isOpen');
+    for (const d of defs.filter(x => x.group === 'prave')) ok(!d.unlock && K.isOpen(d, new Set()), d.id + ': odprta');
+    // splošni pogoji (za morebitne nove skakalnice)
+    const t = (unlock, hill, dist, fall = false) => K.unlocksBy([{ id: 'x', unlock }], { hill: by(hill), dist, fall }).length === 1;
+    ok(t({ hill: 'orlova', over: 'k' }, 'orlova', 125) && !t({ hill: 'orlova', over: 'k' }, 'orlova', 124.5), 'hill + K');
+    ok(t({ hills: ['orlova', 'zakopane'], over: 'hs' }, 'zakopane', 140) && !t({ hills: ['orlova'], over: 'hs' }, 'zakopane', 140), 'hills + HS');
+    ok(t({ group: 'prave', size: 'velika', over: 'hs' }, 'zakopane', 140) && !t({ group: 'prave', size: 'velika', over: 'hs' }, 'sipina', 117), 'group + size');
+    ok(t({ size: 'letalnica', over: 'k' }, 'orlovo-gnezdo', 200) && t({ size: 'letalnica', over: 'k' }, 'vikersund', 200), 'size brez skupine');
+    ok(!t({ hill: 'orlova', over: 'k' }, 'orlova', 140, true), 'padec ne odklene');
+    ok(/skakalnici »Orlova« ali »Planica, velika«/.test(K.unlockText({ unlock: { hills: ['orlova', 'planica-velika'], over: 'k' } }, defs)));
+    ok(/kateri koli pravi veliki/.test(K.unlockText({ unlock: { group: 'prave', size: 'velika', over: 'hs' } }, defs)));
   });
 
   test('skoki: prave skakalnice — max_points/max_dist v SQL = scoring.js, zaletna mesta po certifikatu', ctx => {

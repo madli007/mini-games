@@ -258,13 +258,14 @@ export const unlockKey = id => 'odklep-' + id;
 export const isOpen = (def, achKeys) => !def.unlock || achKeys.has(unlockKey(def.id));
 /**
  * Ali skok na skakalnici `hill` (JSON) izpolni pogoj odklepa `u`:
- * { hill } — ta skakalnica · { hills: [...] } — katera koli od naštetih · { group, size } — katera koli skakalnica skupine in velikosti.
+ * { hill } — ta skakalnica · { hills: [...] } — katera koli od naštetih · { size, group? } — katera koli skakalnica te velikosti
+ * (z group le iz te skupine; npr. Luna: { size: 'letalnica', over: 'k' } — čez K na kateri koli letalnici).
  */
 export function unlockMatches(u, hill) {
   if (!u) return false;
   if (u.hill) return u.hill === hill.id;
   if (u.hills) return u.hills.includes(hill.id);
-  if (u.group) return (hill.group || 'trening') === u.group && hill.size === u.size;
+  if (u.size) return hill.size === u.size && (!u.group || (hill.group || 'trening') === u.group);
   return false;
 }
 /** Skakalnice, ki jih odklene ta skok: [def …]. */
@@ -282,7 +283,7 @@ export function unlockText(def, defs) {
   const nameOf = id => defs.find(d => d.id === id)?.name || id;
   const where = u.hill ? nameOf(u.hill)
     : u.hills ? 'skakalnici ' + u.hills.map(id => '»' + nameOf(id) + '«').join(' ali ')
-    : `kateri koli ${GROUP_NAMES[u.group] || u.group} ${SIZE_NAMES[u.size] || u.size} skakalnici`;
+    : `kateri koli ${u.group ? (GROUP_NAMES[u.group] || u.group) + ' ' : ''}${SIZE_NAMES[u.size] || u.size}${u.size === 'letalnica' ? '' : ' skakalnici'}`;
   return `Skoči čez ${u.over === 'hs' ? 'HS' : 'K'} na ${where}${u.over === 'hs' ? ' (brez padca)' : ''}.`;
 }
 

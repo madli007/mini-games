@@ -99,13 +99,6 @@
     "phoneLights": 1
   },
   "desc": "Zadnja postaja turneje. Najdaljši zalet med velikimi (položen, 27°), večer pod reflektorji, sneg v žarkih.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.08
   }

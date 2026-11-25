@@ -97,11 +97,6 @@
     "spotlights": 6
   },
   "desc": "Letalnica nad jezerom, prva z reflektorji. Strm zalet, strmo doskočišče — najdaljši poleti sezone.",
-  "unlock": {
-    "group": "prave",
-    "size": "velika",
-    "over": "hs"
-  },
   "physics": {
     "liftScale": 1.18
   }

@@ -34,10 +34,6 @@
     "outrunAngle": 1.5,
     "outrunLength": 95
   },
-  "unlock": {
-    "hill": "orlova",
-    "over": "k"
-  },
   "theme": {
     "id": "reflektor-noc",
     "label": "Nočna tekma pod reflektorji",

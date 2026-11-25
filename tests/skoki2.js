@@ -63,14 +63,16 @@ export function skokiPhase2Tests(test, { eq, ok }) {
     const a = run(0), b2 = run(-8);
     ok(Math.abs(a.x - b2.x) < 1e-6 || Math.abs(a.dist - b2.dist) <= 0.5, `Luna: daljava neodvisna od nagiba (${a.dist} / ${b2.dist})`);
     eq(a.windSamples.every(w => w === 0), true, 'Luna: brez vetra');
-    // odklepanje
-    const defs = ctx.skokiHills.filter(d => d.group !== 'prave');   // prave skakalnice: tests/skoki3.js
-    eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 126, fall: false }).map(d => d.id).sort(), ['reflektor', 'sipina']);
-    eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 141, fall: false }).map(d => d.id).sort(), ['orlovo-gnezdo', 'reflektor', 'sipina']);
-    eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 141, fall: true }), [], 'padec ne odklene');
-    eq(K.unlocksBy(defs, { hill: fly, dist: 201, fall: false }).map(d => d.id), ['mirno-morje']);
-    ok(K.isOpen(hillOf(ctx, 'zajcek').def, new Set()) && K.isOpen(hillOf(ctx, 'orlova').def, new Set()), 'mini in velika odprti');
-    ok(!K.isOpen(fly, new Set()) && K.isOpen(fly, new Set([K.unlockKey('orlovo-gnezdo')])), 'letalnica po odklepu');
+    // odklepanje: vse skakalnice so odprte, le Luna se odklene s skokom čez K na kateri koli letalnici
+    const defs = ctx.skokiHills;
+    for (const d of defs) if (d.id !== 'mirno-morje') ok(K.isOpen(d, new Set()), d.id + ': odprta');
+    ok(!K.isOpen(moon, new Set()) && K.isOpen(moon, new Set([K.unlockKey('mirno-morje')])), 'Luna po odklepu');
+    eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'orlova').def, dist: 141, fall: false }), [], 'velika ne odklene Lune');
+    eq(K.unlocksBy(defs, { hill: fly, dist: 199.5, fall: false }), [], 'pod K ne');
+    eq(K.unlocksBy(defs, { hill: fly, dist: 200, fall: false }).map(d => d.id), ['mirno-morje'], 'izmišljena letalnica');
+    eq(K.unlocksBy(defs, { hill: hillOf(ctx, 'kulm').def, dist: 200, fall: false }).map(d => d.id), ['mirno-morje'], 'prava letalnica');
+    eq(K.unlocksBy(defs, { hill: fly, dist: 230, fall: true }), [], 'padec ne odklene');
+    eq(K.unlockText(moon, defs), 'Skoči čez K na kateri koli letalnici.');
   });
 
   /* ------------------------------------------------------------ competition.js */

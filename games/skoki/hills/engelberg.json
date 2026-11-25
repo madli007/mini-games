@@ -96,13 +96,6 @@
     ]
   },
   "desc": "Velika skakalnica pod ledeniki, tik pred prazniki. Sneži, gore so na dosegu roke.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 1.08
   }

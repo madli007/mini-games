@@ -433,3 +433,12 @@ Cilj: odriv, ki ga zadene tudi človek, gladek prehod v let in let, v katerem se
   dotik z roko; klik po refleksu = trd pristanek (prej padec — pozen klik je bil slabši od nobenega). Meje udarca `hTele` 1,8,
   `hTwo` 2,15, `hNone` 1,3, kot smuči `pitchOk` 15° / `pitchTouch` 25° — dolgi skoki niso več dotiki; pristanek daleč čez HS je še
   padec.
+
+## Odklepanje (od 25. 11. 2026)
+- **Vse skakalnice so od začetka odprte** (prej verige: Orlova → Sipina/Reflektor/Orlovo gnezdo, Planica srednja → velika →
+  prave velike → letalnice). Igra je za prijatelje: host v tekmi lahko izbere katero koli skakalnico.
+- **Izjema: Luna (Mirno morje)** — odklene se s skokom čez K na kateri koli letalnici (`unlock: { size: 'letalnica', over: 'k' }`;
+  pogoj `size` brez `group` = katera koli skupina). Pogoji `hill` / `hills` / `size + group` ostanejo za morebitne nove skakalnice.
+- **Napredek namesto odklepov:** oznaka na kartici »✓ K« / »⭐ HS« (čez K / HS brez padca; statistika naprave ali moj rekord na
+  lestvici) in dosežka »Zbiratelj K-točk« (čez K povsod razen na Luni) in »Do HS povsod« (čez HS na vseh pravih velikih).
+  Že dobljeni dosežki `odklep-<id>` ostanejo.

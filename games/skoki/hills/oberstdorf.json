@@ -96,13 +96,6 @@
     ]
   },
   "desc": "Prva postaja turneje štirih skakalnic. Mrzel večer, sonce zahaja za grebeni, polne tribune.",
-  "unlock": {
-    "hills": [
-      "orlova",
-      "planica-velika"
-    ],
-    "over": "k"
-  },
   "physics": {
     "liftScale": 0.98
   }

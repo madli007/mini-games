@@ -153,11 +153,11 @@ export function buildHill(def) {
 /* ------------------------------------------------------------ validator */
 
 const NUM = (o, k) => typeof o?.[k] === 'number' && isFinite(o[k]);
-/** unlock: { hill } | { hills: [...] } (katera koli) | { group, size } (katera koli skakalnica skupine in velikosti), over: k|hs */
+/** unlock: { hill } | { hills: [...] } (katera koli) | { size, group? } (katera koli skakalnica velikosti, po želji le iz skupine), over: k|hs */
 const validUnlock = u => !!u && typeof u === 'object' && ['k', 'hs'].includes(u.over) && (
   typeof u.hill === 'string' ||
   (Array.isArray(u.hills) && u.hills.length > 0 && u.hills.every(h => typeof h === 'string')) ||
-  (typeof u.group === 'string' && typeof u.size === 'string'));
+  (typeof u.size === 'string' && (u.group == null || typeof u.group === 'string')));
 
 /**
  * Preveri skakalnico. Vrne seznam napak (prazen = veljavna).
@@ -203,7 +203,7 @@ export function validateHill(def) {
   if (!(L.outrunLength >= 40)) e.push('landing.outrunLength: vsaj 40 m.');
   // neobvezno: skupina v meniju, odklepanje, parametri fizike skakalnice
   if (def.group != null && !(typeof def.group === 'string' && /^[a-z0-9-]{2,20}$/.test(def.group))) e.push('group: male črke, številke, »-« (privzeto »trening«).');
-  if (def.unlock != null && !validUnlock(def.unlock)) e.push('unlock: { hill | hills: […] | group + size, over: "k"|"hs" }.');
+  if (def.unlock != null && !validUnlock(def.unlock)) e.push('unlock: { hill | hills: […] | size (+ group), over: "k"|"hs" }.');
   // prave skakalnice: obvezen kraj in vir (certifikat); rekord skakalnice brez imena skakalca
   if (def.group === 'prave') {
     const R = def.real;

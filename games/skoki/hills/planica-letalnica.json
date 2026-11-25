@@ -98,11 +98,6 @@
     "spring": 1
   },
   "desc": "Letalnica v dolini pod stenami: finale pokala. Dolgo, ravno jadranje nad doskočiščem, ki se položi šele daleč spodaj.",
-  "unlock": {
-    "group": "prave",
-    "size": "velika",
-    "over": "hs"
-  },
   "physics": {
     "liftScale": 1.14
   }
