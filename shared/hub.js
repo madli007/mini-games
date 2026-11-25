@@ -163,6 +163,15 @@ export const hub = {
   },
 
   /**
+   * Najboljši posamezni rezultati (BREZ združevanja po igralcu: isti igralec je lahko večkrat), npr. top 10 skokov.
+   * @param {{seed?:string|null, limit?:number, order?:'asc'|'desc', game?:string}} [opt]
+   * @returns {Promise<{user_id:string, nickname:string, avatar:Object, equipped:Object, score:number, meta:Object, created_at:string}[]>}
+   */
+  async getTopScores({ seed = null, limit = 10, order = hub.scoreOrder, game = hub.gameId } = {}) {
+    return hub.backend.getTopScores({ game, seed, limit, asc: order === 'asc' });
+  },
+
+  /**
    * Moj najboljši rezultat (ali null).
    * @param {{seed?:string|null, order?:'asc'|'desc', game?:string}} [opt]
    */

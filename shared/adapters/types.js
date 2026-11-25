@@ -49,6 +49,7 @@
  * @property {(amount:number, reason?:string) => Promise<{xp:number, granted:number}>} awardXp
  * @property {(o:{game:string, score:number, seed?:string|null, meta?:Object}) => Promise<Object>} submitScore
  * @property {(o:{game:string, seed?:string|null, since?:Date|null, limit?:number, asc?:boolean}) => Promise<Object[]>} getLeaderboard
+ * @property {(o:{game:string, seed?:string|null, limit?:number, asc?:boolean}) => Promise<Object[]>} getTopScores
  * @property {(o:{game:string, seed?:string|null, asc?:boolean}) => Promise<number|null>} getMyBest
  * @property {(o:{game:string, key:string, title?:string, icon?:string}) => Promise<boolean>} unlock
  * @property {(o?:{game?:string, userId?:string}) => Promise<Object[]>} getAchievements

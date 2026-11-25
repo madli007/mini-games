@@ -68,6 +68,7 @@ ui.profileModal();                                               // okno za urej
 await hub.submitScore(1234, { seed: hub.dailySeed(), meta: { level: 3 } });
 const top = await hub.getLeaderboard({ seed: hub.dailySeed(), limit: 10, period: 'today' });
 // [{ user_id, nickname, avatar, score, created_at }] — najboljši rezultat vsakega igralca
+const top10 = await hub.getTopScores({ seed: 'rekord:orlova', limit: 10 }); // posamezni rezultati (isti igralec večkrat), z meta
 const best = await hub.getMyBest({ seed: hub.dailySeed() });   // število ali null
 ```
 - `seed: null` (privzeto) = vsi rezultati igre, ne glede na seed.

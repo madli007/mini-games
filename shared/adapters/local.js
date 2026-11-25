@@ -355,6 +355,19 @@ export class LocalBackend {
     }));
   }
 
+  async getTopScores({ game, seed = null, limit = 10, asc = false }) {
+    const all = this._profiles();
+    return S.load('db:scores', [])
+      .filter(r => r.game === game && (seed == null || r.seed === seed))
+      .sort((a, b) => (asc ? a.score - b.score : b.score - a.score) || (a.created_at < b.created_at ? -1 : 1))
+      .slice(0, Math.max(1, Math.min(limit, 100)))
+      .map(r => ({
+        user_id: r.user_id, score: r.score, meta: r.meta || {}, created_at: r.created_at,
+        nickname: all[r.user_id]?.nickname || '???', avatar: all[r.user_id]?.avatar || { emoji: '❔', color: '#888' },
+        equipped: all[r.user_id]?.equipped || {},
+      }));
+  }
+
   async getMyBest({ game, seed = null, asc = false }) {
     const mine = S.load('db:scores', []).filter(r => r.game === game && r.user_id === this.userId && (seed == null || r.seed === seed));
     if (!mine.length) return null;

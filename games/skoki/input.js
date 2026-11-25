@@ -4,8 +4,8 @@
      btn = število pritisnjenih gumbov (0, 1, 2); pitch = popravek nagiba (°) glede na samodejni
      letalni položaj (+ = bolj pokonci / nazaj, − = bolj naprej).
      Miška: klik = štart; LEVI + DESNI GUMB HKRATI na koncu mize = odriv; premik gor/dol = nagib;
-            pred tlemi oba gumba = telemark, en gumb = dve nogi. Meni desnega klika je onemogočen.
-     Dotik: tap = štart; DVA PRSTA HKRATI = odriv / telemark; en tap v letu = dve nogi;
+            pred tlemi EN gumb = telemark, OBA gumba = dve nogi. Meni desnega klika je onemogočen.
+     Dotik: tap = štart; DVA PRSTA HKRATI = odriv / dve nogi; en tap v letu = telemark;
             vlečenje gor/dol v letu = nagib (relativno na mesto dotika).
      Tipkovnica: le R (nov skok), Enter (replay), Esc/P (pavza) — skoka ne upravlja.
    Kratek pritisk (krajši od ticka) se ne izgubi: največje število gumbov od zadnjega ticka se zadrži.
@@ -17,6 +17,7 @@ const MOUSE_SENS = 0.22;   // ° na piksel
 const TOUCH_SENS = 0.3;
 const TILT_SENS = 1.2;
 const LIM = 40;            // največji popravek nagiba (°)
+const LAND_GRACE = 7;      // tickov (≈ 60 ms) za drugi gumb ob pristanku: oba = dve nogi, sicer telemark
 
 export class Input {
   /** @param {HTMLElement} surface igralna površina (canvas) */
@@ -102,7 +103,7 @@ export class Input {
     const t = this.touches.get(e.pointerId);
     if (!t) return;
     this.touches.delete(e.pointerId);
-    // en kratek tap v letu = en gumb (pristanek na obe nogi)
+    // en kratek tap v letu = en gumb (telemark)
     if (!cancel && this.mode === 'air' && !t.counted && !t.moved && performance.now() - t.t0 < 300) { this.pulse = 3; this.pulseLevel = 1; this.latch = Math.max(this.latch, 1); }
   }
 
@@ -136,10 +137,33 @@ export class Input {
   sample() {
     let cur = this._count();
     if (this.pulse > 0) { cur = Math.max(cur, this.pulseLevel); this.pulse--; }
-    const btn = Math.max(cur, this.latch);
+    let btn = Math.max(cur, this.latch);
     this.latch = cur;
+    if (this.landing) btn = this._landBtn(btn, cur);
+    else this.lg = null;
     return { btn, pitch: quantPitch(this.pitch) };
   }
 
-  reset() { this.left = this.right = false; this.touches.clear(); this.latch = 0; this.pulse = 0; }
+  /**
+   * Pristanek (po odrivu): EN gumb = telemark, OBA gumba = dve nogi. Simulacija (in boti, ghosti) pa pozna
+   * btn 1 = priprava / dve nogi, btn 2 = telemark (nadgradnja 1 → 2 obdrži trenutek priprave). Zato:
+   * prvi pritisk takoj pošlje 1 (priprava se začne brez zamika); če v LAND_GRACE tickih ne pride drugi gumb,
+   * pošljemo 2 (telemark), sicer ostane 1 (dve nogi).
+   */
+  _landBtn(btn, cur) {
+    const lg = this.lg || (this.lg = { st: 'idle', t: 0, out: 0 });
+    if (lg.st === 'idle') {
+      if (!btn) return 0;
+      if (btn >= 2) { lg.st = 'done'; lg.out = 1; return 1; }        // oba hkrati = dve nogi
+      lg.st = 'wait'; lg.t = LAND_GRACE; return 1;
+    }
+    if (lg.st === 'wait') {
+      if (btn >= 2) { lg.st = 'done'; lg.out = 1; return 1; }        // drugi gumb v roku = dve nogi
+      if (--lg.t > 0) return btn ? 1 : 0;
+      lg.st = 'done'; lg.out = 2; return 2;                          // le en gumb = telemark
+    }
+    return cur || btn ? lg.out : 0;
+  }
+
+  reset() { this.left = this.right = false; this.touches.clear(); this.latch = 0; this.pulse = 0; this.lg = null; }
 }

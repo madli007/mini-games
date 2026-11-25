@@ -1099,3 +1099,16 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 - **TV pogled** (`?tv=1` / gumb v lobbyju) in emoji odzivi izpadlih — implementirano, a ne preizkušeno v več zavihkih.
 - Multiplayer s Supabase (različne naprave, zakasnitev) in lestvica na Supabase.
 - `prefers-reduced-motion` (brez shakea, konfetov in vrtenja) — le v kodi.
+
+---
+
+# Smučarski skoki — popravki (25. 11. 2026)
+
+- Konec tekme: rezultati imajo »V meni« (lokalna) / »Zapusti sobo« (spletna); `ui.results({ exit })`.
+- Ocene: dve nogi odbitek 3 (prej 1,5), trd 4,5; dotik z roko 8 in šteje kot padec (rekordi, lestvica, odklepi) — po ICR 431.2.
+- Kontrole pristanka obrnjene: en gumb = telemark, oba = dve nogi (preslikava v `input.js`, ghosti in boti nespremenjeni).
+- Rekord skakalnice / svetovni rekord: zlata črta, čip v HUD-u, proslava (zlata kartica, konfeti/ognjemet, fanfara).
+- Meni: »Najdaljši skoki« (svetovni rekord, pravi rekord, najdaljši pri nas, moj) + top 10 po skakalnici (`hub.getTopScores`).
+- Animiran vetrokaz desno zgoraj.
+- Preverjeno: `node tests/run-node.mjs` 200/200, preklop pristanka v simulaciji (Bistra), proslava in tabela v brskalniku
+  (namizje + 375 px). Ni preverjeno: pristanek z resnično miško, gumb za izhod ob dejanskem koncu tekme, `getTopScores` na Supabase.

@@ -85,7 +85,7 @@ function lineAt(hill, s, w, color, emissive = 0, opacity = 1) {
 /**
  * @param {Object} hill zgrajena skakalnica (hill.js)
  * @param {Object} q nastavitve kakovosti (scene.js QUALITY)
- * @returns {{group:THREE.Group, recordLine:Function, gateBars:THREE.Object3D[], setGate:Function, terrainAt:Function, crowdAnchor:THREE.Vector3}}
+ * @returns {{group:THREE.Group, recordLine:Function, hillRecordLine:Function, gateBars:THREE.Object3D[], setGate:Function, terrainAt:Function, crowdAnchor:THREE.Vector3}}
  */
 export function buildWorld(hill, q) {
   const T = hill.def.theme;
@@ -213,6 +213,12 @@ export function buildWorld(hill, q) {
   const recordLine = s => {
     if (recLine) { lines.remove(recLine); recLine.geometry.dispose(); recLine.material.dispose(); recLine = null; }
     if (s && s > 5) { recLine = lineAt(hill, s, 0.45, '#2bff7a', 2.2, 0.85); recLine.renderOrder = 2; lines.add(recLine); }
+  };
+  // rekord skakalnice (pravi ali najdaljši na lestvici): zlata črta čez celo širino
+  let hrLine = null;
+  const hillRecordLine = s => {
+    if (hrLine) { lines.remove(hrLine); hrLine.geometry.dispose(); hrLine.material.dispose(); hrLine = null; }
+    if (s && s > 5) { hrLine = lineAt(hill, s, 0.6, '#ffc21a', 2.6, 0.95); hrLine.renderOrder = 3; lines.add(hrLine); }
   };
 
   /* ---------------- zalet: smučina, krov, ograja, stopnice, konstrukcija */
@@ -635,5 +641,5 @@ export function buildWorld(hill, q) {
     group.add(earth, halo);
   }
 
-  return { group, recordLine, gateBars, setGate, terrainAt, crowdAnchor, snowPts, lines };
+  return { group, recordLine, hillRecordLine, gateBars, setGate, terrainAt, crowdAnchor, snowPts, lines };
 }

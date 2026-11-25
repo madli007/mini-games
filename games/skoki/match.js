@@ -762,7 +762,13 @@ async function finishOnline() {
       if (comp.cfg.rounds >= 2 && r1?.rank >= 4) E.unlock('obrat');
     }
   }
-  const choice = await results(comp, rows, { xp, again: room?.isHost ? 'Nova tekma' : 'Nazaj v sobo', prizes: ST.prizes });
+  const choice = await results(comp, rows, { xp, again: room?.isHost ? 'Nova tekma' : 'Nazaj v sobo', exit: 'Zapusti sobo', prizes: ST.prizes });
+  if (choice === 'exit') {
+    const r = room; room = null; ST = null; VER = 0;
+    await r?.leave().catch(() => {});
+    leaveMatch();
+    return;
+  }
   if (choice === 'again' && room?.isHost) { ST = null; VER = 0; await room.setState({ v: 0 }, {}).catch(() => {}); room.setStatus('lobby').catch(() => {}); room.send('newmatch', {}); }
   showLobby();
 }
@@ -779,7 +785,7 @@ async function podium(comp, rows) {
   el.classList.add('mg-hidden');
 }
 
-function results(comp, rows, { xp = 0, again = 'Še enkrat', prizes = [] } = {}) {
+function results(comp, rows, { xp = 0, again = 'Še enkrat', exit = 'V meni', prizes = [] } = {}) {
   const players = rows.map(r => {
     const p = C.participant(comp, r.id);
     const pl = r.kind === 'human' && !p.meta?.local ? (room?.players.find(x => x.id === r.id) || ST?.people?.[r.id]) : null;
@@ -789,7 +795,7 @@ function results(comp, rows, { xp = 0, again = 'Še enkrat', prizes = [] } = {})
   const teams = C.teamStandings(comp);
   const extra = `${prizes.length ? `<h3 class="mg-title">Posebne nagrade</h3><ul class="sk-prizes">${prizes.map(z => `<li>${z.icon} <b>${esc(z.title)}</b>: ${whoHtml(C.participant(comp, z.id))} <span class="mg-muted">${esc(z.text)}</span></li>`).join('')}</ul>` : ''}
     ${teams.length ? `<h3 class="mg-title">Ekipe</h3><ol class="sk-prizes">${teams.map(t => `<li><b>${esc(t.team)}</b> · ${fmt1(t.total)} t</li>`).join('')}</ol>` : ''}`;
-  return ui.results(players, { title: 'Rezultati tekme', again, hub: !local, extraHtml: extra });
+  return ui.results(players, { title: 'Rezultati tekme', again, exit, hub: !local, extraHtml: extra });
 }
 
 function leaveMatch() {

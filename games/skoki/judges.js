@@ -23,7 +23,7 @@ export function deductions(s, P) {
   switch (land.type) {
     case 'tele': landing = J.teleDeduct + (1 - land.teleQ) * 2; break;
     case 'two': landing = J.twoDeduct; break;
-    case 'none': landing = J.twoDeduct + 2.5; break;
+    case 'none': landing = J.twoDeduct + 1.5; break;
     case 'touch': landing = J.touchDeduct; break;
     default: landing = J.fallDeduct;
   }

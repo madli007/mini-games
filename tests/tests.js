@@ -200,6 +200,9 @@ test('lokalno: lestvica = najboljši rezultat na igralca (desc in asc)', async (
   eq(await a.getMyBest({ game: 'tg' }), 300);
   eq(await a.getMyBest({ game: 'tg', asc: true }), 100);
   eq(await b.getMyBest({ game: 'tg', seed: 'nope' }), null);
+  const top = await a.getTopScores({ game: 'tg', limit: 3 });
+  eq(top.map(r => [r.user_id, r.score]), [['test-a', 300], ['test-b', 200], ['test-a', 100]]);
+  eq((await a.getTopScores({ game: 'tg', seed: 'x' })).map(r => r.score), [50]);
 });
 test('lokalno: XP omejitve (500/klic, 5000/dan)', async () => {
   clearLocal();

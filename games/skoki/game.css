@@ -296,3 +296,85 @@ body.sk-match #btnPause { display: none; }
 .sk-hillcard > * { position: relative; z-index: 1; }
 @media (max-width: 480px) { .sk-hills { grid-template-columns: 1fr 1fr; gap: 8px; } .sk-hillcard { min-height: 100px; padding: 10px; }
   .sk-hillcard b { font-size: 17px; } .sk-hillcard:not(.locked) .desc { display: none; } .sk-hillcard.locked .desc { font-size: 12px; } }
+
+/* =================================================================== rekordi: HUD, proslava, lestvica v meniju */
+.sk-chip--rec { color: #ffd23f; border-color: rgba(255, 194, 26, .55); }
+.sk-chip--rec.world { color: #1a1200; background: linear-gradient(90deg, #ffd23f, #ffb300); border-color: #ffe68a; box-shadow: 0 0 14px rgba(255, 194, 26, .6); }
+@media (max-width: 640px) { .sk-chip--rec { font-size: 13px; padding: 4px 9px; } }
+.sk-bigrec { display: flex; flex-direction: column; align-items: center; font-style: normal; margin-top: 6px; }
+.sk-bigrec i { font-style: normal; white-space: nowrap; font-family: var(--mg-font-title); font-size: clamp(20px, 5.5vw, 38px); color: #ffd23f; letter-spacing: .04em;
+  text-shadow: 0 0 16px rgba(255, 194, 26, .9), 0 2px 0 #7a4b00; animation: sk-recpulse .9s ease-in-out infinite alternate; }
+.sk-bigrec small { font-size: 14px; color: #ffe9a8; font-weight: 600; }
+.sk-big.record { border-color: #ffc21a; box-shadow: 0 10px 40px rgba(0, 0, 0, .5), 0 0 50px rgba(255, 194, 26, .55);
+  background: linear-gradient(180deg, rgba(90, 60, 8, .9), rgba(30, 18, 4, .9)); }
+.sk-big.record b { text-shadow: 0 0 22px rgba(255, 194, 26, .95); }
+.sk-big.world { top: 14%; padding: 16px 34px; animation: sk-pop2 .35s cubic-bezier(.2, 1.4, .4, 1), sk-wrglow 1.2s ease-in-out .4s infinite alternate; }
+.sk-big.world b { font-size: clamp(34px, 9vw, 72px); }
+@keyframes sk-recpulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes sk-wrglow { from { box-shadow: 0 0 30px rgba(255, 194, 26, .4); } to { box-shadow: 0 0 80px rgba(255, 194, 26, .95), 0 0 140px rgba(255, 79, 216, .35); } }
+@media (prefers-reduced-motion: reduce) { .sk-bigrec i, .sk-big.world { animation: none; } }
+
+.sk-wr { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; margin-bottom: 12px;
+  background: linear-gradient(100deg, rgba(255, 194, 26, .22), rgba(255, 79, 216, .1)); border: 1px solid rgba(255, 194, 26, .5); }
+.sk-wr__icon { font-size: 38px; line-height: 1; }
+.sk-wr b { display: block; font-family: var(--mg-font-title); font-size: clamp(24px, 6vw, 36px); color: #ffd23f; }
+.sk-records { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sk-records th { text-align: left; font-size: 12px; color: var(--mg-dim); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--mg-line); }
+.sk-records td { padding: 6px; border-bottom: 1px solid var(--mg-line); vertical-align: middle; }
+.sk-records td.num, .sk-records th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sk-records tr.grp td { font-weight: 700; color: var(--mg-dim); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding-top: 12px; border-bottom: 0; }
+.sk-records tr[data-hill] { cursor: pointer; }
+.sk-records tr[data-hill]:hover td { background: rgba(255, 255, 255, .04); }
+.sk-records tr.locked td:first-child { opacity: .55; }
+.sk-records tr.wr td { background: rgba(255, 194, 26, .1); }
+.sk-records .best { color: #ffd23f; font-weight: 700; }
+.sk-records .sub { display: block; font-size: 12px; color: var(--mg-dim); }
+@media (max-width: 640px) { .sk-records .col-mine { display: none; } .sk-records { font-size: 13px; } }
+
+/* =================================================================== veter v kotu (animiran vetrokaz) */
+.sk-windbox { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(62px, calc(env(safe-area-inset-top) + 56px)); width: 138px; pointer-events: none;
+  padding: 6px 8px 7px; border-radius: 14px; background: var(--sk-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--sk-line);
+  --wdur: 0s; --wsock: 75deg; --wa: .25; --wc: #cfe3ff; }
+.sk-windbox.head { --wc: #39ff88; border-color: rgba(57, 255, 136, .45); }
+.sk-windbox.tail { --wc: #ff6b7a; border-color: rgba(255, 107, 122, .45); }
+.sk-windbox__lbl { display: block; font-size: 10px; letter-spacing: .14em; color: var(--mg-dim); font-weight: 700; }
+.sk-windbox__sky { position: relative; height: 46px; margin: 3px 0 4px; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, rgba(120, 170, 255, .14), rgba(120, 170, 255, .03)); }
+.sk-windbox.head .sk-windbox__sky { transform: scaleX(-1); }   /* čelni veter piha proti skakalcu (v levo) */
+.sk-windbox__sky > i { position: absolute; left: 0; height: 2px; width: 26px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--wc));
+  opacity: var(--wa); transform: translateX(-40px); animation: sk-streak var(--wdur) linear infinite; }
+.sk-windbox__sky > i:nth-child(1) { top: 6px; animation-delay: -.1s; width: 30px; }
+.sk-windbox__sky > i:nth-child(2) { top: 14px; animation-delay: -.55s; width: 18px; }
+.sk-windbox__sky > i:nth-child(3) { top: 22px; animation-delay: -.3s; }
+.sk-windbox__sky > i:nth-child(4) { top: 30px; animation-delay: -.8s; width: 34px; }
+.sk-windbox__sky > i:nth-child(5) { top: 37px; animation-delay: -.2s; width: 20px; }
+.sk-windbox__sky > i:nth-child(6) { top: 18px; animation-delay: -.95s; width: 14px; }
+@keyframes sk-streak { from { transform: translateX(-40px); } to { transform: translateX(150px); } }
+.sk-windbox__pole { position: absolute; left: 14px; top: 8px; width: 2px; height: 38px; background: #dfe6f0; border-radius: 1px; }
+.sk-windbox__sock { position: absolute; left: 16px; top: 8px; display: flex; height: 11px; transform-origin: 0 50%; rotate: var(--wsock); transition: rotate .6s ease-out;
+  animation: sk-flutter .35s ease-in-out infinite alternate; }
+.sk-windbox__sock em { display: block; width: 13px; height: 100%; background: #ff7a1a; clip-path: polygon(0 0, 100% 8%, 100% 92%, 0 100%); }
+.sk-windbox__sock em:nth-child(2) { background: #fff; width: 12px; height: 88%; margin-top: 2%; }
+.sk-windbox__sock em:nth-child(3) { width: 11px; height: 76%; margin-top: 4%; }
+@keyframes sk-flutter { from { transform: rotate(-3deg) scaleX(.97); } to { transform: rotate(3deg) scaleX(1.02); } }
+.sk-windbox__val { display: flex; align-items: baseline; gap: 4px; }
+.sk-windbox__val b { font-family: var(--mg-font-title); font-size: 22px; color: var(--wc); }
+.sk-windbox__val small { color: var(--mg-dim); font-size: 12px; }
+.sk-windbox__arrow { display: inline-block; color: var(--wc); font-size: 18px; transition: transform .3s; }
+.sk-windbox.head .sk-windbox__arrow { transform: rotate(180deg); }
+@media (max-width: 640px) { .sk-windbox { width: 112px; top: max(56px, calc(env(safe-area-inset-top) + 50px)); padding: 4px 6px 5px; } .sk-windbox__sky { height: 36px; } .sk-windbox__val b { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { .sk-windbox__sky > i, .sk-windbox__sock { animation: none; } }
+.sk-records tr.open td { background: rgba(255, 194, 26, .08); }
+.sk-records tr.sk-top10row > td { padding: 0 0 10px; border-bottom: 1px solid var(--mg-line); }
+.sk-top10 { padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .22); border: 1px solid rgba(255, 194, 26, .3); }
+.sk-top10__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.sk-top10__head .mg-small { color: var(--mg-dim); }
+.sk-top10__list { list-style: none; margin: 0 0 10px; padding: 0; }
+.sk-top10__list li { display: grid; grid-template-columns: 2.2em 1fr auto; grid-template-areas: 'rk who d' 'rk who t'; column-gap: 8px; align-items: center; padding: 5px 4px; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.sk-top10__list li .rk { grid-area: rk; color: var(--mg-dim); font-weight: 700; }
+.sk-top10__list li .who { grid-area: who; min-width: 0; overflow: hidden; }
+.sk-top10__list li .d { grid-area: d; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sk-top10__list li .t { grid-area: t; text-align: right; color: var(--mg-dim); }
+.sk-top10__list li:nth-child(1) .rk { color: #ffd23f; } .sk-top10__list li:nth-child(2) .rk { color: #d7dde8; } .sk-top10__list li:nth-child(3) .rk { color: #e0955a; }
+.sk-top10__list li.me { background: rgba(79, 195, 247, .1); border-radius: 8px; }
+.sk-top10__list li.beat .d { color: #ffd23f; }
+.sk-top10__list li.beat .d::after { content: ' 🏆'; }

@@ -497,10 +497,11 @@ export const ui = {
    * Končni zaslon s stopničkami.
    * @param {{id:string, nickname:string, avatar:Object, score?:number, scoreText?:string, xp?:number}[]} players
    *   urejeni od zmagovalca naprej
-   * @param {{title?:string, again?:string|false, hub?:boolean, extraHtml?:string}} [opt]
-   * @returns {Promise<'again'|'hub'|null>}
+   * @param {{title?:string, again?:string|false, hub?:boolean, exit?:string, extraHtml?:string}} [opt]
+   *   exit: napis neobveznega gumba za izhod iz igre (vrne 'exit')
+   * @returns {Promise<'again'|'exit'|'hub'|null>}
    */
-  results(players, { title = 'Rezultati', again = 'Še enkrat', hub: showHub = true, extraHtml = '' } = {}) {
+  results(players, { title = 'Rezultati', again = 'Še enkrat', hub: showHub = true, exit = '', extraHtml = '' } = {}) {
     const top = players.slice(0, 3);
     const order = [top[1], top[0], top[2]].map((p, i) => p ? { p, place: [2, 1, 3][i] } : null).filter(Boolean);
     const scoreOf = p => p.scoreText ?? (p.score != null ? p.score.toLocaleString('sl-SI') : '');
@@ -520,6 +521,7 @@ export const ui = {
       onOpen: () => { if (fx) ui.winFx(fx.value); },
       actions: [
         ...(showHub ? [{ label: '← Hub', value: 'hub' }] : []),
+        ...(exit ? [{ label: exit, value: 'exit' }] : []),
         ...(again ? [{ label: again, value: 'again', kind: 'primary' }] : []),
       ],
     }).then(v => {

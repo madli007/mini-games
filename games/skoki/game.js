@@ -88,6 +88,36 @@ const better = (a, b) => !b || a.dist > b.dist || (a.dist === b.dist && a.total 
 const BOARD_SEED = id => 'rekord:' + id;
 const localBest = id => { const b = S.load(bestKey(id), null); return b && b.pv === P?.paramsVersion ? b : null; };
 
+/* ------------------------------------------------------------ rekordi skakalnic in svetovni rekord */
+// Rekord skakalnice = daljši od pravega rekorda (real.record) in najdaljšega skoka na lestvici »Rekord skakalnice«.
+// Svetovni rekord = najdaljši rekord vseh skakalnic (brez Lune). Lestvice se naložijo ob meniju (predpomnilnik 60 s).
+const recs = { at: 0, hills: {}, loading: null };   // id → { dist, total, who (igralec z lestvice ali {nickname}) }
+const realRec = def => def.real?.record ? { dist: def.real.record.dist, year: def.real.record.year, real: true } : null;
+function hillRecord(def) {
+  const a = realRec(def), b = recs.hills[def.id];
+  return !b ? a : !a ? b : b.dist > a.dist ? b : a;
+}
+function worldRecord() {
+  let best = null;
+  for (const { def } of HILLS) {
+    if (def.physics?.noAir) continue;
+    const r = hillRecord(def);
+    if (r && (!best || r.dist > best.dist)) best = { ...r, hill: def };
+  }
+  return best;
+}
+function loadRecords(force = false) {
+  if (recs.loading) return recs.loading;
+  if (!force && Date.now() - recs.at < 60000) return Promise.resolve(recs);
+  recs.loading = Promise.all(HILLS.map(({ def }) => hub.getLeaderboard({ seed: BOARD_SEED(def.id), limit: 1, order: 'desc' }).then(rows => {
+    const r = rows?.[0]; if (!r) return;
+    const d = decodeBoard(r.score), cur = recs.hills[def.id];
+    if (!cur || d.dist >= cur.dist) recs.hills[def.id] = { dist: d.dist, total: d.total, who: r };
+  }).catch(() => {}))).then(() => { recs.at = Date.now(); recs.loading = null; return recs; });
+  return recs.loading;
+}
+const recWho = r => r.real ? `pravi rekord${r.year ? ' (' + r.year + ')' : ''}` : r.who ? ui.who(r.who) : '';
+
 /* ------------------------------------------------------------ globalno */
 let P = null;             // parametri fizike
 let HILLS = [];           // [{ def, hill }]
@@ -219,6 +249,7 @@ function renderMenu() {
           <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnRecord">Rekord skakalnice (3 skoki)</button>
         </div>
       </div>
+      <div class="mg-card" id="records"><h2 class="mg-title">Najdaljši skoki</h2><div id="recBody"><span class="mg-spin"></span></div></div>
       <div class="mg-card" id="board"></div>
       <div class="mg-card"><h2 class="mg-title">Dosežki</h2><div class="sk-ach" id="achList"></div></div>
       <div class="mg-grid mg-grid--2">
@@ -275,6 +306,68 @@ function renderMenu() {
     onRow: row => pickFriendGhost(row, H), rowHint: () => ' 👻',
   });
   refreshAch();
+  renderRecords();
+  loadRecords().then(() => { if ($('#recBody')) renderRecords(); });
+}
+
+/** Lestvica najdaljših skokov po skakalnicah in svetovni rekord (meni). */
+function renderRecords() {
+  const el = $('#recBody'); if (!el) return;
+  const wr = worldRecord();
+  const row = ({ def }) => {
+    const real = realRec(def), top = recs.hills[def.id], mine = localBest(def.id), hr = hillRecord(def);
+    const isWr = wr && !def.physics?.noAir && wr.hill.id === def.id;
+    const cell = (r, cls = '') => r ? `<td class="num ${cls}">${fmtDist(r.dist)}</td>` : '<td class="num mg-muted">—</td>';
+    return `<tr data-hill="${def.id}" class="${isOpen(def, unlocked) ? '' : 'locked'} ${isWr ? 'wr' : ''}">
+      <td>${isWr ? '🌍 ' : ''}<b>${esc(def.name)}</b><span class="sub">K${def.k} · HS${def.hs}</span></td>
+      ${cell(real, hr === real && real ? 'best' : '')}
+      <td class="num ${top && hr === top ? 'best' : ''}">${top ? fmtDist(top.dist) + `<span class="sub">${top.who ? ui.who(top.who) : ''}</span>` : '<span class="mg-muted">—</span>'}</td>
+      <td class="num col-mine">${mine ? fmtDist(mine.dist) : '<span class="mg-muted">—</span>'}</td></tr>`;
+  };
+  el.innerHTML = `${wr ? `<div class="sk-wr"><span class="sk-wr__icon">🌍</span><div><span class="mg-muted mg-small">Svetovni rekord</span>
+      <b>${fmtDist(wr.dist)}</b><span class="mg-small">${esc(wr.hill.name)} · ${recWho(wr)}</span></div></div>` : ''}
+    <table class="sk-records"><thead><tr><th>Skakalnica</th><th class="num">Pravi rekord</th><th class="num">Najdaljši pri nas</th><th class="num col-mine">Moj</th></tr></thead>
+    <tbody>${GROUPS.map(gr => {
+      const list = HILLS.filter(h => (h.def.group || 'trening') === gr.id);
+      return list.length ? `<tr class="grp"><td colspan="4">${esc(gr.name)}</td></tr>${list.map(row).join('')}` : '';
+    }).join('')}</tbody></table>
+    <p class="sk-note">Klikni skakalnico za <b>top 10 skokov</b>. »Najdaljši pri nas« je najdaljši skok brez padca v Rekordu skakalnice. Preskoči rekord skakalnice ali svetovni rekord in tribune bodo ponorele.</p>`;
+  // klik na vrstico: odpre/zapre top 10 skokov te skakalnice
+  el.querySelectorAll('tr[data-hill]').forEach(tr => tr.onclick = () => {
+    const id = tr.dataset.hill, was = G.recOpen === id;
+    el.querySelectorAll('tr.sk-top10row').forEach(r => r.remove());
+    el.querySelectorAll('tr.open').forEach(r => r.classList.remove('open'));
+    G.recOpen = was ? null : id;
+    if (!was) openTop10(tr, hillOf(id).def);
+  });
+  if (G.recOpen) { const tr = el.querySelector(`tr[data-hill="${G.recOpen}"]`); if (tr) openTop10(tr, hillOf(G.recOpen).def); }
+}
+
+/** Top 10 skokov skakalnice (posamezni rezultati Rekorda skakalnice, isti igralec lahko večkrat). */
+async function openTop10(tr, def) {
+  tr.classList.add('open');
+  const row = document.createElement('tr');
+  row.className = 'sk-top10row';
+  row.innerHTML = `<td colspan="4"><div class="sk-top10"><span class="mg-spin"></span></div></td>`;
+  tr.after(row);
+  const box = row.querySelector('.sk-top10');
+  let rows = [];
+  try { rows = await hub.getTopScores({ seed: BOARD_SEED(def.id), limit: 10, order: 'desc' }); } catch (e) { console.warn(e); box.innerHTML = '<div class="mg-empty">Lestvice ni bilo mogoče naložiti.</div>'; return; }
+  if (!row.isConnected) return;
+  const real = realRec(def), open = hillOpen(def.id);
+  const date = r => { try { return new Date(r.created_at).toLocaleDateString('sl-SI', { day: 'numeric', month: 'numeric', year: '2-digit' }); } catch { return ''; } };
+  box.innerHTML = `<div class="sk-top10__head"><b>Top 10 · ${esc(def.name)}</b>${real ? `<span class="mg-small">pravi rekord ${fmtDist(real.dist)}${real.year ? ' (' + real.year + ')' : ''}</span>` : ''}</div>
+    ${rows.length ? `<ol class="sk-top10__list">${rows.map((r, i) => {
+      const b = decodeBoard(r.score);
+      return `<li class="${r.user_id === hub.userId ? 'me' : ''} ${real && b.dist > real.dist ? 'beat' : ''}"><span class="rk">${i + 1}.</span><span class="who">${ui.who(r)}</span>
+        <span class="d">${fmtDist(b.dist)}</span><span class="t mg-small">${fmt1(b.total)} t · ${date(r)}</span></li>`;
+    }).join('')}</ol>` : '<div class="mg-empty">Na tej skakalnici še ni skokov v Rekordu skakalnice. Bodi prvi!</div>'}
+    <button class="mg-btn mg-btn--small ${open ? 'mg-btn--primary' : 'mg-btn--ghost'}" data-go>${open ? 'Skači na ' + esc(def.name) : '🔒 ' + esc(unlockText(def, HILLS.map(x => x.def)))}</button>`;
+  box.querySelector('[data-go]').onclick = e => {
+    e.stopPropagation();
+    if (!open) return;
+    G.hillId = def.id; G.recOpen = null; renderMenu(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 }
 
 function helpHtml() {
@@ -282,7 +375,7 @@ function helpHtml() {
     <dt>1. Zalet</dt><dd>${IS_TOUCH ? 'Tapni' : 'Klikni'} za štart — skakalec se sam spusti v nizko držo.</dd>
     <dt>2. Odriv</dt><dd><b>${IS_TOUCH ? 'Dva prsta hkrati' : 'Levi + desni gumb hkrati'}</b> točno na koncu mize. ✨ = popoln odriv (±25 ms).</dd>
     <dt>3. Let</dt><dd>Skakalec se sam nagne v letalni položaj; ${IS_TOUCH ? 'z vlečenjem prsta gor/dol' : 'z miško gor/dol'} ga popravljaš. Bela črtica na merilniku desno naj bo v zelenem oknu — okno se med letom premika. Preveč naprej = padec na nos, preveč nazaj = zavora.</dd>
-    <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'Dva prsta' : 'Oba gumba'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'en tap' : 'en gumb'} = pristanek na obe nogi (varneje). Prepozno = padec.</dd>
+    <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'En tap' : 'En gumb'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'dva prsta' : 'oba gumba'} = pristanek na obe nogi (varneje). Prepozno = padec.</dd>
     <dt>Tipke</dt><dd>Skok se upravlja samo z miško. <span class="mg-kbd">R</span> nov skok · <span class="mg-kbd">Enter</span> replay · <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> pavza</dd>
     <dt>Točke</dt><dd>60 točk na K-točki ± vrednost metra, slog 5 sodnikov (najvišja in najnižja se ne štejeta), kompenzacija vetra in zaletnega mesta.</dd></dl>`;
 }
@@ -422,6 +515,8 @@ function newJump() {
   renderer.setGhosts(G.ghosts.length);
   const rec = X ? X.recordLine || 0 : Math.max(localBest(H.def.id)?.dist || 0, ...G.ghosts.map(g => g.g.dist));
   renderer.setRecord(rec || null);
+  renderer.setHillRecord(H.def.physics?.noAir ? null : hillRecord(H.def)?.dist || null);
+  updateRecChip();
   $('#barRec').textContent = rec ? fmtDist(rec) : '—';
   $('#barRecLbl').textContent = X ? (X.recordLabel || 'Vodilni') : G.ghosts.length ? 'Rekord / ghost' : 'Rekord';
   if (X) { $('#hudMode').textContent = X.label || 'Tekma'; $('#barWho').innerHTML = X.whoHtml || esc(X.who?.name || ''); }
@@ -501,7 +596,7 @@ function tick() {
     if (!gh.J.done) { gh.J.step(gh.input(gh.J.s, gh.J.s.tick)); gh.J.ev.length = 0; }
     gh.snap = snapshot(gh.J.s, P);
   }
-  if (!G.bot && !G.stream) input.mode = s.phase === 'inrun' ? 'inrun' : s.phase === 'air' ? 'air' : 'other';
+  if (!G.bot && !G.stream) { input.mode = s.phase === 'inrun' ? 'inrun' : s.phase === 'air' ? 'air' : 'other'; input.landing = s.phase === 'air' && !!s.takeoff; }
   return true;
 }
 
@@ -531,8 +626,18 @@ function onEvent(e) {
       renderer.setCheer(L.kind === 'fall' ? 0.2 : 0.2 + lvl * 0.8);
       if (L.kind !== 'fall' && L.dist >= H.k) { audio.bells(L.dist >= H.hs ? 14 : 8); audio.fanfare(); }
       audio.cheer(L.kind === 'fall' ? 0.3 : 0.4 + lvl);
-      const pb = G.mode === 'record' && (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && (localBest(H.id) != null);
+      const pb = G.mode === 'record' && (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && L.kind !== 'touch' && (localBest(H.id) != null);
       comment(say(landingGroup({ type: L.kind, fallen: s.fallen, dist: L.dist, k: H.k, hs: H.hs, wind: L.windAvg, pb })));
+      // rekord skakalnice / svetovni rekord (veljaven le pristanek brez padca in dotika)
+      if (L.kind !== 'fall' && L.kind !== 'touch' && !H.physics?.noAir) {
+        const wr = worldRecord(), hr = hillRecord(H);
+        const kind = wr && L.dist > wr.dist ? 'world' : hr && L.dist > hr.dist ? 'hill' : null;
+        if (kind) {
+          G.flags.recBreak = { kind, prev: kind === 'world' ? wr : hr };
+          // v tabelo gre le »Rekord skakalnice« (lestvica); trening in tekma samo proslavita
+          if (G.mode === 'record') recs.hills[H.id] = { dist: L.dist, who: hub.profile, total: 0 };
+        }
+      }
       if (!reducedMotion() && !G.stream && !G.ext?.noSlowmo && L.dist >= H.k && L.kind !== 'fall' && G.hist.length > TPS) {
         const to = G.hist.length - 1;
         G.slow = { from: Math.max(0, to - Math.round(1.4 * TPS)), to: to + Math.round(0.25 * TPS), pos: Math.max(0, to - Math.round(1.4 * TPS)) };
@@ -567,11 +672,36 @@ function showBig() {
   G.landShown = true;
   const L = G.J.s.landing;
   const el = $('#big');
-  el.classList.remove('mg-hidden'); el.classList.toggle('fall', L.type === 'fall');
+  el.classList.remove('mg-hidden'); el.classList.toggle('fall', L.type === 'fall' || L.type === 'touch');
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   $('#bigDist').textContent = fmtDist(L.dist);
   const T = { tele: 'Telemark', two: 'Na obe nogi', none: 'Trd pristanek', touch: 'Dotik z roko', fall: 'Padec' };
   $('#bigSub').textContent = T[L.type] || '';
+  const RB = G.flags.recBreak, rec = $('#bigRec');
+  el.classList.toggle('record', !!RB); el.classList.toggle('world', RB?.kind === 'world');
+  rec.classList.toggle('mg-hidden', !RB);
+  if (RB) {
+    const Hd = hillOf(G.hillId).def;
+    const train = G.mode === 'train' && !G.ext;
+    rec.innerHTML = `<i>${RB.kind === 'world' ? '🌍 SVETOVNI REKORD!' : '🏆 REKORD SKAKALNICE!'}</i>
+      <small>prej ${fmtDist(RB.prev.dist)}${RB.kind === 'world' && RB.prev.hill && RB.prev.hill.id !== Hd.id ? ' · ' + esc(RB.prev.hill.name) : ''}${train ? ' · trening ne šteje' : ''}</small>`;
+    audio.fanfare(); audio.bells(RB.kind === 'world' ? 24 : 16); audio.cheer(1);
+    renderer.setCheer(1); renderer.setHillRecord(L.dist);
+    try { ui.winFx(RB.kind === 'world' ? 'fireworks' : 'confetti', { duration: RB.kind === 'world' ? 6000 : 3500 }); } catch { /* */ }
+    if (RB.kind === 'world') setTimeout(() => { try { ui.winFx('confetti'); audio.fanfare(); } catch { /* */ } }, 1800);
+    updateRecChip();
+  }
+}
+
+/** Čip v HUD-u z rekordom skakalnice (in oznako, če je to tudi svetovni rekord). */
+function updateRecChip() {
+  const el = $('#hudRec'); if (!el) return;
+  const Hd = hillOf(G.hillId)?.def, r = Hd && hillRecord(Hd), wr = worldRecord();
+  el.classList.toggle('mg-hidden', !r);
+  if (!r) return;
+  const isWr = wr && !Hd.physics?.noAir && wr.hill.id === Hd.id && wr.dist === r.dist;
+  el.classList.toggle('world', !!isWr);
+  el.textContent = `${isWr ? '🌍 Svetovni rekord' : '🏆 Rekord skakalnice'} ${fmtDist(r.dist)}`;
 }
 
 function updateHud(v) {
@@ -584,6 +714,19 @@ function updateHud(v) {
   cell.classList.toggle('head', w > 0.15); cell.classList.toggle('tail', w < -0.15);
   $('#barWind').textContent = sign(w);
   $('#barArrow').style.transform = `rotate(${w >= 0 ? 180 : 0}deg)`;
+  // vetrokaz v kotu: v letu veter ob skakalcu, sicer pri K-točki
+  const wl = s.phase === 'air' && s.takeoff && !s.landing ? G.windObj.at(t, s.x).h : w;
+  const wq = Math.round(wl * 10) / 10;
+  if (wq !== G.wbLast) {
+    G.wbLast = wq;
+    const a = Math.abs(wq), box = $('#windBox');
+    box.classList.toggle('head', wq > 0.15); box.classList.toggle('tail', wq < -0.15);
+    const step = Math.round(a * 4) / 4;   // hitrost animacije v korakih po 0,25 m/s (manj preskokov)
+    box.style.setProperty('--wdur', (step < 0.2 ? 0 : 2.2 / (0.35 + step)).toFixed(2) + 's');
+    box.style.setProperty('--wsock', Math.round(80 - Math.min(1, a / 3) * 80) + 'deg');   // visi → vodoravno pri 3 m/s
+    box.style.setProperty('--wa', Math.min(1, 0.2 + a / 2.5).toFixed(2));
+    $('#wbVal').textContent = sign(wq);
+  }
   if (s.phase === 'inrun' && G.state === 'jump') $('#barSpeed').textContent = fmt1(s.v * 3.6) + ' km/h';
   // merilnik nagiba
   const inAir = s.phase === 'air' && s.takeoff && !s.prep && !s.fallen;
@@ -605,7 +748,7 @@ function updateHud(v) {
     } else if (s.phase === 'air' && s.takeoff && !s.prep && !s.fallen) {
       const ttc = s.vn > 0.1 ? s.hag / s.vn : 9;
       const a = s.alpha * 180 / Math.PI;
-      if (ttc < 0.5) { h = IS_TOUCH ? 'Dva prsta za telemark!' : 'Oba gumba za telemark!'; go = true; }
+      if (ttc < 0.5) { h = IS_TOUCH ? 'Tapni za telemark!' : 'Klik za telemark!'; go = true; }
       else if ((s.tick - s.takeoff.tick) * STEP > 0.3) {
         if (a > BOT_ALPHA + 7) h = 'Nagni se naprej ' + (IS_TOUCH ? '(povleci dol)' : '(miška dol)');
         else if (a < BOT_ALPHA - 7) h = 'Malo nazaj ' + (IS_TOUCH ? '(povleci gor)' : '(miška gor)');
@@ -698,7 +841,8 @@ async function finishJump() {
   if (G.mode === 'daily') res = resultOf(s, Hd, P, { gate: G.gate, refGate: G.daily.refGate, judgeSeed: (G.wind.seed ^ s.tick) >>> 0, teleOnly: !!G.daily.cond.mods.teleOnly });
   else res = scoreJump(Hd, { dist: L.dist, judges: judgeScores(s, P, (G.wind.seed ^ s.tick) >>> 0), wind: L.windAvg, gate: G.gate });
   const judges = res.judges;
-  res.type = L.type; res.fall = L.type === 'fall'; res.speed = s.tableSpeed; res.takeoff = s.takeoff;
+  // dotik z roko = neveljaven skok (kot padec): ne šteje za rekord, osebni rekord, odklepe in »brez padca«
+  res.type = L.type; res.fall = L.type === 'fall' || L.type === 'touch'; res.speed = s.tableSpeed; res.takeoff = s.takeoff;
   const jump = { hill: Hd.id, dist: L.dist, total: res.total, fall: res.fall, mode: G.mode };
   G.session.jumps.push(jump);
   const ghostData = encodeGhost({ pv: P.paramsVersion, hill: Hd.id, gate: G.gate, wind: G.wind, changes: G.rec.changes, ticks: G.rec.ticks, dist: L.dist, total: res.total });

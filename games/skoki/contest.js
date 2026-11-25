@@ -99,7 +99,7 @@ export function resultOf(s, def, P, { gate, refGate, judgeSeed, teleOnly = false
   const judges = judgeScores(js, P, judgeSeed >>> 0);
   const r = scoreJump(def, { dist: L.dist, judges, wind: L.windAvg, gate, refGate });
   return {
-    dist: L.dist, type: L.type, fall: L.type === 'fall', total: r.total, style: r.style, windAvg: r.wind, wind: r.wind, gate, windPts: r.windPts,
+    dist: L.dist, type: L.type, fall: L.type === 'fall' || L.type === 'touch', total: r.total, style: r.style, windAvg: r.wind, wind: r.wind, gate, windPts: r.windPts,
     gatePts: r.gatePts, distPts: r.distPts, judges: r.judges, dropped: r.dropped, ticks: s.tick, speed: s.tableSpeed, perfect: !!s.takeoff?.perfect,
   };
 }

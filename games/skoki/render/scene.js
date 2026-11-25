@@ -137,6 +137,7 @@ export class Renderer {
   }
 
   setRecord(s) { this.world?.recordLine(s); }
+  setHillRecord(s) { this.world?.hillRecordLine(s); }
   setGate(g) { this.world?.setGate(g); }
   setCheer(v) { WAVE.uCheer.value = v; }
   shake(v) { if (!this.reduced) this.cam.shake = Math.max(this.cam.shake, v); }

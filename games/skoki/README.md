@@ -14,10 +14,10 @@ je na igralni površini onemogočen; preslednica in puščice skoka ne upravljaj
 | Zalet | — (skakalec se sam spusti v nizko držo) | — |
 | Odriv (konec mize) | **levi + desni gumb hkrati** (en gumb ni odriv) | dva prsta hkrati |
 | Let | skakalec se **sam nagne** v letalni položaj; miška gor (nazaj) / dol (naprej) ga popravlja | vlečenje gor/dol |
-| Telemark | **oba gumba** tik pred tlemi | dva prsta |
-| Dve nogi | en gumb | en tap |
+| Telemark | **en gumb** tik pred tlemi | en tap |
+| Dve nogi | **oba gumba** hkrati | dva prsta |
 
-Brez premikanja miške skakalec pristane pred K-točko brez padca (Orlova ~100 m); rahel nagib naprej (−5°) ga nese do K,
+Pristanek: **en gumb = telemark, oba gumba = dve nogi**. Brez premikanja miške skakalec pristane pred K-točko brez padca (Orlova ~100 m); rahel nagib naprej (−5°) ga nese do K,
 preveč naprej pa na nos.
 
 `R` = nov skok, `Enter` = replay, `Esc`/`P`/⏸ = pavza (tudi samodejno, ko zavihek ni viden; tedaj utihne tudi zvok).
@@ -97,7 +97,7 @@ dodaj vrstico v `skoki_hills` z `maxPoints(def)` (test preveri).
 
 - Daljava: `base` (60, letalnice 120) + (daljava − K) × vrednost metra, nikoli negativno.
 - Slog: 5 sodnikov (0–20, korak 0,5), najvišja in najnižja se ne štejeta. Odbitki: nemiren let (Σω²), mahanje z rokami
-  (navor blizu meje), slab odriv, pristanek (telemark 0,5 + kakovost, dve nogi 1,5, trd 4, dotik 5, padec 9), trd udarec.
+  (navor blizu meje), slab odriv, pristanek (telemark 0,5 + kakovost, dve nogi 3, trd 4,5, dotik z roko 8, padec 9), trd udarec.
   Vsak sodnik ima deterministično občutljivost in šum iz seeda skoka.
 - Veter: povprečje čelne komponente v 5 točkah leta; čelni odšteje `head × m/s`, hrbtni prišteje `tail × m/s`.
 - Zaletno mesto: (privzeto − uporabljeno) × `gateFactor`.
@@ -358,3 +358,28 @@ Na Planici, srednji in veliki certifikat navaja e2, ki se ne ujema z e1 − es; 
 Vse vrstice izpolnijo cilje 1. faze (test »cilji uravnoteženja«). Z naključnim vetrom (`--wind`) so prave skakalnice strožje od
 izmišljenih: najboljši bot (1,0) pade v 24–50 % skokov na velikih (Orlova 20 %) in ~43 % na letalnicah (Orlovo gnezdo 54 %) —
 pristanek pri HS je na položnejšem doskočišču zahtevnejši.
+
+## Rekordi in svetovni rekord
+- **Rekord skakalnice** = daljši od pravega rekorda (`real.record`) in najdaljšega skoka na lestvici `rekord:<id>`; na doskočišču
+  je **zlata črta**, v HUD-u čip »🏆 Rekord skakalnice« (»🌍 Svetovni rekord«, če je to najdaljši rekord vseh skakalnic).
+- **Svetovni rekord** = najdaljši rekord vseh skakalnic brez Lune (privzeto Planica, letalnica 254,5 m).
+- Skok brez padca in dotika čez rekord: zlata kartica »REKORD SKAKALNICE!« / velika »SVETOVNI REKORD!«, fanfara, zvonci,
+  konfeti oz. ognjemet. Proslava je v vseh načinih (v treningu z opombo »trening ne šteje«); tabelo posodobi le »Rekord skakalnice«.
+- Meni: kartica **Najdaljši skoki** — svetovni rekord in po skakalnicah pravi rekord, najdaljši na lestvici (z igralcem) in moj;
+  klik na vrstico izbere skakalnico. Lestvice (`limit: 1`) se naložijo ob meniju, predpomnilnik 60 s.
+- Konec tekme: rezultati imajo poleg »Nova tekma« še **Zapusti sobo** (spletna) oz. **V meni** (lokalna) — `ui.results({ exit })`.
+- **Top 10 skokov:** klik na vrstico v »Najdaljši skoki« odpre top 10 posameznih rezultatov Rekorda skakalnice (isti igralec
+  lahko večkrat; `hub.getTopScores`, brez združevanja po igralcu) z datumom; skoki čez pravi rekord imajo 🏆.
+
+## Kontrole pristanka in vetrokaz
+- **En gumb = telemark, oba gumba = dve nogi** (dotik: en tap = telemark, dva prsta = dve nogi). Simulacija, boti in ghosti
+  ostanejo pri btn 1 = dve nogi, btn 2 = telemark: `input.js` (`_landBtn`) ob prvem pritisku takoj pošlje 1 (priprava brez zamika),
+  če v 7 tickih (~60 ms) ne pride drugi gumb, pošlje 2 (nadgradnja v telemark z istim trenutkom priprave). Stari ghosti veljajo.
+- **Vetrokaz** desno zgoraj: rokav, ki se z močjo vetra dviguje, črte, ki letijo v smeri vetra (hitreje pri močnejšem), puščica in
+  m/s (zeleno čelni, rdeče hrbtni). Pred skokom veter pri K-točki, v letu ob skakalcu.
+
+## Dotik z roko (FIS ICR, Book III, 2024)
+- ICR 431.2.2/431.2.3: pristanek brez telemarka najmanj **3,0** odbitka; prehod z rokama/zadnjico na snegu **4,0–5,0**; padec pred
+  črto padca **7,0** (skupina iztek). ICR dotika z roko ne imenuje »padec«, a se na točkah skoraj izenači s padcem, rekordi z dotikom
+  pa se ne priznajo. Zato v igri: odbitek za dotik **8** (padec 9), in dotik **šteje kot padec** za rekord skakalnice, svetovni rekord,
+  osebni rekord, lestvico (najboljši skok »brez padca«), odklepe, dosežke in statistiko padcev.

@@ -33,11 +33,18 @@
         <span class="sk-chip" id="hudHill">Orlova</span>
         <span class="sk-chip sk-chip--mode" id="hudMode">Trening</span>
         <span class="sk-chip mg-hidden" id="hudGhost">👻</span>
+        <span class="sk-chip sk-chip--rec mg-hidden" id="hudRec"></span>
       </div>
       <div class="sk-btns">
         <button class="sk-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
         <button class="sk-btn" id="btnPause" type="button" aria-label="Pavza">⏸</button>
       </div>
+    </div>
+    <div class="sk-windbox" id="windBox" aria-label="Veter">
+      <span class="sk-windbox__lbl">VETER</span>
+      <div class="sk-windbox__sky" id="wbSky"><i></i><i></i><i></i><i></i><i></i><i></i>
+        <span class="sk-windbox__pole"></span><span class="sk-windbox__sock" id="wbSock"><em></em><em></em><em></em></span></div>
+      <div class="sk-windbox__val"><span class="sk-windbox__arrow" id="wbArrow">➜</span> <b id="wbVal">0,0</b> <small>m/s</small></div>
     </div>
     <div class="sk-light mg-hidden" id="light" aria-live="polite">
       <div class="sk-lamps"><i class="sk-lamp sk-lamp--r on"></i><i class="sk-lamp sk-lamp--g"></i></div>
@@ -50,7 +57,7 @@
     </div>
     <div class="sk-hint mg-hidden" id="hint"></div>
     <div class="sk-flash mg-hidden" id="flash"></div>
-    <div class="sk-big mg-hidden" id="big"><b id="bigDist">0,0 m</b><span id="bigSub"></span></div>
+    <div class="sk-big mg-hidden" id="big"><b id="bigDist">0,0 m</b><span id="bigSub"></span><em class="sk-bigrec mg-hidden" id="bigRec"></em></div>
     <div class="sk-comment mg-hidden" id="comment"></div>
     <div class="sk-bar" id="bar">
       <div class="sk-bar__who" id="barWho"></div>

@@ -210,6 +210,13 @@ export class SupabaseBackend {
     }));
   }
 
+  async getTopScores({ game, seed = null, limit = 10, asc = false }) {
+    let q = this.client.from('game_scores').select('user_id,score,meta,created_at,profiles(nickname,avatar,equipped)').eq('game', game);
+    if (seed != null) q = q.eq('seed', seed);
+    const rows = check(await q.order('score', { ascending: asc }).order('created_at', { ascending: true }).limit(Math.max(1, Math.min(limit, 100))));
+    return rows.map(({ profiles: p, ...r }) => ({ ...r, nickname: p?.nickname || '???', avatar: p?.avatar || { emoji: '❔', color: '#888' }, equipped: p?.equipped || {} }));
+  }
+
   async getMyBest({ game, seed = null, asc = false }) {
     let q = this.client.from('game_scores').select('score').eq('game', game).eq('user_id', this.userId);
     if (seed != null) q = q.eq('seed', seed);
