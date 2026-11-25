@@ -877,6 +877,7 @@ async function runLocal(cfg, sel) {
     const gate = L.jury.gate, refGate = L.jury.start;
     const gateChange = jb.change ? { ...jb.change, pts: gatePoints(def, jb.change.to, refGate) } : null;
     if (jb.msg) msg(jb.msg, 5000);
+    const pb = myStats()[id]?.best?.[cfg.hill] || 0;   // osebni rekord skakalca na tej skakalnici (lokalna liga)
     const judgeSeed = C.hashStr(seed + ':' + L.comp.round + ':' + id);
     renderSide({ comp: L.comp }, L.changes || {}, id);
     renderDeck(L.comp);
@@ -891,7 +892,7 @@ async function runLocal(cfg, sel) {
       if (cfg.replay === 'skip') r = { status: 'ok', res: b.res, changes: b.changes };
       else {
         renderThird(L.comp, id, { def, gate, refGate, wind });
-        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
+        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, pb, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
         if (r.status === 'abort') return;
         r = { status: 'ok', res: b.res, changes: b.changes };   // uradno: izračun (enak replayu)
       }
@@ -904,7 +905,7 @@ async function runLocal(cfg, sel) {
       const go = await interstitial(p, j);
       if (local !== L) return;
       if (!go) { leaveLocal(); return; }
-      r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, judgeSeed, source: 'me', mine: true, startLimit: true, relaxed: cfg.relaxed, skin: skinOf(j), label: `${roundLabel(L.comp)} · ${j.name}`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', holdMs: 800 });
+      r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, pb, judgeSeed, source: 'me', mine: true, startLimit: true, relaxed: cfg.relaxed, skin: skinOf(j), label: `${roundLabel(L.comp)} · ${j.name}`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', holdMs: 800 });
       if (r.status === 'abort') return;
     }
     if (local !== L) return;

@@ -185,9 +185,10 @@ export function skokiTests(test, { eq, ok }) {
     const none = run({ err: 0.01, pitch: good, lead: -1 });
     ok(['none', 'fall', 'touch'].includes(none.landing.type), 'brez priprave na pristanek: ' + none.landing.type);
     const late = run({ err: 0.01, pitch: good, lead: 0.11 });
-    ok(['fall', 'touch'].includes(late.landing.type), 'prepozen klik: ' + late.landing.type);
+    // paramsVersion 5: pozen klik ni več slabši od nobenega — telemarka ni, pristanek na obe nogi; klik po refleksu = trd pristanek
+    eq(late.landing.type, 'two', 'prepozen klik: dve nogi');
     const later = run({ err: 0.01, pitch: good, lead: 0.04 });
-    eq(later.landing.type, 'fall', 'klik po refleksu');
+    eq(later.landing.type, 'none', 'klik po refleksu: trd pristanek');
     const nose = run({ err: 0.01, pitch: s => s.gamma / D.DEG - 15 });
     eq(nose.fallen, 'nose', 'prevelik nagib naprej');
     eq(nose.landing.type, 'fall');

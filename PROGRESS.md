@@ -1129,3 +1129,9 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 - Ustaljen veter v tekmi (»Spremenljiv«) in v Rekordu skakalnice (nov način vetra `steady`).
 - Animacija spremembe zaletnega mesta s kompenzacijo; točke na mesto izmerjene (`tools/skoki-gatefactor.mjs`).
 - Preverjeno: testi 202/202, animacija v Rekordu skakalnice (hrbtni −2,4 m/s → 13 ▲ 17, −27,2 t). Ni preverjeno: spletna tekma v več zavihkih.
+
+# Smučarski skoki — rekordi in pristanek (25. 11. 2026)
+
+- Pristanek (paramsVersion 5): pozen klik = dve nogi, le skrajno pozen = dotik; klik po refleksu = trd pristanek; mehkejše meje.
+- Naš rekord skakalnice / svetovni rekord iz lestvice, pravi rekordi ob strani; »Moj« rekord z vseh naprav; osebni rekord v traku.
+- Preverjeno: testi 202/202, simulacija pristankov (Orlova, Planica, Zakopane, Willingen, letalnici), meni in trak v brskalniku.

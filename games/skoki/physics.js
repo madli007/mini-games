@@ -251,7 +251,8 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
     if (s.fallen) type = 'fall';
     else {
       // brez klika: refleks tik pred tlemi → trd pristanek na obe nogi ('none')
-      if (s.prep && s.prep.late) { type = 'tele'; lateTele = 2; }
+      // klik šele po refleksu: za telemark prepozno → trd pristanek (paramsVersion 5; prej padec — pozen klik je bil slabši od nobenega)
+      if (s.prep && s.prep.late) type = 'none';
       else if (!s.prep || s.prep.type === 'reflex') type = 'none';
       else {
         timing = (s.tick - s.prep.tick) * STEP;
@@ -259,8 +260,8 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
           teleQ = teleQuality(timing, L);
           type = 'tele';
         } else type = 'two';
-        // prepozen klik: pristanek ne uspe — dotik z roko ali padec
-        if (timing < L.teleMin) lateTele = timing < L.teleMin * 0.6 ? 2 : 1;
+        // prepozen klik: telemarka ni več mogoče narediti → pristanek na obe nogi; le skrajno pozen (< lateTouch) = dotik z roko
+        if (timing < L.teleMin) { if (timing < (L.lateTouch ?? L.teleMin * 0.6)) lateTele = 1; else { type = 'two'; teleQ = 0; } }
       }
       const lim = type === 'tele' ? L.hTele : type === 'two' ? L.hTwo : L.hNone;
       const ar = Math.abs(skiRel);

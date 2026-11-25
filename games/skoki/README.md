@@ -420,3 +420,16 @@ Cilj: odriv, ki ga zadene tudi človek, gladek prehod v let in let, v katerem se
   − rdeče); v traku spodaj zalet s točkami. Tekma jo pošlje vsem (`active.gateChange`).
 - **Točke na mesto** (`gateFactor`) so izmerjene: `node tools/skoki-gatefactor.mjs [--write]` (metri na mesto bota 0,7 × vrednost
   metra), da kompenzacija res izravna mesto — test: bot 0,9 pri ±2 m/s z žirijo dobi skoraj enake točke kot brez vetra.
+
+## Rekordi: naši, moji in pravi (paramsVersion 5)
+- **Rekord skakalnice in svetovni rekord sta »naša«**: najdaljši skok brez padca na lestvici Rekorda skakalnice (vsi igralci) oz.
+  najdaljši med vsemi skakalnicami (brez Lune). Pravi rekordi (`real.record`) so dodatni podatek: stolpec »Pravi rekord«, pod
+  svetovnim rekordom, v čipu (»pravi 142,0 m«) in omemba pri proslavi (»Daljše od pravega rekorda …«). Zlata črta = naš rekord
+  (če ga še ni, pravi). Prvi rekord skakalnice šteje od K naprej.
+- **Moj rekord** = daljši od lokalnega (ta naprava) in mojega najboljšega na lestvici (`hub.getMyBest`) — enak na vseh napravah.
+- **Pred skokom** je v traku spodaj »Osebni rekord« skakalca na tej skakalnici (jaz: moj rekord; lokalna tekma: statistika
+  skakalca iz »Moji skakalci«).
+- **Pristanek:** pozen klik (manj kot `teleMin` 0,15 s pred stikom) da pristanek na obe nogi, le skrajno pozen (< `lateTouch` 0,05 s)
+  dotik z roko; klik po refleksu = trd pristanek (prej padec — pozen klik je bil slabši od nobenega). Meje udarca `hTele` 1,8,
+  `hTwo` 2,15, `hNone` 1,3, kot smuči `pitchOk` 15° / `pitchTouch` 25° — dolgi skoki niso več dotiki; pristanek daleč čez HS je še
+  padec.

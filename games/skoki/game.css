@@ -95,6 +95,7 @@ body.sk-playing .mg-header { display: none; }
 .sk-bar__cell span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--mg-dim); white-space: nowrap; }
 .sk-bar__cell b { font-size: 19px; white-space: nowrap; }
 .sk-bar__cell--rec b { color: var(--mg-green); }
+.sk-bar__cell--pb b { color: #ffd23f; }
 .sk-wind.head b { color: var(--mg-green); } .sk-wind.tail b { color: #ff6b7a; }
 .sk-arrow { display: inline-block; font-style: normal; transition: transform .3s; }
 .sk-wind em { font-style: normal; }
@@ -103,7 +104,7 @@ body.sk-playing .mg-header { display: none; }
   .sk-bar__who { flex-basis: 100%; padding: 6px 10px 0 !important; }
   .sk-bar > div { padding: 4px 10px 8px; }
   .sk-bar__cell b { font-size: 16px; }
-  .sk-bar__cell--rec { display: none !important; }
+  .sk-bar > div { min-width: 0; }
   .sk-comment { bottom: calc(118px + env(safe-area-inset-bottom)); font-size: 15px; }
   .sk-lean__bar { height: 150px; }
 }
@@ -293,6 +294,7 @@ body.sk-match #btnPause { display: none; }
 .sk-groupbox + .sk-groupbox { margin-top: 6px; }
 .sk-hillcard .sk-flag { font-family: initial; font-size: 14px; }
 .sk-hillcard .sk-real { font-size: 12px; color: #c9d6ff; opacity: .9; line-height: 1.35; position: relative; z-index: 1; }
+.sk-hillcard .sk-ourrec { font-size: 12.5px; color: #ffd23f; font-weight: 700; position: relative; z-index: 1; }
 .sk-hillcard > * { position: relative; z-index: 1; }
 @media (max-width: 480px) { .sk-hills { grid-template-columns: 1fr 1fr; gap: 8px; } .sk-hillcard { min-height: 100px; padding: 10px; }
   .sk-hillcard b { font-size: 17px; } .sk-hillcard:not(.locked) .desc { display: none; } .sk-hillcard.locked .desc { font-size: 12px; } }
@@ -329,7 +331,9 @@ body.sk-match #btnPause { display: none; }
 .sk-records tr.wr td { background: rgba(255, 194, 26, .1); }
 .sk-records .best { color: #ffd23f; font-weight: 700; }
 .sk-records .sub { display: block; font-size: 12px; color: var(--mg-dim); }
-@media (max-width: 640px) { .sk-records .col-mine { display: none; } .sk-records { font-size: 13px; } }
+.sk-wr__real { display: block; margin-top: 2px; }
+.sk-records .col-real { font-size: 12px; }
+@media (max-width: 640px) { .sk-records .col-real { display: none; } .sk-records { font-size: 13px; } }
 
 /* =================================================================== veter v kotu (animiran vetrokaz) */
 .sk-windbox { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(62px, calc(env(safe-area-inset-top) + 56px)); width: 138px; pointer-events: none;
@@ -410,3 +414,6 @@ body.sk-match #btnPause { display: none; }
 #barGate small.plus { color: #39ff88; } #barGate small.minus { color: #ff6b7a; }
 @media (max-width: 640px) { .sk-gatefx { top: 26%; } .sk-gatefx__box { padding: 10px 18px 12px; } }
 @media (prefers-reduced-motion: reduce) { .sk-gatefx, .sk-gatefx * { animation: none !important; } .sk-gatefx__nums .from::after { transform: scaleX(1); } }
+.sk-chip--rec small.real { font-weight: 600; opacity: .75; font-size: .85em; margin-left: 4px; }
+.sk-chip--rec.world small.real { color: #3a2a00; }
+.sk-bigrec small.real { color: #fff3c4; font-weight: 700; margin-top: 2px; }
