@@ -142,7 +142,7 @@ export function skokiTests(test, { eq, ok }) {
     ok(perfect.dist > late.dist + 3, `prepozno krajši (${perfect.dist} / ${late.dist})`);
     ok(late.takeoff.err > 0 && early.takeoff.err < 0);
   });
-  test('skoki: odriv le z obema gumboma, telemark z obema, en gumb = dve nogi, brez vnosa pred K brez padca', ctx => {
+  test('skoki: odriv le z obema gumboma, telemark z obema, en gumb = dve nogi, brez vnosa okoli K brez padca', ctx => {
     const { def, hill } = hillOf(ctx, 'bistra');
     // le en gumb na koncu mize: ni odriva → »padeš z mize« (samodejen šibek odriv)
     let clicked = -1;
@@ -156,15 +156,15 @@ export function skokiTests(test, { eq, ok }) {
     eq(plain.landing.type, 'tele');
     ok(plain.takeoff.perfect, 'oba gumba ob robu = ✨');
     eq(run({ hold: true }).landing.type, 'two');
-    // brez premikanja miške: samodejni letalni položaj → pristanek pred K, brez padca
+    // brez premikanja miške (paramsVersion 4): popoln odriv in samodejni letalni položaj → okoli K, a nikoli do HS, brez padca
+    // (do HS pripelje šele pravi nagib naprej; letalnica je občutljivejša, zato širše okno)
     for (const d2 of ctx.skokiHills) {
       const h2 = H.buildHill(d2);
       const r = PH.simulate({ hill: h2, P: ctx.skokiParams, gate: d2.gates.default, wind: { mode: 'off' }, input: scripted({ err: 0.01 }) }).s;
-      // letalnica: brez popravljanja ne ujameš jadranja (pristanek precej pred K, a brez padca; prave letalnice
-      // imajo počasnejši zalet in več vzgona, zato brez popravka pristaneš še prej)
       // Luna: brez zraka nagib ne šteje, skok je čisto balističen (le brez padca)
       if (d2.physics?.noAir) { ok(r.landing.type === 'tele', d2.id + ': ' + r.landing.type); continue; }
-      ok(r.landing.type === 'tele' && r.dist < d2.k && r.dist > d2.k * (d2.k >= 170 ? (d2.real ? 0.4 : 0.5) : 0.7), `${d2.id}: brez popravka ${r.dist} m ${r.landing.type}`);
+      const lo = d2.k * (d2.k >= 170 ? 0.75 : 0.88);
+      ok(r.landing.type === 'tele' && r.dist > lo && r.dist < d2.hs - 2, `${d2.id}: brez popravka ${r.dist} m ${r.landing.type} (pričakovano ${lo.toFixed(0)}–${d2.hs - 2} m)`);
     }
   });
   test('skoki: čelni veter podaljša, hrbtni skrajša (velika ~+10–15 m pri +2 m/s)', ctx => {

@@ -17,7 +17,7 @@ import { scoreJump, encodeBoard, decodeBoard, fmtBoard, fmtDist, fmtPts } from '
 import { InputRecorder, encodeGhost, decodeGhost, ghostJump, GHOST_MAX } from './ghost.js';
 import { createBot, BOT_ALPHA } from './bot.js';
 import { createWind } from './wind.js';
-import { snapshot, gateSnapshot, lerpSnap, replayCuts, cutAt } from './replay.js';
+import { snapshot, gateSnapshot, lerpSnap, replayCuts, cutAt, GLIDE_ALPHA } from './replay.js';
 import { commentator, landingGroup } from './texts.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
@@ -43,7 +43,7 @@ const ACH = [
   { key: 'prvi-skok', title: 'Prvi skok', icon: '🎿', desc: 'Skoči svoj prvi skok' },
   { key: 'k-tocka', title: 'K-točka', icon: '🎯', desc: 'Prvič skoči do K-točke' },
   { key: 'hs', title: 'Do HS', icon: '🚀', desc: 'Skoči do HS brez padca' },
-  { key: 'popoln-odriv', title: 'Popoln odriv', icon: '✨', desc: 'Odriv v oknu ±25 ms' },
+  { key: 'popoln-odriv', title: 'Popoln odriv', icon: '✨', desc: 'Odriv v oknu ±35 ms' },
   { key: 'telemark-19', title: 'Telemark za 19', icon: '🧑‍⚖️', desc: 'Vsaj štirje sodniki ti dajo 19 ali več' },
   { key: 'snezni-angel', title: 'Snežni angel', icon: '👼', desc: 'Prvi padec' },
   { key: 'vse-tri', title: 'Vse tri', icon: '🏔️', desc: 'Čez K na vseh treh skakalnicah' },
@@ -82,11 +82,13 @@ const stats = S.load('skoki:stats', { jumps: 0, falls: 0, overK: {}, hints: 0 })
 const saveStats = () => S.save('skoki:stats', stats);
 // lokalni najboljši skok (ghost) na skakalnico — vezan na profil, da si ga dva profila v istem brskalniku ne delita
 const bestKey = id => 'skoki:best:' + (hub.userId || 'anon') + ':' + id;
-// šteje le »Rekord skakalnice« (trening ne postavlja rekordov); rekord iz starejše fizike (paramsVersion) ne velja
+// šteje le »Rekord skakalnice« (trening ne postavlja rekordov); rekord iz starejše fizike ostane (daljava velja), ghost pa se
+// predvaja le, če je iz iste verzije fizike (prepGhosts preveri pv)
 // rekord = najdaljši skok brez padca (v metrih); enako dolge skoke loči točkovanje
 const better = (a, b) => !b || a.dist > b.dist || (a.dist === b.dist && a.total > b.total);
 const BOARD_SEED = id => 'rekord:' + id;
-const localBest = id => { const b = S.load(bestKey(id), null); return b && b.pv === P?.paramsVersion ? b : null; };
+const glideOf = s => s.prep || s.fallen ? 0 : Math.max(0, 1 - Math.abs(s.alpha * 180 / Math.PI - GLIDE_ALPHA) / 9);
+const localBest = id => S.load(bestKey(id), null);
 
 /* ------------------------------------------------------------ rekordi skakalnic in svetovni rekord */
 // Rekord skakalnice = daljši od pravega rekorda (real.record) in najdaljšega skoka na lestvici »Rekord skakalnice«.
@@ -373,7 +375,7 @@ async function openTop10(tr, def) {
 function helpHtml() {
   return `<dl class="sk-help">
     <dt>1. Zalet</dt><dd>${IS_TOUCH ? 'Tapni' : 'Klikni'} za štart — skakalec se sam spusti v nizko držo.</dd>
-    <dt>2. Odriv</dt><dd><b>${IS_TOUCH ? 'Dva prsta hkrati' : 'Levi + desni gumb hkrati'}</b> točno na koncu mize. ✨ = popoln odriv (±25 ms).</dd>
+    <dt>2. Odriv</dt><dd><b>${IS_TOUCH ? 'Dva prsta hkrati' : 'Levi + desni gumb hkrati'}</b> točno na koncu mize. ✨ = popoln odriv (±35 ms), dober do ±90 ms.</dd>
     <dt>3. Let</dt><dd>Skakalec se sam nagne v letalni položaj; ${IS_TOUCH ? 'z vlečenjem prsta gor/dol' : 'z miško gor/dol'} ga popravljaš. Bela črtica na merilniku desno naj bo v zelenem oknu — okno se med letom premika. Preveč naprej = padec na nos, preveč nazaj = zavora.</dd>
     <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'En tap' : 'En gumb'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'dva prsta' : 'oba gumba'} = pristanek na obe nogi (varneje). Prepozno = padec.</dd>
     <dt>Tipke</dt><dd>Skok se upravlja samo z miško. <span class="mg-kbd">R</span> nov skok · <span class="mg-kbd">Enter</span> replay · <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> pavza</dd>
@@ -761,7 +763,8 @@ function updateHud(v) {
   audio.update({
     ski: s.phase === 'inrun' ? Math.min(1, s.v / 25) : s.phase === 'out' ? Math.min(1, s.outV / 25) * 0.7 : 0,
     speed: Math.min(1, (s.phase === 'inrun' ? s.v : s.outV || 0) / 27),
-    wind: s.phase === 'air' && s.takeoff ? Math.min(1, s.speed / 30) * (0.6 + Math.min(0.4, Math.abs(s.alpha) * 0.6)) : 0,
+    // veter v letu: močnejši in »polnejši« pri dobrem jadranju (napadni kot blizu GLIDE_ALPHA) in v čelnem vetru, šibkejši v hrbtnem
+    wind: s.phase === 'air' && s.takeoff ? Math.min(1, Math.min(1, s.speed / 30) * (0.45 + 0.5 * glideOf(s)) * (1 + Math.max(-0.3, Math.min(0.3, (s.wind?.h || 0) * 0.12)))) : 0,
     // publika: po pristanku vzklik izzveni (prej je šumela naprej)
     crowd: G.state === 'gate' ? 0.1 : s.landing ? (s.landing.type === 'fall' ? 0.25 : Math.min(1, 0.3 + s.landing.dist / hillOf(G.hillId).def.hs * 0.7)) * Math.exp(-(performance.now() - (G.landAt || 0)) / 2500) : s.phase === 'air' ? Math.min(0.8, 0.2 + Math.max(0, s.x) / hillOf(G.hillId).def.k * 0.5) : 0.1,
   });

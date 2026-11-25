@@ -75,7 +75,7 @@ const CERTS = [
 
 /* ------------------------------------------------------------ izbrane nastavitve (iz iskanja: node tools/skoki-real-hills.mjs --search) */
 // g = privzeto zaletno mesto, lift = physics.liftScale, tw = physics.takeoffWindow, push = physics.pushScale
-const TUNE = {"planica-srednja":{g: 11, lift: 1.02, tw: 1, push: 1}, "planica-velika":{g: 6, lift: 1.1, tw: 0.9, push: 1}, oberstdorf: {g: 33, lift: 1, tw: 0.6, push: 1}, garmisch: {g: 45, lift: 1.02, tw: 0.5, push: 1}, innsbruck: {g: 12, lift: 1.12, tw: 1, push: 1}, bischofshofen: {g: 16, lift: 1.02, tw: 0.5, push: 1}, zakopane: {g: 19, lift: 1.06, tw: 0.6, push: 1}, willingen: {g: 29, lift: 1.02, tw: 0.5, push: 1}, lahti: {g: 25, lift: 1, tw: 0.7, push: 1}, engelberg: {g: 19, lift: 1.04, tw: 1, push: 1}, "planica-letalnica":{g: 6, lift: 1.175, tw: 1, push: 1}, kulm: {g: 6, lift: 1.18, tw: 1, push: 1.2}, vikersund: {g: 4, lift: 1.185, tw: 2, push: 1}, "oberstdorf-letalnica":{g: 33, lift: 1.13, tw: 1, push: 1}};
+const TUNE = {"planica-srednja":{g: 4, lift: 1.12, tw: 1, push: 1}, "planica-velika":{g: 5, lift: 1.12, tw: 1, push: 1}, oberstdorf: {g: 36, lift: 0.98, tw: 1, push: 1}, garmisch: {g: 34, lift: 1.1, tw: 1, push: 1}, innsbruck: {g: 5, lift: 1.22, tw: 1, push: 1}, bischofshofen: {g: 4, lift: 1.08, tw: 1, push: 1}, zakopane: {g: 11, lift: 1.14, tw: 1, push: 1}, willingen: {g: 19, lift: 1.1, tw: 1, push: 1}, lahti: {g: 19, lift: 1.06, tw: 1, push: 1}, engelberg: {g: 16, lift: 1.08, tw: 1, push: 1}, "planica-letalnica":{g: 17, lift: 1.14, tw: 1, push: 1}, kulm: {g: 32, lift: 1.1, tw: 1, push: 1}, vikersund: {g: 11, lift: 1.18, tw: 1, push: 1}, "oberstdorf-letalnica":{g: 47, lift: 1.12, tw: 1, push: 1}};
 
 /* ------------------------------------------------------------ odklepi, teme, opisi */
 const UNLOCK = {
@@ -121,9 +121,10 @@ const r1Of = c => Array.isArray(c.r1) ? (c.r1[0] + c.r1[1]) / 2 : c.r1 ?? Math.r
 const r2d = v => Math.round(v * 100) / 100;
 
 const range = (a, b, st) => Array.from({ length: Math.round((b - a) / st) + 1 }, (_, i) => Math.round((a + i * st) * 1000) / 1000);
-const LIFTS = { velika: range(1, 1.1, 0.02), srednja: range(1, 1.1, 0.02), letalnica: [1.045, ...range(1.1, 1.24, 0.005)] };
+const LIFTS = { velika: range(0.98, 1.24, 0.02), srednja: range(0.98, 1.24, 0.02), letalnica: range(1.02, 1.34, 0.01) };
 // različice fizike skakalnice: [takeoffWindow, pushScale]
-const TWS = { velika: [1, 0.9, 0.8, 0.7, 0.6, 0.5].map(t => [t, 1]), letalnica: [[1, 1], [1, 1.1], [1, 1.2], [1.3, 1.1], [1.3, 1.2], [1, 1.3], [1.3, 1], [1.6, 1], [2, 1], [1.6, 1.1]] };
+// (paramsVersion 4: velike in srednje brez ožjega okna — odriv naj bo za igralca enako prijazen povsod)
+const TWS = { velika: [[1, 1]], letalnica: [[1, 1], [1, 1.1], [1, 1.2], [1.3, 1], [1.6, 1], [2, 1]] };
 TWS.srednja = TWS.velika;
 const LIFT0 = { velika: 1, srednja: 1, letalnica: 1.045 };
 function defFrom(c, b0, gate = 1, gateFactor = 7, lift = LIFT0[c.size], tw = 1, push = 1) {

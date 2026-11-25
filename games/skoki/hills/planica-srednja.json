@@ -11,10 +11,10 @@
     "head": 8,
     "tail": 9.68
   },
-  "gateFactor": 3.5,
+  "gateFactor": 4.2,
   "gates": {
     "count": 34,
-    "default": 11,
+    "default": 4,
     "spacing": 0.63
   },
   "inrun": {
@@ -98,6 +98,6 @@
   },
   "desc": "Srednja skakalnica v dolini pod strmimi stenami. Krajši zalet, nizek let — dobra za začetek na pravih profilih.",
   "physics": {
-    "liftScale": 1.02
+    "liftScale": 1.12
   }
 }

@@ -36,7 +36,8 @@
   },
   "physics": {
     "gravity": 1.62,
-    "noAir": true
+    "noAir": true,
+    "takeoffWindow": 0.6
   },
   "unlock": {
     "hill": "orlovo-gnezdo",

@@ -1,5 +1,5 @@
 {
-  "paramsVersion": 3,
+  "paramsVersion": 4,
   "g": 9.81,
   "rho": 1.1,
   "mass": 72,
@@ -14,11 +14,13 @@
   "takeoff": {
     "vPush": 2.7,
     "idealOffset": 0,
-    "perfect": 0.025,
-    "good": 0.06,
+    "perfect": 0.035,
+    "good": 0.09,
+    "goodDrop": 0.07,
     "earlyLimit": 0.22,
     "lateLimit": 0.15,
-    "minQ": 0.35,
+    "minQ": 0.45,
+    "pitch0": 34,
     "spin": 0.9,
     "spinLate": 6,
     "earlySpeedLoss": 0
@@ -65,7 +67,7 @@
       [75, -0.05],
       [90, -0.12]
     ],
-    "liftScale": 1.05,
+    "liftScale": 0.99,
     "dragScale": 1,
     "momentScale": 1,
     "openTime": 0.35,
@@ -79,8 +81,8 @@
     "pitchMin": -45,
     "pitchMax": 60,
     "startPitch": 18,
-    "autoAlpha": 34,
-    "autoLag": 0.35,
+    "autoAlpha": 32,
+    "autoLag": 0.15,
     "noseCrash": -6,
     "backCrash": 92
   },
@@ -89,7 +91,7 @@
     "gustFreq": 0.7,
     "varAlong": 0.45,
     "vertical": 0.35,
-    "updraft": 0.8
+    "updraft": 1.0
   },
   "landing": {
     "teleMin": 0.15,
@@ -100,9 +102,9 @@
     "prepTime": 0.3,
     "prepPitch": 6,
     "reflex": 0.08,
-    "hTele": 1.4,
-    "hTwo": 1.75,
-    "hNone": 1.0,
+    "hTele": 1.6,
+    "hTwo": 1.95,
+    "hNone": 1.15,
     "touchMargin": 1.2,
     "pitchOk": 12,
     "pitchTouch": 22,

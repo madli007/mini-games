@@ -1112,3 +1112,13 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 - Animiran vetrokaz desno zgoraj.
 - Preverjeno: `node tests/run-node.mjs` 200/200, preklop pristanka v simulaciji (Bistra), proslava in tabela v brskalniku
   (namizje + 375 px). Ni preverjeno: pristanek z resnično miško, gumb za izhod ob dejanskem koncu tekme, `getTopScores` na Supabase.
+
+# Smučarski skoki — zglajena fizika v4 (25. 11. 2026)
+
+- Odriv: telo ob odrivu 34° nad smerjo leta (prej 55° — »potegnilo nazaj«), okni ±35 / ±90 ms, prave skakalnice brez ožjega okna.
+- Let: samodejni položaj 32° z zamikom 0,15 s → popoln odriv brez miške ≈ K, nagib naprej −3 … −5° ≈ HS; skupni liftScale 0,99.
+- Veter v letu močnejši (updraft 1,0: ±2 m/s ≈ ±11–12 m na Orlovi), pristanek tik pred HS čist (hTele 1,6).
+- Občutek: zvok vetra po kakovosti jadranja in vetru, tokovnice in plapolanje dresa; nov model skakalca (V-položaj s skupaj repi).
+- Boti: večji raztros pri nizki spretnosti; vse skakalnice znova uglašene (22/22 izpolni cilje), fiksture `tools/skoki-fixtures.mjs`.
+- Preverjeno: `node tests/run-node.mjs` 200/200; v brskalniku pravi kliki na Orlovi brez vetra: odriv −27 ms ✨, brez miške 118 m,
+  nagib naprej 4° 131 m. Ni preverjeno: igranje z resnično miško/telefonom (občutek), izris na telefonu.

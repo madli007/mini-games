@@ -30,10 +30,11 @@ export const quantPitch = p => Math.round(clamp(p, -60, 80) * 2) / 2;
 export function takeoffQuality(err, T) {
   const a = Math.abs(err);
   if (a <= T.perfect) return { q: 1, perfect: true, good: true };
-  if (a <= T.good) return { q: 1 - 0.12 * (a - T.perfect) / (T.good - T.perfect), perfect: false, good: true };
+  const gd = T.goodDrop ?? 0.12;   // padec kakovosti v oknu »dobro«
+  if (a <= T.good) return { q: 1 - gd * (a - T.perfect) / (T.good - T.perfect), perfect: false, good: true };
   const lim = err < 0 ? T.earlyLimit : T.lateLimit;
   const u = clamp((a - T.good) / (lim - T.good), 0, 1);
-  return { q: lerp(0.88, T.minQ, u), perfect: false, good: false };
+  return { q: lerp(1 - gd, T.minQ, u), perfect: false, good: false };
 }
 
 /** Kakovost telemarka iz časa med pritiskom in stikom. */
@@ -103,7 +104,7 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
     vx += push * sin(a); vy += push * cos(a);
     s.vx = vx; s.vy = vy;
     const gam = atan2(vy, vx);
-    s.pitch = gam + 55 * DEG;
+    s.pitch = gam + (T.pitch0 ?? 55) * DEG;   // telo ob odrivu nad smerjo leta (prej fiksno 55°)
     s.omega = -(T.spin + (err > 0 ? T.spinLate * err : 0)) * (0.7 + 0.3 * tq.q);
     s.takeoff = { err: Math.round(err * 1000) / 1000, q: tq.q, perfect: tq.perfect, good: tq.good, tick: s.tick };
     if (s.phase === 'inrun') { s.phase = 'air'; s.airTick = s.tick; }

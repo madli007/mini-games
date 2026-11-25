@@ -29,12 +29,12 @@ export function createBot({ skill = 0.7, seed = 1, alpha = BOT_ALPHA, style = nu
   const r = prng((seed >>> 0) ^ 0x2545f491);
   const miss = 1 - skill;
   // načrt skoka (vse naključno vnaprej, deterministično iz seeda)
-  let toErr = clamp(r.gauss() * (0.006 + miss * 0.075) + miss * 0.01, -0.2, 0.14);
+  let toErr = clamp(r.gauss() * (0.006 + miss * 0.09) + miss * 0.015, -0.2, 0.14);
   let landLead = 0.28 + r.gauss() * (0.015 + miss * 0.11);
   let twoFeet = r() < miss * 0.45;
   const delayTicks = Math.round((0.03 + miss * 0.22) / STEP);
   const noiseAmp = 0.4 + miss * 7;
-  let alphaBias = r.gauss() * miss * 4 + miss * 6;   // začetniki se radi »usedejo« (premalo naprej)
+  let alphaBias = r.gauss() * miss * 4 + 6 * Math.sqrt(miss);   // začetniki se radi »usedejo« (premalo naprej)
   if (style === 'agresiven') { toErr = clamp(toErr * 0.6, -0.2, 0.14); alphaBias -= 2 + miss * 3; landLead -= 0.03; }
   else if (style === 'varen') { alphaBias += 1.5; landLead = 0.3 + (landLead - 0.28) * 0.5; twoFeet = twoFeet || r() < 0.3; }
   const standUp = r() < miss * 0.35 ? { at: 120 + Math.floor(r() * 300), len: 20 + Math.floor(r() * 50) } : null;

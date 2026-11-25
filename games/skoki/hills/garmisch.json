@@ -11,10 +11,10 @@
     "head": 10.86,
     "tail": 13.14
   },
-  "gateFactor": 3.1,
+  "gateFactor": 3.8,
   "gates": {
     "count": 49,
-    "default": 45,
+    "default": 34,
     "spacing": 0.5
   },
   "inrun": {
@@ -104,7 +104,6 @@
     "over": "k"
   },
   "physics": {
-    "liftScale": 1.02,
-    "takeoffWindow": 0.5
+    "liftScale": 1.1
   }
 }

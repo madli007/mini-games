@@ -92,6 +92,6 @@
   },
   "desc": "Letalnica pod gorami. Sedem sekund mirnega jadranja, kjer šteje vsak popravek — in nevaren pristanek.",
   "physics": {
-    "liftScale": 1.045
+    "liftScale": 1.065
   }
 }

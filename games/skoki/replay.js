@@ -6,6 +6,9 @@
 import { STEP } from './physics.js';
 import { DEG } from './dmath.js';
 
+/** Napadni kot najboljšega jadranja (°), enak kot pri botu (bot.js → BOT_ALPHA). */
+export const GLIDE_ALPHA = 29;
+
 /** Posnetek stanja simulacije za izris (en tick). */
 export function snapshot(s, P) {
   const phase = s.phase === 'out' || s.phase === 'done' ? 'out' : s.phase;
@@ -22,6 +25,9 @@ export function snapshot(s, P) {
     flail: s.phase === 'air' && Math.abs(s.torque) > P.body.maxTorque * 0.8,
     speed: s.speed, hag: s.hag, target: s.target, btn: s.btn,
     cheer: !!(s.landing && s.landing.type !== 'fall' && s.landing.type !== 'touch'),
+    // »jadranje«: kako blizu optimalnega napadnega kota je let (0–1) — za občutek vzgona (zvok, tokovnice, plapolanje dresa)
+    glide: s.phase === 'air' && s.takeoff && !s.prep && !s.fallen ? Math.max(0, 1 - Math.abs(s.alpha / DEG - GLIDE_ALPHA) / 9) : 0,
+    windH: s.phase === 'air' ? s.wind?.h || 0 : 0,
   };
 }
 
