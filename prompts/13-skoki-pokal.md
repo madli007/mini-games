@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Smučarski skoki — 3. faza (svetovni pokal, kariera, trgovina, športni okvir)
 
-> **Stanje:** ✅ narejeno — commit `8936bc0` (26. 11. 2026); SQL še ni pognan v Supabase (PROGRESS.md)
+> **Stanje:** ✅ narejeno — commit `8936bc0` (26. 11. 2026); SQL pognan v Supabase
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/13-skoki-pokal.md in ga v celoti izvedi.«**

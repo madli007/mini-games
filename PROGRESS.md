@@ -1143,7 +1143,7 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 
 # Smučarski skoki — 3. faza: svetovni pokal, kariera, oprema, športni okvir (`prompts/13-skoki-pokal.md`, 26. 11. 2026)
 
-Stanje: **narejeno v kodi in preverjeno offline**; SQL **ni pognan** v Supabase (glej »Kaj mora uporabnik narediti«).
+Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z lažnimi JWT (glej »Supabase«).
 
 ### Načrt
 - [x] Športni okvir v `shared/sport/`: `season.js` (koledar sezone iz meseca + seeda, ljubljanski čas s prehodom CET/CEST,
@@ -1212,20 +1212,27 @@ Stanje: **narejeno v kodi in preverjeno offline**; SQL **ni pognan** v Supabase 
 - Konzola brez napak: igra (pokal, kariera, tekma), trgovina, dashboard, Krogla. Telefon 375×812 (pokal, kariera, trgovina —
   brez vodoravnega drsenja; popravljena širina tabele in številka postaje) in namizje.
 
+### Supabase (26. 11. 2026, po odobritvi uporabnika)
+- Migraciji `shop_game_items` (stolpca `game`/`slot`, `kind` 'game', 32 predmetov za skoke, `private.equip` za slote iger,
+  dnevna ponudba brez predmetov za igre, `equipped` do 2000 B) in `skoki_cup` (tabeli, pogled, RPC). Okna postaj: 265 vrstic
+  (2026-12 … 2028-12) — časi izračunani v Postgresu po `Europe/Ljubljana`, **MD5 vseh oken = koledar igre** (ujemanje preverjeno).
+- `get_advisors`: brez novih napak; nove tabele imajo le opozorilo »Anonymous Access Policies« (kot vse tabele huba — hub
+  namenoma uporablja anonimno prijavo) in INFO »unused index« za nova indeksa.
+- Varnostni preizkusi z lažnimi JWT v bloku, ki se na koncu razveljavi (rollback; po tem 0 zapisov, 0 testnih postaj/profilov):
+  veljaven zapis ✓ · dvojni zapis `cup_already` · izven okna `cup_closed` · 2. serija pred odprtjem `cup_closed` · 2. serija
+  brez 1. `cup_no_r1` · 31. po 1. seriji `cup_cut` (30. sprejet; 31 začasnih uporabnikov) · inputs > 6000 in ne-base64
+  `cup_too_big` · točke/daljava nad mejo skakalnice `cup_impossible` · brez prijave `not_authenticated` · neposreden insert za
+  drugega, update in insert postaje `permission denied` · pogled vrne zapise z vzdevkom · `equip` brez nakupa `not_owned`,
+  napačen in neznan slot `invalid`. Dnevna ponudba v SQL (20. 11.) = referenca iz JS.
+- V brskalniku (Supabase): okna postaj in razvrstitev se naložijo, konzola brez napak. Pokalnega skoka v živo s Supabase ni bilo
+  mogoče narediti (prva postaja se odpre 1. 12. 2026), profila za testiranje v produkciji nisem ustvarjal.
+
 ### Ni bilo preverjeno
-- **Pokal s Supabase** (dva igralca), varnostni preizkusi RPC z lažnimi JWT in `get_advisors` — migracija v produkcijsko bazo v tej
-  seji ni bila dovoljena; SQL je pripravljen, a ni pognan. Zato tudi ni testnih podatkov v bazi za brisanje.
+- Pravi pokalni skok s Supabase z dvema igralcema (od 1. 12. 2026 dalje) in nakup/opremljanje predmeta za igro prek pravega
+  klienta (RPC sta preizkušena z lažnim JWT, klient pa offline).
 - Spletna Turneja 4 skakalnic (prehod med štirimi tekmami pri hostu, prenos hosta med turnejo) in KO pari v živo z ≥ 4 skakalci
   (logika je v testih; lokalna turneja je bila preizkušena s tremi boti, torej brez KO).
 - Uradni pokalni skok z resnično miško (v testu je skakal bot `?bot=`); kariera na telefonu (dotik).
-- Predmeti za igre na Supabase (`equip('skoki.suit', …)`, nakup, presence z `equipped.games`).
 
-### Kaj mora uporabnik narediti v Supabaseu (po vrstnem redu)
-1. SQL Editor → poženi **`supabase/schema.sql`** (idempotentno: stolpca `game`/`slot`, `kind` 'game', blok GAME_ITEMS,
-   nova `private.equip`, dnevna ponudba brez predmetov za igre, večja meja `equipped`).
-2. Poženi **`supabase/games/skoki.sql`** (tabeli `skoki_cup_events`, `skoki_cup_jumps`, pogled `skoki_cup_board`, RPC
-   `skoki_cup_submit`, okna postaj 2026-12 … 2028-12).
-3. Advisors (Security + Performance) — pričakovano brez novih opozoril (RLS vklopljen, `security definer` le v `private`,
-   pogled `security_invoker`).
-4. Preizkus: dva igralca (`?igralec=1`, `?igralec=2`) skočita 1. serijo odprte postaje; drugi vidi razvrstitev in replay.
-5. Pred koncem 2028: `LAST_SEASON` v `tools/skoki-cup-sql.mjs` podaljšaj, `node tools/skoki-cup-sql.mjs --write`, znova poženi skoki.sql.
+### Vzdrževanje
+- Pred koncem 2028: `LAST_SEASON` v `tools/skoki-cup-sql.mjs` podaljšaj, `node tools/skoki-cup-sql.mjs --write`, znova poženi skoki.sql.
