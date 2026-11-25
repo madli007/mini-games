@@ -222,74 +222,95 @@ const LOCATIVE = { Planica: 'Planici', Zakopane: 'Zakopanah', 'Tauplitz / Bad Mi
   Willingen: 'Willingenu', Lahti: 'Lahtiju', Engelberg: 'Engelbergu', Vikersund: 'Vikersundu' };
 const locative = v => LOCATIVE[v] || v;
 
+// zavihki izbire skakalnice: trening (izmišljene), prave, letalnice (vse velikosti »letalnica«, ne glede na skupino)
+const HILL_TABS = [
+  { id: 'trening', name: 'Trening', has: d => (d.group || 'trening') === 'trening' && d.size !== 'letalnica' },
+  { id: 'prave', name: 'Prave', has: d => d.group === 'prave' && d.size !== 'letalnica' },
+  { id: 'letalnice', name: 'Letalnice', has: d => d.size === 'letalnica' },
+];
+const MENU_TABS = [['lestvice', 'Lestvice'], ['dosezki', 'Dosežki'], ['pomoc', 'Kako igrati'], ['nastavitve', 'Nastavitve']];
+const hillTabOf = def => (HILL_TABS.find(t => t.has(def)) || HILL_TABS[0]).id;
+
 function renderMenu() {
-  if (!G.hillId || !hillOpen(G.hillId)) G.hillId = (hillOf('bistra') ? 'bistra' : HILLS[0].def.id);
+  if (!G.hillId || !hillOpen(G.hillId)) G.hillId = settings.lastHill && hillOpen(settings.lastHill) ? settings.lastHill : (hillOf('bistra') ? 'bistra' : HILLS[0].def.id);
   const H = hillOf(G.hillId).def;
+  if (settings.lastHill !== H.id) { settings.lastHill = H.id; saveSettings(); }
   const gateOpts = Array.from({ length: H.gates.count }, (_, i) => i + 1).map(g => `<option value="${g}" ${g === (G.trainGate?.[H.id] ?? H.gates.default) ? 'selected' : ''}>${g}${g === H.gates.default ? ' (privzeto)' : ''}</option>`).join('');
-  const mb = localBest(H.id);
+  const mb = localBest(H.id), mine = myBest(H.id), hr = hillRecord(H), real = realRec(H), ps = passed(H);
   const tot = G.session.jumps.filter(j => j.hill === H.id);
+  const [c1, c2] = THEME_COLORS[H.id] || [H.theme?.sky?.zenith || '#24356e', '#0f1530'];
+  const R = H.real;
+  const hillTab = HILL_TABS.some(t => t.id === G.hillTab) ? G.hillTab : hillTabOf(H);
+  const menuTab = MENU_TABS.some(([id]) => id === settings.menuTab) ? settings.menuTab : 'lestvice';
+  const badge = def => { const p = passed(def); return p.hs ? '<span class="sk-badge hs" title="Čez HS brez padca">⭐ HS</span>' : p.k ? '<span class="sk-badge" title="Čez K brez padca">✓ K</span>' : ''; };
+  const tile = ({ def }) => {
+    const open = isOpen(def, unlocked);
+    const [t1, t2] = THEME_COLORS[def.id] || [def.theme?.sky?.zenith || '#24356e', '#0f1530'];
+    return `<button class="sk-tile ${open ? '' : 'locked'}" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${t1};--c2:${t2}" ${open ? '' : `title="${esc(unlockText(def, HILLS.map(x => x.def)))}"`}>
+      <b>${open ? '' : '🔒 '}${def.real ? flagOf(COUNTRY_FLAG[def.real.country]) + ' ' : ''}${esc(def.name)}</b>
+      <span class="kh">K${def.k} · HS${def.hs} ${badge(def)}</span></button>`;
+  };
   $('#menu').innerHTML = `
-    <div class="mg-stack">
-      <div class="sk-hero">
-        <div class="sk-hero__icon" aria-hidden="true">🎿</div>
-        <div><h1 class="mg-title">Smučarski skoki</h1>
-          <p class="mg-muted">Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Prava pravila točkovanja, veter in ghosti prijateljev.</p></div>
-      </div>
-      <div class="sk-modes sk-modes--4">
-        <button class="sk-modecard" id="mOnline"><span>🏆</span><b>Tekma</b><em>2–10 prijateljev, vsak s svojega zaslona, replay v živo</em></button>
-        <button class="sk-modecard" id="mLocal"><span>🖥️</span><b>Lokalna tekma</b><em>Tvoji skakalci na eni napravi, tudi brez povezave</em></button>
-        <button class="sk-modecard" id="mDaily"><span>📅</span><b>Dnevni izziv</b><em>${esc(dailyLine())}</em></button>
-        <button class="sk-modecard" id="mJumpers"><span>🎽</span><b>Moji skakalci</b><em>Sestavi svojo ekipo, statistika tvoje lige</em></button>
-      </div>
-      ${GROUPS.map(gr => {
-        const list = HILLS.filter(h => (h.def.group || 'trening') === gr.id);
-        if (!list.length) return '';
-        const nOpen = list.filter(h => isOpen(h.def, unlocked)).length;
-        const closed = (settings.groupsClosed || []).includes(gr.id) && !list.some(h => h.def.id === H.id);
-        return `<details class="sk-groupbox" data-group="${gr.id}" ${closed ? '' : 'open'}>
-        <summary class="sk-group"><span class="mg-title">${esc(gr.name)}</span> <span class="mg-muted mg-small">${nOpen}/${list.length} odprtih${gr.desc ? ' · ' + esc(gr.desc) : ''}</span></summary>
-        <div class="sk-hills" role="list">${list.map(({ def }) => {
-        const b = myBest(def.id), hr = hillRecord(def), ps = passed(def);
-        const open = isOpen(def, unlocked);
-        const [c1, c2] = THEME_COLORS[def.id] || [def.theme?.sky?.zenith || '#24356e', '#0f1530'];
-        const R = def.real;
-        return `<button class="sk-hillcard ${open ? '' : 'locked'} ${R ? 'sk-hillcard--real' : ''}" role="listitem" data-hill="${def.id}" aria-pressed="${def.id === H.id}" style="--c1:${c1};--c2:${c2}">
-          <span class="kh">${R ? `<span class="sk-flag" aria-label="${esc(R.country)}">${flagOf(COUNTRY_FLAG[R.country])}</span> ` : ''}K${def.k} · HS${def.hs}${def.size === 'letalnica' ? ' · letalnica' : ''}</span><b>${open ? '' : '🔒 '}${esc(def.name)}${ps.hs ? ' <span class="sk-badge hs" title="Čez HS brez padca">⭐ HS</span>' : ps.k ? ' <span class="sk-badge" title="Čez K brez padca">✓ K</span>' : ''}</b><span class="desc">${esc(open ? def.desc || '' : unlockText(def, HILLS.map(x => x.def)))}</span>
-          ${hr ? `<span class="sk-ourrec">🏆 Rekord: ${fmtDist(hr.dist)}${hr.who?.nickname ? ' · ' + esc(hr.who.nickname) : ''}</span>` : ''}
-          ${R ? `<span class="sk-real">${R.record ? `Pravi rekord: ${fmtDist(R.record.dist)} (${R.record.year})<br>` : ''}po profilu skakalnice v ${esc(locative(R.venue))} (certifikat ${R.certYear})</span>` : ''}
-          <span class="pb">${b ? '🏅 Moj rekord: ' + fmtDist(b.dist) + (b.total ? ' · ' + fmt1(b.total) + ' t' : '') : ''}</span></button>`;
-      }).join('')}</div></details>`;
-      }).join('')}
-      <div class="sk-modes">
-        <div class="mg-card">
-          <h2 class="mg-title">Trening</h2>
-          <p class="sk-note">Neomejeno skokov, ena tipka za nov skok, takojšen replay. Ne šteje za rekorde in lestvico.</p>
-          <div class="sk-row"><label>Zaletno mesto <select class="mg-select" id="selGate">${gateOpts}</select></label></div>
-          <div class="sk-row"><label>Veter <select class="mg-select" id="selWind">
-            <option value="off" ${settings.wind === 'off' ? 'selected' : ''}>Izklopljen</option>
-            <option value="const" ${settings.wind === 'const' ? 'selected' : ''}>Stalen</option>
-            <option value="random" ${settings.wind === 'random' ? 'selected' : ''}>Naključen</option></select></label>
-            <label class="${settings.wind === 'const' ? '' : 'mg-hidden'}" id="windVal"><input type="range" id="selWindSpeed" min="-3" max="3" step="0.5" value="${settings.windSpeed}"> <b id="windValTxt">${sign(settings.windSpeed)} m/s</b></label></div>
-          <div class="sk-row"><label class="mg-check"><input type="checkbox" id="chkGhost" ${settings.ghostMine ? 'checked' : ''}> 👻 Moj najboljši skok ${mb ? '(' + fmtDist(mb.dist) + ')' : '(še ga ni)'}</label></div>
-          <div class="sk-ghostsel" id="friendSel">${G.friendGhost && G.friendGhost.hill === H.id ? '👻 Ghost: ' + esc(G.friendGhost.name) + ' (' + fmtDist(G.friendGhost.g.dist) + ') <button class="mg-btn mg-btn--small mg-btn--ghost" id="clrFriend">Odstrani</button>' : 'Klikni vrstico na lestvici za ghosta prijatelja.'}</div>
-          <button class="mg-btn mg-btn--primary mg-btn--big mg-btn--block" id="btnTrain">Trening na ${esc(H.name)}</button>
+    <div class="mg-stack sk-menu2">
+      <section class="sk-sel" style="--c1:${c1};--c2:${c2}" aria-label="Izbrana skakalnica">
+        <div class="sk-sel__top">
+          <div><span class="sk-sel__lbl">Izbrana skakalnica</span>
+            <h1 class="sk-sel__name">${R ? `<span class="sk-flag">${flagOf(COUNTRY_FLAG[R.country])}</span> ` : ''}${esc(H.name)}</h1>
+            <span class="sk-sel__kh">K${H.k} · HS${H.hs}${H.size === 'letalnica' ? ' · letalnica' : ''} ${badge(H)}</span></div>
+          <button class="mg-btn mg-btn--small mg-btn--ghost" id="btnSwap">⇄ Zamenjaj</button>
         </div>
-        <div class="mg-card">
-          <h2 class="mg-title">Rekord skakalnice</h2>
-          <p class="sk-note">Trije skoki v podobnem (naključnem) vetru; žirija zalet prilagodi vetru, kompenzacija je glede na privzeto mesto (${H.gates.default}). Šteje <b>najdaljši skok brez padca</b> (v metrih; enako dolge loči točkovanje), ki gre na lestvico ${esc(H.name)}.</p>
-          <div class="sk-stats"><div><span class="mg-muted mg-small">Seja na ${esc(H.name)}</span><b>${tot.length} ${tot.length === 1 ? 'skok' : 'skokov'}</b></div>
-            <div><span class="mg-muted mg-small">Najdaljši</span><b>${tot.length ? fmtDist(Math.max(...tot.map(j => j.dist))) : '—'}</b></div>
-            <div><span class="mg-muted mg-small">Povprečje</span><b>${tot.length ? fmtDist(tot.reduce((a, j) => a + j.dist, 0) / tot.length) : '—'}</b></div>
-            <div><span class="mg-muted mg-small">Padci</span><b>${tot.filter(j => j.fall).length}</b></div></div>
-          <button class="mg-btn mg-btn--pink mg-btn--big mg-btn--block" id="btnRecord">Rekord skakalnice (3 skoki)</button>
+        <p class="sk-sel__desc">${esc(H.desc || '')}</p>
+        <div class="sk-sel__recs">
+          <span class="rec">🏆 Rekord: <b>${hr ? fmtDist(hr.dist) : '—'}</b>${hr?.who?.nickname ? ' · ' + esc(hr.who.nickname) : ''}</span>
+          <span class="mine">🏅 Moj: <b>${mine ? fmtDist(mine.dist) : '—'}</b></span>
+          ${real ? `<span class="real">pravi ${fmtDist(real.dist)}${real.year ? ' (' + real.year + ')' : ''}</span>` : ''}
         </div>
+        <div class="sk-sel__btns">
+          <button class="mg-btn mg-btn--primary mg-btn--big" id="btnTrain">▶ Trening</button>
+          <button class="mg-btn mg-btn--pink mg-btn--big" id="btnRecord">🏆 Rekord skakalnice <small>3 skoki</small></button>
+        </div>
+        <details class="sk-sel__more" ${settings.trainOpen ? 'open' : ''}>
+          <summary>Nastavitve treninga · zalet ${G.trainGate?.[H.id] ?? H.gates.default}, veter ${({ off: 'izklopljen', const: 'stalen', random: 'naključen' })[settings.wind] || 'naključen'}</summary>
+          <div class="sk-sel__set">
+            <div class="sk-row"><label>Zaletno mesto <select class="mg-select" id="selGate">${gateOpts}</select></label>
+              <label>Veter <select class="mg-select" id="selWind">
+                <option value="off" ${settings.wind === 'off' ? 'selected' : ''}>Izklopljen</option>
+                <option value="const" ${settings.wind === 'const' ? 'selected' : ''}>Stalen</option>
+                <option value="random" ${settings.wind === 'random' ? 'selected' : ''}>Naključen</option></select></label>
+              <label class="${settings.wind === 'const' ? '' : 'mg-hidden'}" id="windVal"><input type="range" id="selWindSpeed" min="-3" max="3" step="0.5" value="${settings.windSpeed}"> <b id="windValTxt">${sign(settings.windSpeed)} m/s</b></label></div>
+            <div class="sk-row"><label class="mg-check"><input type="checkbox" id="chkGhost" ${settings.ghostMine ? 'checked' : ''}> 👻 Moj najboljši skok kot ghost ${mb ? '(' + fmtDist(mb.dist) + ')' : '(še ga ni)'}</label></div>
+            <div class="sk-ghostsel" id="friendSel">${G.friendGhost && G.friendGhost.hill === H.id ? '👻 Ghost: ' + esc(G.friendGhost.name) + ' (' + fmtDist(G.friendGhost.g.dist) + ') <button class="mg-btn mg-btn--small mg-btn--ghost" id="clrFriend">Odstrani</button>' : 'Ghost prijatelja: klikni vrstico na lestvici skakalnice (zavihek Lestvice).'}</div>
+            <p class="sk-note"><b>Trening:</b> neomejeno skokov, takojšen replay, ne šteje za rekorde. <b>Rekord skakalnice:</b> trije skoki v podobnem vetru, žirija zalet prilagodi vetru (kompenzacija glede na mesto ${H.gates.default}); šteje najdaljši skok brez padca.</p>
+            ${tot.length ? `<div class="sk-stats"><div><span class="mg-muted mg-small">Ta seja</span><b>${tot.length} ${tot.length === 1 ? 'skok' : 'skokov'}</b></div>
+              <div><span class="mg-muted mg-small">Najdaljši</span><b>${fmtDist(Math.max(...tot.map(j => j.dist)))}</b></div>
+              <div><span class="mg-muted mg-small">Povprečje</span><b>${fmtDist(tot.reduce((a, j) => a + j.dist, 0) / tot.length)}</b></div>
+              <div><span class="mg-muted mg-small">Padci</span><b>${tot.filter(j => j.fall).length}</b></div></div>` : ''}
+            ${R ? `<p class="sk-note">Po profilu skakalnice v ${esc(locative(R.venue))} (certifikat ${R.certYear}).</p>` : ''}
+          </div>
+        </details>
+      </section>
+
+      <section class="mg-card sk-picker" id="picker" aria-label="Izbira skakalnice">
+        <div class="sk-tabs" role="tablist">${HILL_TABS.map(t => `<button class="sk-tab" role="tab" data-htab="${t.id}" aria-selected="${t.id === hillTab}">${t.name} <span class="mg-muted">${HILLS.filter(h => t.has(h.def)).length}</span></button>`).join('')}</div>
+        <div class="sk-tiles">${HILLS.filter(h => HILL_TABS.find(t => t.id === hillTab).has(h.def)).map(tile).join('')}</div>
+      </section>
+
+      <div class="sk-modesrow">
+        <button class="mg-btn" id="mOnline">🏆 Tekma s prijatelji</button>
+        <button class="mg-btn" id="mLocal">🖥️ Lokalna tekma</button>
+        <button class="mg-btn" id="mDaily" title="${esc(dailyLine())}">📅 Dnevni izziv</button>
+        <button class="mg-btn" id="mJumpers">🎽 Moji skakalci</button>
       </div>
-      <div class="mg-card" id="records"><h2 class="mg-title">Najdaljši skoki</h2><div id="recBody"><span class="mg-spin"></span></div></div>
-      <div class="mg-card" id="board"></div>
-      <div class="mg-card"><h2 class="mg-title">Dosežki</h2><div class="sk-ach" id="achList"></div></div>
-      <div class="mg-grid mg-grid--2">
-        <div class="mg-card"><h2 class="mg-title">Kako igrati</h2>${helpHtml()}</div>
-        <div class="mg-card"><h2 class="mg-title">Nastavitve</h2>
+
+      <section class="mg-card sk-bottom">
+        <div class="sk-tabs" role="tablist">${MENU_TABS.map(([id, name]) => `<button class="sk-tab" role="tab" data-mtab="${id}" aria-selected="${id === menuTab}">${name}</button>`).join('')}</div>
+        <div class="sk-panel ${menuTab === 'lestvice' ? '' : 'mg-hidden'}" data-panel="lestvice">
+          <div id="records"><h2 class="mg-title">Najdaljši skoki</h2><div id="recBody"><span class="mg-spin"></span></div></div>
+          <div id="board"></div>
+        </div>
+        <div class="sk-panel ${menuTab === 'dosezki' ? '' : 'mg-hidden'}" data-panel="dosezki"><div class="sk-ach" id="achList"></div></div>
+        <div class="sk-panel ${menuTab === 'pomoc' ? '' : 'mg-hidden'}" data-panel="pomoc">${helpHtml()}</div>
+        <div class="sk-panel ${menuTab === 'nastavitve' ? '' : 'mg-hidden'}" data-panel="nastavitve">
           <div class="sk-row"><label>Kakovost <select class="mg-select" id="selQ">
             <option value="auto" ${settings.quality === 'auto' ? 'selected' : ''}>Samodejno (${QUALITY[autoQuality()].name.toLowerCase()})</option>
             ${QUALITY_ORDER.map(q => `<option value="${q}" ${settings.quality === q ? 'selected' : ''}>${QUALITY[q].name}</option>`).join('')}</select></label></div>
@@ -300,19 +321,23 @@ function renderMenu() {
           ${IS_TOUCH ? `<label class="mg-check"><input type="checkbox" id="sTilt" ${settings.tilt ? 'checked' : ''}> Nagib telefona za nagib skakalca</label>` : ''}
           <p class="sk-note">Statistika: ${stats.jumps} skokov, ${stats.falls} padcev.</p>
         </div>
-      </div>
+      </section>
     </div>`;
-  // dogodki
-  $('#menu').querySelectorAll('[data-hill]').forEach(b => b.onclick = () => {
+  // dogodki: izbira skakalnice (kartice v izbiri; vrstice v lestvici imajo svoj klik), zavihki
+  $('#menu').querySelectorAll('.sk-tile[data-hill]').forEach(b => b.onclick = () => {
     audio.unlock();
     if (!hillOpen(b.dataset.hill)) { ui.toast(unlockText(hillOf(b.dataset.hill).def, HILLS.map(x => x.def)), { icon: '🔒' }); return; }
-    G.hillId = b.dataset.hill; renderMenu();
+    G.hillId = b.dataset.hill; G.hillTab = hillTab; renderMenu();
+    $('#menu .sk-sel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
-  $('#menu').querySelectorAll('details[data-group]').forEach(d => d.addEventListener('toggle', () => {
-    const set = new Set(settings.groupsClosed || []);
-    if (d.open) set.delete(d.dataset.group); else set.add(d.dataset.group);
-    settings.groupsClosed = [...set]; saveSettings();
-  }));
+  $('#menu').querySelectorAll('[data-htab]').forEach(b => b.onclick = () => { G.hillTab = b.dataset.htab; renderMenu(); });
+  $('#menu').querySelectorAll('[data-mtab]').forEach(b => b.onclick = () => {
+    settings.menuTab = b.dataset.mtab; saveSettings();
+    $('#menu').querySelectorAll('[data-mtab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    $('#menu').querySelectorAll('[data-panel]').forEach(p => p.classList.toggle('mg-hidden', p.dataset.panel !== settings.menuTab));
+  });
+  $('#menu .sk-sel__more').addEventListener('toggle', e => { settings.trainOpen = e.target.open; saveSettings(); });
+  $('#btnSwap').onclick = () => $('#picker').scrollIntoView({ behavior: 'smooth', block: 'start' });
   $('#mOnline').onclick = () => { audio.unlock(); matchApi?.openOnline(); };
   $('#mLocal').onclick = () => { audio.unlock(); matchApi?.openLocal(); };
   $('#mJumpers').onclick = () => { audio.unlock(); matchApi?.openJumpers(); };

@@ -442,3 +442,12 @@ Cilj: odriv, ki ga zadene tudi človek, gladek prehod v let in let, v katerem se
 - **Napredek namesto odklepov:** oznaka na kartici »✓ K« / »⭐ HS« (čez K / HS brez padca; statistika naprave ali moj rekord na
   lestvici) in dosežka »Zbiratelj K-točk« (čez K povsod razen na Luni) in »Do HS povsod« (čez HS na vseh pravih velikih).
   Že dobljeni dosežki `odklep-<id>` ostanejo.
+
+## Meni (v2)
+- **Na vrhu izbrana skakalnica** (ime, K/HS, oznaka ✓ K / ⭐ HS, opis, naš rekord, moj rekord, pravi ob strani) z dvema velikima
+  gumboma **▶ Trening** in **🏆 Rekord skakalnice**; pod njima zložljive »Nastavitve treninga« (zalet, veter, ghost, opis načinov,
+  statistika seje). Igra si zapomni zadnjo skakalnico (`settings.lastHill`) in ali so nastavitve odprte.
+- **Izbira skakalnice** z zavihki Trening / Prave / Letalnice (letalnice iz obeh skupin); klik zamenja kartico zgoraj, »⇄ Zamenjaj«
+  skoči na izbiro.
+- **Drugi načini** v eni vrsti: Tekma s prijatelji, Lokalna tekma, Dnevni izziv, Moji skakalci.
+- **Spodaj zavihki** Lestvice (najdaljši skoki, top 10, lestvica skakalnice) / Dosežki / Kako igrati / Nastavitve (`settings.menuTab`).
