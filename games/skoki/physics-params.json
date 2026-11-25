@@ -1,5 +1,5 @@
 {
-  "paramsVersion": 5,
+  "paramsVersion": 6,
   "g": 9.81,
   "rho": 1.1,
   "mass": 72,
@@ -98,8 +98,9 @@
     "teleMax": 0.45,
     "teleIdeal": 0.28,
     "lateTouch": 0.05,
-    "prepLift": 0.55,
-    "prepDrag": 1.3,
+    "prepLift": 0.8,
+    "prepDrag": 1.15,
+    "flyFactor": 2.1,
     "prepTime": 0.3,
     "prepPitch": 6,
     "reflex": 0.08,

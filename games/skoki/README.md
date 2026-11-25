@@ -457,3 +457,10 @@ Nad štartno hiško je drog z veliko zastavo (`countryFlag` v `render/tex.js`, `
 (`real.country`: Slovenija z grbom, Avstrija, Nemčija, Poljska, Finska, Švica, Norveška; pripravljene še Italija, Češka, Japonska),
 plapola v vetru (senčilnik kot pri zastavicah publike). Luna: temno modra zastava z Luno in zvezdami na vodoravni prečki, ne plapola
 (ni zraka). Izmišljene skakalnice: zastava MINI GAMES.
+
+## Pristanek na letalnicah in zgodnji klik (paramsVersion 6)
+- **Zgodnji klik** (priprava na pristanek že 1–2 s pred tlemi) ni več padec: priprava vzame manj vzgona (`prepLift` 0,8, prej 0,55;
+  `prepDrag` 1,15) — skok je le nekaj metrov krajši in telemark slabše ocenjen.
+- **Letalnice:** meje udarca so pomnožene z `landing.flyFactor` 2,1 (le `size: 'letalnica'`), ker se za HS doskočišče izravna in
+  udarec hitro raste. Čist pristanek je mogoč do ~HS + 10 m (npr. 251 m na Planici), dlje dotik, nato padec — rekordne daljave
+  (pravi svetovni rekord 254,5 m) so dosegljive le z zelo dobrim pristankom.

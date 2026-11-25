@@ -263,7 +263,10 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
         // prepozen klik: telemarka ni več mogoče narediti → pristanek na obe nogi; le skrajno pozen (< lateTouch) = dotik z roko
         if (timing < L.teleMin) { if (timing < (L.lateTouch ?? L.teleMin * 0.6)) lateTele = 1; else { type = 'two'; teleQ = 0; } }
       }
-      const lim = type === 'tele' ? L.hTele : type === 'two' ? L.hTwo : L.hNone;
+      // letalnice (paramsVersion 6): za HS se doskočišče izravna, udarec hitro raste — večja toleranca, da je čist pristanek
+      // mogoč do ~HS + 10 (rekordne daljave), dlje dotik, nato padec
+      const fly = hill.def?.size === 'letalnica' ? (L.flyFactor ?? 1) : 1;
+      const lim = (type === 'tele' ? L.hTele : type === 'two' ? L.hTwo : L.hNone) * fly;
       const ar = Math.abs(skiRel);
       if (hEq > lim * L.touchMargin || ar > L.pitchTouch || lateTele === 2) type = 'fall';
       else if (hEq > lim || ar > L.pitchOk || lateTele === 1) type = 'touch';
