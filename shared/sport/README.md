@@ -92,7 +92,8 @@ let st = C.createCompetition({
   postaj, najbolj stanoviten), `seasonName('2026-11')` → »Pokal Novembra 2026«.
 
 ## `ko.js`
-`koPairs(ranked)`, `koOrder(ko)`, `koAdvance(ko, točke, { lucky })`, `luckyCount(n)`, `tourTotal([standings…])`.
+`koPairs(ranked)`, `koOrder(ko)`, `koAdvance(ko, točke, { lucky })`, `luckyCount(n)`, `tourTotal([standings…])` (turneja: zamujena tekma = izpad),
+`seriesTotal([standings…], { pointsFor })` (pokal več tekem: točke po mestu ali vsota, zamujena tekma = 0, izenačenje po zmagah).
 
 ## `career.js`
 `makeRivals(seed, imena, 29, { specTags, styles })`, `createCareer`, `startSeason(st, prizorišča)`, `seasonSchedule`, `field`

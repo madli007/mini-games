@@ -176,6 +176,20 @@ export function sport3Tests(test, { eq, ok }) {
     const t = KO.tourTotal([[{ id: 'a', total: 250 }, { id: 'b', total: 240 }], [{ id: 'a', total: 230 }, { id: 'b', total: 250 }, { id: 'c', total: 300 }]]);
     eq(t.map(x => [x.id, x.rank, x.total, x.missed]), [['b', 1, 490, 0], ['a', 2, 480, 0], ['c', null, 300, 1]]);
   });
+  test('sport: pokal več tekem (seriesTotal) — točke pokala po mestu ali točke skokov, zamujena tekma = 0, izenačenje po zmagah', () => {
+    const c1 = [{ id: 'a', total: 250, rank: 1, status: 'ok' }, { id: 'b', total: 240, rank: 2, status: 'ok' }, { id: 'c', total: 0, rank: null, status: 'dns' }];
+    const c2 = [{ id: 'b', total: 260, rank: 1, status: 'ok' }, { id: 'a', total: 200, rank: 2, status: 'ok' }, { id: 'c', total: 199, rank: 3, status: 'ok' }];
+    const cup = KO.seriesTotal([c1, c2], { pointsFor: SE.cupPointsFor });
+    // a: 100 + 80 · b: 80 + 100 → izenačeno, oba 1 zmaga in 1 drugo mesto → deljeno 1.; c: 0 + 60
+    eq(cup.map(x => [x.id, x.rank, x.total, x.parts]), [['a', 1, 180, [100, 80]], ['b', 1, 180, [80, 100]], ['c', 3, 60, [null, 60]]]);
+    eq(cup.find(x => x.id === 'c').missed, 1);
+    const pts = KO.seriesTotal([c1, c2]);
+    eq(pts.map(x => [x.id, x.rank, x.total]), [['b', 1, 500], ['a', 2, 450], ['c', 3, 199]]);
+    // izenačenje v točkah, odloči več zmag
+    const t = KO.seriesTotal([[{ id: 'x', total: 1, rank: 1 }, { id: 'y', total: 1, rank: 2 }], [{ id: 'y', total: 1, rank: 1 }, { id: 'x', total: 1, rank: 3 }], [{ id: 'y', total: 1, rank: 3 }, { id: 'x', total: 1, rank: 3 }]],
+      { pointsFor: r => [0, 10, 5, 0][r] });
+    eq(t.map(x => [x.id, x.total, x.wins]), [['y', 15, 1], ['x', 10, 1]]);
+  });
   test('sport: kariera — rivali so deterministični iz seeda, forma niha, mojstri imajo prednost na svojem prizorišču', () => {
     const pool = Array.from({ length: 40 }, (_, i) => ({ name: 'Rival ' + i, flag: 'si' }));
     const a = CA.makeRivals('s1', pool, 29, { specTags: ['letalnica'] }), b = CA.makeRivals('s1', pool, 29, { specTags: ['letalnica'] });

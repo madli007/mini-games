@@ -19,7 +19,7 @@ import * as S from '../../shared/storage.js';
 import * as C from '../../shared/sport/competition.js';
 import { createSender, createReceiver, verify } from '../../shared/sport/live-replay.js';
 import {
-  contestSettings, FORMATS, WIND_MODES, seriesWind, createJury, juryAfterJump, juryNewRound, juryBeforeJump, windForecast, simulateFromInputs, resultOf,
+  contestSettings, FORMATS, SCORINGS, SERIES_MAX, WIND_MODES, seriesWind, createJury, juryAfterJump, juryNewRound, juryBeforeJump, windForecast, simulateFromInputs, resultOf,
   sameResult, distForLead, PRIZES, contestXp, humanPlace, JUMPER_SEC, isOpen, unlockKey,
 } from './contest.js';
 import { simulate } from './physics.js';
@@ -30,7 +30,8 @@ import { DEFAULT_SKIN } from './render/jumper.js';
 import * as JP from './jumpers.js';
 import { fmtDist, gatePoints } from './scoring.js';
 import { skinFromEquipped, flagEmoji, YELLOW } from './gear.js';
-import { tourTotal } from '../../shared/sport/ko.js';
+import { tourTotal, seriesTotal } from '../../shared/sport/ko.js';
+import { cupPointsFor } from '../../shared/sport/season.js';
 import { TOUR, TOUR_NAME, venueName } from './cup-config.js';
 
 const $ = s => document.querySelector(s);
@@ -126,7 +127,7 @@ function renderSide(st, changes = {}, activeId = null) {
   const comp = st.comp || st;
   const R = C.currentRound(comp);
   const rn = C.roundNumber(comp);
-  const tr = st.tour ? `<div class="sk-mside__tour">🎄 ${esc(TOUR_NAME)} ${st.tour.k + 1}/4${comp.cfg.ko && rn === 1 ? ' · KO pari' : ''}</div>` : st.label ? `<div class="sk-mside__tour">${esc(st.label)}</div>` : '';
+  const tr = st.tour ? `<div class="sk-mside__tour">${st.tour.icon || '🎄'} ${esc(st.tour.name || TOUR_NAME)} ${st.tour.k + 1}/${st.tour.hills?.length || 4}${comp.cfg.ko && rn === 1 ? ' · KO pari' : ''}</div>` : st.label ? `<div class="sk-mside__tour">${esc(st.label)}</div>` : '';
   el.innerHTML = `${tr}<div class="sk-mside__head"><b>${R.kind === 'trial' ? 'Poskusna serija' : rn + '. serija'}</b><span>${C.totalRounds(comp) > 1 ? `od ${comp.cfg.rounds}` : ''}${comp.finished ? ' · konec' : ''}</span></div>
     <ol class="sk-mside__list">${rows.map(r => {
       const p = C.participant(comp, r.id);
@@ -366,6 +367,39 @@ function hillOptions(hills, cur, opt) {
   return groups.map(g => { const l = hills.filter(d => (d.group || 'trening') === g.id); return l.length ? `<optgroup label="${esc(g.name)}">${l.map(d => opt(d.id, cur, `${d.name} (K${d.k})`)).join('')}</optgroup>` : ''; }).join('');
 }
 
+/** Polja za Pokal (več tekem): izbira skakalnic po vrsti, hitre izbire, način seštevka. Vidna le pri formatu »series«. */
+function seriesFields(hills, s, opt) {
+  return `<div class="sk-series ${s.format === 'series' ? '' : 'mg-hidden'}" data-series>
+    <div class="sk-series__head"><b>🏆 Pokal: skakalnice po vrsti</b> <span class="mg-small mg-muted" data-scount></span></div>
+    <div class="sk-series__quick">
+      <button type="button" class="mg-btn mg-btn--small mg-btn--ghost" data-sq="prave">Prave velike</button>
+      <button type="button" class="mg-btn mg-btn--small mg-btn--ghost" data-sq="letalnice">Letalnice</button>
+      <button type="button" class="mg-btn mg-btn--small mg-btn--ghost" data-sq="rnd">Naključnih 5</button>
+      <button type="button" class="mg-btn mg-btn--small mg-btn--ghost" data-sq="none">Počisti</button></div>
+    <div class="sk-pick sk-series__hills">${hills.map(d => `<label class="mg-check"><input type="checkbox" name="hills" value="${esc(d.id)}" data-size="${esc(d.size || '')}" data-group="${esc(d.group || 'trening')}" ${s.hills?.includes(d.id) ? 'checked' : ''}> ${esc(d.name)} <span class="mg-muted mg-small">K${d.k}</span></label>`).join('')}</div>
+    <label>Seštevek<select class="mg-select" name="scoring">${Object.entries(SCORINGS).map(([k, n]) => opt(k, s.scoring, n)).join('')}</select></label>
+    <p class="sk-note">Tekme si sledijo takoj (dve seriji vsaka), brez čakanja; na koncu seštevek. Izberi 2–${SERIES_MAX} skakalnic (po vrsti seznama).</p></div>`;
+}
+function bindSeries(root) {
+  const box = root.querySelector('[data-series]'); if (!box) return;
+  const fmt = root.querySelector('[name=format]');
+  const cbs = () => [...box.querySelectorAll('[name=hills]')];
+  const count = () => { const n = cbs().filter(c => c.checked).length; box.querySelector('[data-scount]').textContent = n + ' izbranih' + (n > SERIES_MAX ? ' (šteje prvih ' + SERIES_MAX + ')' : ''); };
+  const hillLbl = root.querySelector('[name=hill]')?.closest('label');
+  const sync = () => { box.classList.toggle('mg-hidden', fmt?.value !== 'series'); hillLbl?.classList.toggle('mg-hidden', ['series', 'tour'].includes(fmt?.value)); };
+  fmt?.addEventListener('change', sync);
+  sync();
+  box.addEventListener('change', count);
+  box.querySelectorAll('[data-sq]').forEach(b => b.onclick = () => {
+    const q = b.dataset.sq, list = cbs();
+    if (q === 'rnd') { const pick = C.shuffled(list.map((_, i) => String(i)), 'rnd' + Date.now()).slice(0, 5); list.forEach((c, i) => { c.checked = pick.includes(String(i)); }); }
+    else list.forEach(c => { c.checked = q === 'prave' ? c.dataset.group === 'prave' && c.dataset.size === 'velika' : q === 'letalnice' ? c.dataset.size === 'letalnica' : false; });
+    count();
+  });
+  count();
+}
+const readHills = root => [...root.querySelectorAll('[data-series] [name=hills]')].filter(c => c.checked).map(c => c.value);
+
 function renderSettings(el) {
   settingsEl = el;
   const s = contestSettings(lastSettings || room?.settings || {}, E.hills().map(h => h.def.id));
@@ -375,6 +409,7 @@ function renderSettings(el) {
   el.innerHTML = `<div class="sk-form" id="cf">
     <label>Skakalnica<select class="mg-select" name="hill">${opt('random', s.hill, '🎲 Naključna')}${hillOptions(hills, s.hill, opt)}</select></label>
     <label>Format<select class="mg-select" name="format">${Object.entries(FORMATS).map(([k, f]) => opt(k, s.format, f.name)).join('')}</select></label>
+    ${seriesFields(hills, s, opt)}
     <label>V 2. serijo<select class="mg-select" name="cut">${opt(0, s.cut, 'vsi')}${[3, 5, 10, 15, 20, 30].map(v => opt(v, s.cut, 'najboljših ' + v)).join('')}</select></label>
     <label>Veter<select class="mg-select" name="wind">${Object.entries(WIND_MODES).map(([k, n]) => opt(k, s.wind, n)).join('')}</select></label>
     <label>Zaletno mesto<select class="mg-select" name="jury">${opt('auto', s.jury, 'Samodejno (žirija)')}${opt('manual', s.jury, 'Ročno (host)')}</select></label>
@@ -386,6 +421,7 @@ function renderSettings(el) {
     <label>Imena botov<select class="mg-select" name="botSource">${opt('builtin', s.botSource, 'Izmišljeni boti igre')}${mine.length ? opt('mine', s.botSource, `Moji boti (${mine.length})`) : ''}</select></label>
     <label>Ekipe<select class="mg-select" name="teams">${opt(0, s.teams, 'brez')}${[2, 3, 4].map(v => opt(v, s.teams, v + ' ekipe (naključno)')).join('')}</select></label>
   </div>`;
+  bindSeries(el);
   el.querySelector('[name=bots]').onchange = e => { if (+e.target.value >= 10 && el.querySelector('[name=cut]').value === '0') el.querySelector('[name=cut]').value = '30'; };
 }
 function readSettings() {
@@ -395,7 +431,7 @@ function readSettings() {
   const s = contestSettings({
     hill: v('hill').value, format: v('format').value, cut: +v('cut').value, wind: v('wind').value, jury: v('jury').value,
     gate: v('gate').value ? +v('gate').value : null, relaxed: v('relaxed').checked, bots: +v('bots').value, botLevel: v('botLevel').value,
-    botSource: v('botSource').value, teams: +v('teams').value,
+    botSource: v('botSource').value, teams: +v('teams').value, hills: readHills(el), scoring: v('scoring')?.value,
   }, E.hills().map(h => h.def.id));
   if (s.jury === 'auto') s.gate = null;
   lastSettings = s;
@@ -451,19 +487,21 @@ async function hostStart(settings) {
   }
   if (!parts.length) { ui.toast('Ni skakalcev (vsi so TV?).', { icon: '⚠️' }); return; }
   const F = FORMATS[cfg.format];
-  // Turneja: štiri tekme zapored; KO pari v 1. seriji (pri vsaj 4 skakalcih), nasev 1. tekme naključen iz seeda
+  // Turneja ali pokal (več tekem): tekme zapored na seznamu skakalnic; turneja s KO pari (pri vsaj 4 skakalcih)
+  const plan = seriesPlan(cfg, parts.length);
+  if (plan && plan.hills.length < 2) { ui.toast('Za pokal izberi vsaj dve skakalnici.', { icon: '🏆' }); return; }
   let tour = null, hill = cfg.hill, comp, jury;
-  if (F.tour) {
-    tour = { k: 0, hills: TOUR.venues.slice(), comps: [] };
+  if (plan) {
+    tour = { ...plan, k: 0, comps: [] };
     hill = tour.hills[0];
     const seeded = C.shuffled(parts.map(p => p.id), seed + ':nasev').map(id => parts.find(p => p.id === id));
-    comp = C.createCompetition({ seed, participants: seeded, rounds: 2, ko: parts.length >= 4, order1: 'given', cut: 0 });
+    comp = C.createCompetition({ seed, participants: seeded, rounds: 2, ko: plan.ko, order1: 'given', cut: plan.ko ? 0 : cfg.cut });
     jury = createJury(hillDef(hill), { auto: cfg.jury === 'auto' });
   } else {
     comp = C.createCompetition({ seed, participants: parts, rounds: F.rounds, trial: F.trial, cut: cfg.cut });
     jury = createJury(def, { auto: cfg.jury === 'auto', gate: cfg.gate });
   }
-  const state = { v: 1, cfg, hill, seed, comp, jury, people, bots, active: null, last: null, phase: 'jump', processed: [], msg: tour ? `${TOUR_NAME}: 1/4 — ${venueName(hillDef(hill))}` : null, ...(tour ? { tour } : {}) };
+  const state = { v: 1, cfg, hill, seed, comp, jury, people, bots, active: null, last: null, phase: 'jump', processed: [], msg: tour ? `${tour.name}: 1/${tour.hills.length} — ${venueName(hillDef(hill))}` : null, ...(tour ? { tour } : {}) };
   // soba ostane odprta za pridružitev med tekmo (gledalci)
   room.setStatus('lobby').catch(() => {});
   host = newHostState();
@@ -637,18 +675,17 @@ function hostApply(id, key, res, changes, isBot, ok = true) {
 
 async function hostFinish(st) {
   if (st.tour) {
-    st.tour.comps.push(C.standings(st.comp).map(r => ({ id: r.id, total: r.total, status: r.status })));
+    st.tour.comps.push(compRows(st.comp));
     if (st.tour.k < st.tour.hills.length - 1) {
-      // naslednja tekma turneje: nasev po skupni razvrstitvi (vodilni je 1. nosilec), novi pari, nova žirija
+      // naslednja tekma: nasev po skupni razvrstitvi (vodilni je 1. nosilec), novi pari (turneja), nova žirija
       const k = st.tour.k + 1, hill = st.tour.hills[k];
-      const tot = tourTotal(st.tour.comps);
-      const order = [...tot.filter(t => t.rank).map(t => t.id), ...tot.filter(t => !t.rank).map(t => t.id)];
+      const order = seriesOrder(st.tour, st.tour.comps);
       const parts = order.map(id => C.participant(st.comp, id)).filter(Boolean).map(p => ({ id: p.id, name: p.name, kind: p.kind, ...(p.team ? { team: p.team } : {}), ...(p.meta ? { meta: p.meta } : {}) }));
       st.tour.k = k; st.hill = hill; st.seed = st.seed.split('#')[0] + '#' + k;
-      st.comp = C.createCompetition({ seed: st.seed, participants: parts, rounds: 2, ko: parts.length >= 4, order1: 'given', cut: 0 });
+      st.comp = C.createCompetition({ seed: st.seed, participants: st.tour.ko ? parts : parts.slice().reverse(), rounds: 2, ko: st.tour.ko, order1: 'given', cut: st.tour.ko ? 0 : st.cfg.cut });
       st.jury = createJury(hillDef(hill), { auto: st.cfg.jury === 'auto' });
       st.active = null; st.last = null; st.phase = 'show';
-      st.msg = `${TOUR_NAME}: ${k + 1}/4 — ${venueName(hillDef(hill))}. Vodi ${C.participant(st.comp, order[0])?.name || '?'}.`;
+      st.msg = `${st.tour.name}: ${k + 1}/${st.tour.hills.length} — ${venueName(hillDef(hill))}. Vodi ${C.participant(st.comp, order[0])?.name || '?'}.`;
       host.showUntil = Date.now() + 6000;
       await hostSave(st);
       return;
@@ -781,17 +818,40 @@ function replayOf(id) {
   E.jump({ hillId: local ? local.hill : ST.hill, gate: m.res.gate, refGate: m.refGate ?? m.res.gate, wind: m.wind || ST?.active?.wind || { mode: 'off', seed: 0 }, judgeSeed: 1, source: 'stream', stream: rcv, speed: 1.3, label: 'Replay', whoHtml: whoHtml(p), noSlowmo: true, holdMs: 400, skin });
 }
 
-/** Skupna razvrstitev turneje v obliki razvrstitve tekme (za oder in ui.results). */
-function tourRows(comp, comps) {
-  return tourTotal(comps).map(t => {
+/* ---------------- serija tekem: Turneja 4 skakalnic ali Pokal (več tekem, izbrane skakalnice) */
+
+/**
+ * Načrt serije tekem iz nastavitev (ali null za navadno tekmo).
+ * Turneja: 4 fiksne skakalnice, KO pari pri ≥ 4, seštevek točk skokov, kdor zamudi tekmo, izpade.
+ * Pokal: izbrane skakalnice (2–10), brez KO, seštevek točk pokala 100-80-60 … ali točk skokov, zamujena tekma = 0.
+ */
+function seriesPlan(cfg, n) {
+  const F = FORMATS[cfg.format];
+  if (F?.tour) return { kind: 'tour', name: TOUR_NAME, icon: '🎄', hills: TOUR.venues.slice(), ko: n >= 4, scoring: 'points' };
+  if (F?.series) return { kind: 'series', name: 'Pokal', icon: '🏆', hills: (cfg.hills || []).slice(0, 10), ko: false, scoring: cfg.scoring === 'points' ? 'points' : 'cup' };
+  return null;
+}
+/** Razvrstitev tekme za seštevek serije. */
+const compRows = comp => C.standings(comp).map(r => ({ id: r.id, total: r.total, status: r.status, rank: r.rank }));
+/** Skupna razvrstitev serije. */
+const seriesStand = (plan, comps) => (plan.kind === 'tour' ? tourTotal(comps) : seriesTotal(comps, { pointsFor: plan.scoring === 'cup' ? cupPointsFor : null }));
+/** Vrstni red naseva za naslednjo tekmo (vodilni prvi). */
+function seriesOrder(plan, comps) {
+  const tot = seriesStand(plan, comps);
+  return [...tot.filter(t => t.rank).map(t => t.id), ...tot.filter(t => !t.rank).map(t => t.id)];
+}
+/** Skupna razvrstitev serije v obliki razvrstitve tekme (za oder in ui.results). */
+function tourRows(comp, comps, plan = { kind: 'tour' }) {
+  return seriesStand(plan, comps).map(t => {
     const p = C.participant(comp, t.id);
-    return { id: t.id, name: p?.name || t.id, kind: p?.kind || 'human', bib: p?.bib || 0, total: t.total, scores: t.parts, rounds: t.n, status: t.missed ? 'dns' : 'ok', rank: t.rank };
+    return { id: t.id, name: p?.name || t.id, kind: p?.kind || 'human', bib: p?.bib || 0, total: t.total, scores: t.parts, rounds: t.n,
+      status: plan.kind === 'tour' && t.missed ? 'dns' : 'ok', rank: t.rank, unit: plan.scoring === 'cup' ? 'pts' : 't' };
   });
 }
 
 async function finishOnline() {
   const comp = ST.comp;
-  const rows = ST.tour ? tourRows(comp, ST.tour.comps) : C.standings(comp);
+  const rows = ST.tour ? tourRows(comp, ST.tour.comps, ST.tour) : C.standings(comp);
   await podium(comp, rows);
   // poročilo hubu: vsak človek zase (enkrat)
   const me = rows.find(r => r.id === hub.userId);
@@ -812,8 +872,8 @@ async function finishOnline() {
       if (comp.cfg.rounds >= 2 && r1?.rank >= 4) E.unlock('obrat');
     }
   }
-  if (ST.tour && me?.rank === 1) E.unlock('turneja');
-  const choice = await results(comp, rows, { xp, again: room?.isHost ? 'Nova tekma' : 'Nazaj v sobo', exit: 'Zapusti sobo', prizes: ST.prizes, title: ST.tour ? TOUR_NAME + ' — skupno' : null });
+  if (ST.tour?.kind !== 'series' && ST.tour && me?.rank === 1) E.unlock('turneja');
+  const choice = await results(comp, rows, { xp, again: room?.isHost ? 'Nova tekma' : 'Nazaj v sobo', exit: 'Zapusti sobo', prizes: ST.prizes, title: ST.tour ? (ST.tour.name || TOUR_NAME) + ' — skupno' : null });
   if (choice === 'exit') {
     const r = room; room = null; ST = null; VER = 0;
     await r?.leave().catch(() => {});
@@ -841,7 +901,7 @@ function results(comp, rows, { xp = 0, again = 'Še enkrat', exit = 'V meni', pr
     const p = C.participant(comp, r.id);
     const pl = r.kind === 'human' && !p.meta?.local ? (room?.players.find(x => x.id === r.id) || ST?.people?.[r.id]) : null;
     const base = pl ? { ...pl } : { nickname: (p.meta?.flag ? JP.flagOf(p.meta.flag) + ' ' : '') + p.name, avatar: { emoji: r.kind === 'bot' ? '🤖' : '🎿', color: p.meta?.suit || '#4fc3f7' } };
-    return { ...base, id: r.id, scoreText: r.status === 'ok' ? `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})` : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
+    return { ...base, id: r.id, scoreText: r.status === 'ok' ? (r.unit === 'pts' ? `${r.total} točk (${r.scores.map(x => x ?? 0).join(' + ')})` : `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})`) : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
   });
   const teams = C.teamStandings(comp);
   const extra = `${prizes.length ? `<h3 class="mg-title">Posebne nagrade</h3><ul class="sk-prizes">${prizes.map(z => `<li>${z.icon} <b>${esc(z.title)}</b>: ${whoHtml(C.participant(comp, z.id))} <span class="mg-muted">${esc(z.text)}</span></li>`).join('')}</ul>` : ''}
@@ -876,6 +936,7 @@ function openLocal(preset = null) {
       <div class="mg-card"><div class="sk-form" id="lf">
         <label>Skakalnica<select class="mg-select" name="hill">${opt('random', opts.hill, '🎲 Naključna')}${hillOptions(hills, opts.hill, opt)}</select></label>
         <label>Format<select class="mg-select" name="format">${Object.entries(FORMATS).map(([k, f]) => opt(k, opts.format, f.name)).join('')}</select></label>
+        ${seriesFields(hills, opts, opt)}
         <label>V 2. serijo<select class="mg-select" name="cut">${opt(0, opts.cut, 'vsi')}${[3, 5, 10, 15, 20, 30].map(v => opt(v, opts.cut, 'najboljših ' + v)).join('')}</select></label>
         <label>Veter<select class="mg-select" name="wind">${Object.entries(WIND_MODES).map(([k, n]) => opt(k, opts.wind, n)).join('')}</select></label>
         <label>Zaletno mesto<select class="mg-select" name="jury">${opt('auto', opts.jury, 'Samodejno (žirija)')}${opt('manual', opts.jury, 'Ročno')}</select></label>
@@ -890,9 +951,10 @@ function openLocal(preset = null) {
   $('#lAll').onchange = e => boxes().forEach(b => { b.checked = e.target.checked; });
   $('#lEdit').onclick = () => openJumpers();
   $('#lBack').onclick = () => E.showMenu();
+  bindSeries($('#lf'));
   $('#lGo').onclick = () => {
     const f = $('#lf'), v = n => f.querySelector(`[name=${n}]`);
-    const cfg = { ...contestSettings({ hill: v('hill').value, format: v('format').value, cut: +v('cut').value, wind: v('wind').value, jury: v('jury').value, gate: v('gate').value ? +v('gate').value : null, relaxed: v('relaxed').checked }, hills.map(d => d.id)), replay: v('replay').value };
+    const cfg = { ...contestSettings({ hill: v('hill').value, format: v('format').value, cut: +v('cut').value, wind: v('wind').value, jury: v('jury').value, gate: v('gate').value ? +v('gate').value : null, relaxed: v('relaxed').checked, hills: readHills(f), scoring: v('scoring').value }, hills.map(d => d.id)), replay: v('replay').value };
     cfg.sel = boxes().filter(b => b.checked).map(b => b.value);
     const sel = list.filter(j => cfg.sel.includes(j.id));
     if (!sel.length) { ui.toast('Izberi vsaj enega skakalca.', { icon: '🎿' }); return; }
@@ -906,7 +968,7 @@ function openLocal(preset = null) {
  * — z onEnd se konec (statistika, hub, rezultati) prepusti klicatelju; runLocal vrne njegovo vrednost (ali undefined ob prekinitvi).
  */
 async function runLocal(cfg, sel, hooks = null) {
-  if (!hooks && FORMATS[cfg.format]?.tour) return runTour(cfg, sel);
+  if (!hooks && (FORMATS[cfg.format]?.tour || FORMATS[cfg.format]?.series)) return runTour(cfg, sel);
   const seed = hooks?.seed || 'lokalna:' + Date.now().toString(36);
   const def = hillDef(cfg.hill), H = E.hillOf(cfg.hill);
   const F = FORMATS[cfg.format] || FORMATS.two;
@@ -1009,45 +1071,48 @@ function interstitial(p, j) {
 function leaveLocal() { const h = local?.hooks; local = null; showHud(false); if (E.playing) E.abort(); if (h?.onAbort) h.onAbort(); else E.showMenu(); }
 
 /**
- * Lokalna Turneja 4 skakalnic: štiri tekme zapored (KO pari v 1. seriji pri vsaj 4 skakalcih), nasev 1. tekme naključen,
- * nato po skupni razvrstitvi; skupno = vsota točk vseh štirih tekem (sport/ko.js tourTotal).
+ * Lokalna serija tekem: Turneja 4 skakalnic (KO pari pri vsaj 4 skakalcih) ali Pokal (izbrane skakalnice). Tekme si sledijo
+ * brez čakanja; nasev 1. tekme naključen, nato po skupni razvrstitvi (pokal: vodilni skoči zadnji); seštevek na koncu
+ * (sport/ko.js tourTotal oz. seriesTotal).
  */
 async function runTour(cfg, sel) {
+  const plan = seriesPlan(cfg, sel.length);
+  if (plan.hills.length < 2) { ui.toast('Za pokal izberi vsaj dve skakalnici.', { icon: '🏆' }); return openLocal(cfg); }
   const comps = [];
-  let order = C.shuffled(sel.map(j => j.id), 'turneja:' + Date.now().toString(36));
+  let order = C.shuffled(sel.map(j => j.id), 'serija:' + Date.now().toString(36));
   let last = null, aborted = false;
-  for (let k = 0; k < TOUR.venues.length; k++) {
-    const hill = TOUR.venues[k];
-    const ordered = order.map(id => sel.find(j => j.id === id)).filter(Boolean);
-    msg(`${TOUR_NAME}: ${k + 1}/4 — ${venueName(hillDef(hill))}`, 4000);
-    const r = await runLocal({ ...cfg, hill, cut: 0, format: 'two' }, ordered, {
-      ko: sel.length >= 4, order1: 'given', tour: { k }, onAbort: () => { aborted = true; E.showMenu(); },
+  const N = plan.hills.length;
+  for (let k = 0; k < N; k++) {
+    const hill = plan.hills[k];
+    let ordered = order.map(id => sel.find(j => j.id === id)).filter(Boolean);
+    if (!plan.ko && k > 0) ordered = ordered.reverse();
+    msg(`${plan.name}: ${k + 1}/${N} — ${venueName(hillDef(hill))}`, 4000);
+    const r = await runLocal({ ...cfg, hill, cut: plan.ko ? 0 : cfg.cut, format: 'two' }, ordered, {
+      ko: plan.ko, order1: 'given', tour: { k, name: plan.name, icon: plan.icon, hills: plan.hills }, onAbort: () => { aborted = true; E.showMenu(); },
       onEnd: async (rows, L) => {
-        comps.push(rows.map(x => ({ id: x.id, total: x.total, status: x.status })));
+        comps.push(compRows(L.comp));
         saveStats(JP.addCompetitionStats(myStats(), { hill, jumps: L.jumps, standings: rows }));
         last = L;
-        if (k < TOUR.venues.length - 1) {
-          const tot = tourTotal(comps);
-          const lead = tot[0];
+        if (k < N - 1) {
+          const lead = seriesStand(plan, comps)[0];
           await podium(L.comp, rows);
-          msg(`Po ${k + 1}. tekmi vodi ${C.participant(L.comp, lead.id)?.name || '?'} (${fmt1(lead.total)} t).`, 4500);
+          msg(`Po ${k + 1}. tekmi vodi ${C.participant(L.comp, lead.id)?.name || '?'} (${plan.scoring === 'cup' ? lead.total + ' točk' : fmt1(lead.total) + ' t'}).`, 4500);
           await sleep(1500);
         }
         return rows;
       },
     });
     if (!r || aborted) return;
-    const tot = tourTotal(comps);
-    order = [...tot.filter(t => t.rank).map(t => t.id), ...tot.filter(t => !t.rank).map(t => t.id)];
+    order = seriesOrder(plan, comps);
   }
-  const rows = tourRows(last.comp, comps);
+  const rows = tourRows(last.comp, comps, plan);
   const humans = rows.filter(r => r.kind === 'human');
   hub.reportGame({ won: rows[0]?.kind === 'human' && rows[0].rank === 1, players: Math.max(1, humans.length), score: Math.round(Math.max(0, ...humans.map(r => r.total))), daily: false });
   await podium(last.comp, rows);
-  const ch = await results(last.comp, rows, { again: 'Nova lokalna tekma', title: TOUR_NAME + ' — skupno' });
+  const ch = await results(last.comp, rows, { again: 'Nova lokalna tekma', title: plan.name + ' — skupno' });
   showHud(false);
   local = null;
-  if (ch === 'again') openLocal({ ...cfg, format: 'tour' }); else E.showMenu();
+  if (ch === 'again') openLocal(cfg); else E.showMenu();
 }
 
 /* ===================================================================== */

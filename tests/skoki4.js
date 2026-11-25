@@ -185,6 +185,16 @@ export function skoki4Tests(test, { eq, ok }) {
     for (const L of LEAGUES) ok(v.filter(x => L.tags.includes(x.tag)).length >= 3, L.id + ': dovolj prizorišč');
     for (let i = 1; i < LEAGUES.length; i++) ok(LEAGUES[i].skill[0] > LEAGUES[i - 1].skill[0] && LEAGUES[i].skill[1] > LEAGUES[i - 1].skill[1], 'višja liga = močnejši rivali');
   });
+  test('skoki: format »Pokal: več tekem« — nastavitve (skakalnice po vrsti, največ 10, neznane izpuščene, seštevek)', async ctx => {
+    const { contestSettings, FORMATS, SERIES_MAX } = await import('../games/skoki/contest.js');
+    const ids = ctx.skokiHills.map(d => d.id);
+    ok(FORMATS.series?.series && FORMATS.tour?.tour, 'formata series in tour');
+    const s = contestSettings({ format: 'series', hills: ['orlova', 'nic', 'bistra', 'orlova'], scoring: 'points' }, ids);
+    eq([s.format, s.hills, s.scoring], ['series', ['orlova', 'bistra', 'orlova'], 'points']);
+    eq(contestSettings({ hills: ids.concat(ids) }, ids).hills.length, SERIES_MAX);
+    eq(contestSettings({ scoring: 'x' }, ids).scoring, 'cup');
+    eq(contestSettings({}, ids).hills, []);
+  });
   test('skoki: naloge pokala in kariere v games.json', ctx => {
     const g = (ctx.games.games || ctx.games).find(x => x.id === 'skoki');
     const q = id => g.quests.find(x => x.id === id);

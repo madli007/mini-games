@@ -22,11 +22,16 @@ export const FORMATS = {
   // Turneja 4 skakalnic: štiri tekme zapored (Oberstdorf → Garmisch → Innsbruck → Bischofshofen), KO pari v 1. seriji,
   // skupna razvrstitev = vsota točk vseh štirih (sport/ko.js). Skakalnica v nastavitvah se ne upošteva.
   tour: { name: 'Turneja 4 skakalnic (4 tekme, KO pari)', rounds: 2, trial: false, tour: true },
+  // Pokal: več tekem zapored na izbranih skakalnicah (dve seriji vsaka), seštevek na koncu — točke pokala 100-80-60 … ali
+  // točke skokov (s.scoring). Brez čakanja: naslednja tekma se začne takoj (lokalno in v sobi).
+  series: { name: 'Pokal: več tekem (izbrane skakalnice, seštevek)', rounds: 2, trial: false, series: true },
 };
 export const WIND_MODES = { same: 'Enak za vse', var: 'Spremenljiv (s kompenzacijo)', off: 'Brez vetra' };
 export const START_SEC = 10;     // po zeleni luči za štart
 export const JUMPER_SEC = 90;    // skupni čas na skakalca
 
+export const SERIES_MAX = 10;     // največ tekem v pokalu (več tekem)
+export const SCORINGS = { cup: 'Točke pokala (100-80-60 …)', points: 'Točke skokov (vsota)' };
 export const DEFAULT_CONTEST = { hill: 'bistra', format: 'two', cut: 0, wind: 'same', jury: 'auto', gate: null, relaxed: false, bots: 0, botLevel: 'meseno', botSource: 'builtin', teams: 0 };
 
 /** Normaliziraj nastavitve iz lobbyja (tuj vnos). */
@@ -43,6 +48,9 @@ export function contestSettings(o = {}, hillIds = []) {
   s.botLevel = ['zacetniki', 'meseno', 'svetovni'].includes(o.botLevel) ? o.botLevel : 'meseno';
   s.botSource = o.botSource === 'mine' ? 'mine' : 'builtin';
   s.teams = [0, 2, 3, 4].includes(o.teams | 0) ? o.teams | 0 : 0;
+  // pokal (več tekem): seznam skakalnic po vrsti (2–10, ista lahko večkrat) in način seštevka
+  s.hills = Array.isArray(o.hills) ? o.hills.filter(id => typeof id === 'string' && hillIds.includes(id)).slice(0, SERIES_MAX) : [];
+  s.scoring = o.scoring === 'points' ? 'points' : 'cup';
   return s;
 }
 

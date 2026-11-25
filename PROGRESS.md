@@ -1236,3 +1236,20 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
 
 ### Vzdrževanje
 - Pred koncem 2028: `LAST_SEASON` v `tools/skoki-cup-sql.mjs` podaljšaj, `node tools/skoki-cup-sql.mjs --write`, znova poženi skoki.sql.
+
+# Smučarski skoki — Pokal: več tekem brez čakanja (26. 11. 2026)
+
+- Nov format **»Pokal: več tekem«** v Lokalni tekmi in v spletni Tekmi (soba): izbereš seznam skakalnic (2–10, hitre izbire
+  »Prave velike«, »Letalnice«, »Naključnih 5«), tekme si sledijo takoj ena za drugo (dve seriji vsaka) proti botom ali s
+  prijatelji, na koncu seštevek — **točke pokala 100-80-60 …** po mestu ali **točke skokov**. Zamujena tekma = 0 (ne izpade),
+  izenačenje: več zmag, nato več drugih mest. Nasev naslednje tekme po skupni razvrstitvi (vodilni skoči zadnji).
+  Polje »Skakalnica« se pri Pokalu in Turneji skrije.
+- Logika: `shared/sport/ko.js` → `seriesTotal(comps, { pointsFor })`; `match.js` posploši Turnejo v »serijo tekem«
+  (`seriesPlan`: Turneja = 4 fiksne skakalnice s KO, Pokal = izbrane skakalnice); `contest.js`: `FORMATS.series`,
+  nastavitvi `hills`, `scoring`.
+- Svetovni pokal (sezona = mesec, postaje z roki v Supabase) ostane nespremenjen — za asinhrono tekmovanje čez mesec;
+  novi format je za igranje »zdaj«, brez čakanja na termine.
+- Preverjeno: testi 227/227 (+2), lokalni pokal 3 tekme proti 3 botom (seštevek 280 / 220 / 220, izenačenje po zmagah),
+  spletna soba (host + 2 bota, 2 tekmi, samodejen prehod na 2. tekmo, skupni rezultati), skrivanje polj, konzola brez napak.
+- Ni preverjeno: spletni pokal z več ljudmi v ločenih oknih (v testu je bil host v ozadnjem zavihku, kjer brskalnik
+  upočasni animacijo — njegov skok je presegel 90 s in host ga je po pravilih označil DNF, seštevek je zato 0, kar je pravilno).

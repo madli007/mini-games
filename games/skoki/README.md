@@ -490,6 +490,11 @@ Meni ima dva velika gumba **🌍 Svetovni pokal** in **🎯 Kariera**; nad njima
 - Podatki: `hub.cupSubmit / cupStandings / cupJump` (`shared/README.md`), Supabase `skoki_cup_*` in RPC `skoki_cup_submit`
   (`supabase/games/skoki.sql`; okna postaj v `skoki_cup_events` iz `node tools/skoki-cup-sql.mjs --write`).
 
+### Pokal: več tekem (brez čakanja)
+V Lokalni tekmi in spletni Tekmi format **»Pokal: več tekem«**: izbereš 2–10 skakalnic (po vrsti seznama), tekme si sledijo takoj
+(dve seriji vsaka), na koncu seštevek — točke pokala 100-80-60 … po mestu ali točke skokov; zamujena tekma = 0, izenačenje po
+zmagah. Za razliko od Svetovnega pokala (postaje z roki čez mesec) se igra v enem kosu. Logika: `shared/sport/ko.js` `seriesTotal`.
+
 ### Kariera (solo proti 29 botom)
 Celinski pokal (Mini, mala, srednja) → Svetovni pokal (srednja, velika) → Poleti (velika, letalnice). Kariera-sezona ima 6–8 tekem z
 dvema serijama in 30 skakalci; med najboljših 10 v sezoni = višja liga. Rivali so stalni (izmišljena imena ali boti iz »Moji skakalci«,

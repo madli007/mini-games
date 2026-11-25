@@ -63,6 +63,34 @@ export function koAdvance(ko, score, { lucky } = {}) {
 }
 
 /**
+ * Skupna razvrstitev serije tekem (»pokal« z več tekmami): vsota točk po mestu (npr. 100-80-60 …) ali vsota točk
+ * tekmovanja; kdor kakšno tekmo zamudi, dobi zanjo 0 (ne izpade). Izenačenje: več zmag, nato več drugih mest …
+ * @param {Array<Array<{id:string, total:number, rank?:number|null, status?:string}>>} comps razvrstitve tekem (competition.standings)
+ * @param {{pointsFor?:(rank:number)=>number}} [o] pointsFor: točke po mestu (brez = vsota točk tekmovanja)
+ * @returns {{id, total, n, wins, places:number[], parts:(number|null)[], rank:number}[]}
+ */
+export function seriesTotal(comps, { pointsFor = null } = {}) {
+  const m = new Map();
+  comps.forEach((rows, k) => {
+    for (const r of rows) {
+      const t = m.get(r.id) || { id: r.id, total: 0, n: 0, places: [], parts: Array(comps.length).fill(null) };
+      if ((r.status === undefined || r.status === 'ok') && r.rank) {
+        const v = pointsFor ? pointsFor(r.rank) : r.total;
+        t.total = Math.round((t.total + v) * 10) / 10; t.n++; t.parts[k] = v;
+        t.places[r.rank - 1] = (t.places[r.rank - 1] || 0) + 1;
+      }
+      m.set(r.id, t);
+    }
+  });
+  const pl = (t, i) => t.places[i] || 0;
+  const cmpPl = (a, b) => { for (let i = 0; i < Math.max(a.places.length, b.places.length); i++) if (pl(a, i) !== pl(b, i)) return pl(b, i) - pl(a, i); return 0; };
+  const list = [...m.values()].sort((a, b) => b.total - a.total || cmpPl(a, b) || a.id.localeCompare(b.id));
+  let rank = 0;
+  list.forEach((t, i) => { if (i === 0 || list[i - 1].total !== t.total || cmpPl(list[i - 1], t) !== 0) rank = i + 1; t.rank = rank; t.wins = pl(t, 0); t.missed = comps.length - t.n; });
+  return list;
+}
+
+/**
  * Skupna razvrstitev več tekmovanj (turneja): vsota točk; kdor manjka na kateri, izpade.
  * @param {Array<Array<{id:string, total:number, status?:string}>>} comps razvrstitve posameznih tekmovanj (competition.standings)
  * @returns {{id, total, n, missed, rank:number|null, parts:number[]}[]}
