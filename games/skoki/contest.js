@@ -10,6 +10,8 @@ import { inputFrom } from './ghost.js';
 import { judgeScores } from './judges.js';
 import { scoreJump, distancePoints, gatePoints, windPoints } from './scoring.js';
 import { hashStr, rng } from './sport/competition.js';
+import { noise1, clamp } from './dmath.js';
+import { WIND_MAX, createWind } from './wind.js';
 
 /* ------------------------------------------------------------ nastavitve tekme */
 
@@ -44,26 +46,78 @@ export function contestSettings(o = {}, hillIds = []) {
 /* ------------------------------------------------------------ veter in zalet serije */
 
 /**
+ * Ustaljen veter (tekma, rekord skakalnice): povprečje serije iz seeda (−3 … +3 m/s, bolj verjetno blizu 0) in počasen
+ * zdrs od skoka do skoka (do ±1 m/s), zato so razlike med zaporednimi skakalci majhne. i = zaporedni skok (štartna številka).
+ * @returns {number} povprečni veter (m/s, + = čelni, na 0,1)
+ */
+export function steadyMean(seriesSeed, i = 0) {
+  const h = hashStr(String(seriesSeed));
+  const u = rng(h)() * 2 - 1;
+  const base = u * (0.55 + 0.45 * Math.abs(u)) * WIND_MAX;
+  const drift = noise1(i / 5, h & 0xffff) * 1.0;
+  return Math.round(clamp(base + drift, -WIND_MAX, WIND_MAX) * 10) / 10;
+}
+
+/**
  * Konfiguracija vetra za skok.
- * same: isti profil za vse v seriji (seed serije) · var: seed serije + štartna številka · off: brez.
+ * same: isti profil za vse v seriji (seed serije) · var: ustaljen veter serije z rahlim zdrsom od skakalca do skakalca
+ * (steadyMean) in zmernimi sunki · off: brez.
  */
 export function seriesWind(mode, seriesSeed, bib = 0, mods = null) {
   if (mode === 'off') return { mode: 'off', seed: 0 };
   const seed = mode === 'var' ? hashStr(seriesSeed + ':' + bib) : hashStr(String(seriesSeed));
   if (mods?.windMean != null) return { mode: 'const', seed, speed: mods.windMean };
+  if (mode === 'var') return { mode: 'steady', seed, speed: steadyMean(seriesSeed, bib) };
   return { mode: 'random', seed };
 }
 
 /**
- * Samodejna žirija. Stanje: { gate, start, lowered: [{ after, from, to }] }.
- * Začne pri privzetem zaletnem mestu skakalnice (pri njem povprečen igralec — bot 0,7 — pristane okoli K, ne čez HS).
- * Ko skakalec pristane čez 95 % HS (tudi pri padcu), žirija za naslednje skakalce zniža zalet za 1 (čez HS + 3 m za 2).
- * Zalet ne gre pod 1. Kompenzacija (gatePoints) velja glede na začetno mesto serije.
+ * Samodejna žirija (FIS ICR 402.1.2, 422.5–422.8). Stanje:
+ *   { auto, gate (trenutno), start (referenca serije za kompenzacijo), base (začetno mesto, zmanjšano po dolgih skokih),
+ *     fresh (serija se še ni začela), lowered: [{ after, from, to }] }
+ * Pred skokom (juryBeforeJump) žirija pogleda napoved vetra: veter preračuna v zaletna mesta (točke vetra / točke na mesto)
+ * — čelni veter = nižji zalet, hrbtni = višji. Na začetku serije tako izbere začetno mesto (to je referenca kompenzacije),
+ * med serijo pa zalet spremeni le, ko se želeno mesto razlikuje za vsaj 2 (občasno, kot na tekmah). Kompenzacija
+ * (gatePoints) izravna spremembo.
+ * Po skoku (juryAfterJump) čez 95 % HS (tudi pri padcu) zniža zalet za 1 (čez HS + 3 m za 2). Zalet ne gre pod 1.
  */
 export function createJury(def, { auto = true, gate = null } = {}) {
   const start = Math.max(1, Math.min(def.gates.count, gate ?? def.gates.default));
-  return { auto, gate: start, start, lowered: [] };
+  return { auto, gate: start, start, base: start, plan: start, fresh: true, lowered: [] };
 }
+
+/** Napoved vetra za skok (povprečje profila, m/s) — žirija in »za vodstvo«. */
+export const windForecast = (cfg, P) => cfg?.mode === 'off' ? 0 : createWind(cfg, P).mean;
+
+/** Želeno zaletno mesto za napovedani veter (m/s, + = čelni) okoli osnovnega mesta. */
+export function windGate(def, base, wind) {
+  const eq = windPoints(def, wind) / (def.gateFactor || 1);   // čelni: negativne točke → nižje mesto
+  const lo = Math.max(1, base - 8), hi = Math.min(def.gates.count, base + 4);
+  return Math.max(lo, Math.min(hi, base + Math.round(eq)));
+}
+
+/**
+ * Pred skokom: žirija po potrebi prilagodi zalet vetru.
+ * @param {Object} jury stanje
+ * @param {Object} def skakalnica
+ * @param {number} wind napovedani povprečni veter za ta skok (m/s)
+ * @param {{always?:boolean}} [o] always: vedno na želeno mesto (rekord skakalnice — vsak skok svoje mesto)
+ * @returns {{jury:Object, change:{from:number, to:number, wind:number, reason:'wind'}|null, msg:string|null}}
+ */
+export function juryBeforeJump(jury, def, wind, { always = false } = {}) {
+  if (!jury.auto) return { jury, change: null, msg: null };
+  const want = windGate(def, jury.base, wind);
+  if (jury.fresh) {
+    // začetek serije: žirija izbere začetno mesto po vetru — to je referenca serije (brez kompenzacije)
+    const j = { ...jury, gate: want, start: always ? jury.start : want, fresh: false };
+    return { jury: j, change: always && want !== jury.start ? { from: jury.start, to: want, wind, reason: 'wind' } : null, msg: !always && want !== jury.base ? `Žirija je zaradi vetra (${windText(wind)}) začela serijo z zaletnega mesta ${want}.` : null };
+  }
+  if (want === jury.gate || (!always && Math.abs(want - jury.gate) < 2)) return { jury, change: null, msg: null };
+  const j = { ...jury, gate: want };
+  return { jury: j, change: { from: jury.gate, to: want, wind, reason: 'wind' }, msg: `Žirija je zaradi vetra (${windText(wind)}) ${want < jury.gate ? 'znižala' : 'zvišala'} zalet na ${want}.` };
+}
+const windText = w => (w > 0 ? 'čelni ' : w < 0 ? 'hrbtni ' : '') + (Math.round(Math.abs(w) * 10) / 10).toLocaleString('sl-SI', { minimumFractionDigits: 1 }) + ' m/s';
+
 /** Po skoku: vrne { jury: novo stanje, msg | null }. */
 export function juryAfterJump(jury, def, { dist, name = '' }) {
   if (!jury.auto) return { jury, msg: null };
@@ -71,11 +125,11 @@ export function juryAfterJump(jury, def, { dist, name = '' }) {
   const by = dist >= def.hs + 3 ? 2 : 1;
   const to = Math.max(1, jury.gate - by);
   if (to === jury.gate) return { jury, msg: null };
-  const j = { ...jury, gate: to, lowered: [...jury.lowered, { after: name, from: jury.gate, to }] };
+  const j = { ...jury, gate: to, base: Math.max(1, jury.base - by), lowered: [...jury.lowered, { after: name, from: jury.gate, to }] };
   return { jury: j, msg: `Žirija je znižala zalet na ${to}.` };
 }
-/** Nova serija: žirija začne znova pri začetnem mestu (vsaka serija ima svojo referenco). */
-export const juryNewRound = jury => ({ ...jury, gate: jury.start, lowered: [] });
+/** Nova serija: žirija začne znova pri osnovnem mestu, začetno mesto spet izbere po vetru (vsaka serija ima svojo referenco). */
+export const juryNewRound = jury => ({ ...jury, gate: jury.plan ?? jury.start, start: jury.plan ?? jury.start, base: jury.plan ?? jury.start, fresh: true, lowered: [] });
 
 /* ------------------------------------------------------------ simulacija iz vnosov */
 

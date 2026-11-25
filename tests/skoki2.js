@@ -226,6 +226,54 @@ export function skokiPhase2Tests(test, { eq, ok }) {
     const rl = K.resultOf(lo.s, def, ctx.skokiParams, { gate: 11, refGate: 13, judgeSeed: 1 });
     eq(rl.gatePts, 2 * def.gateFactor, 'kompenzacija +2 mesti');
   });
+  test('skoki: žirija prilagodi zalet vetru (začetek serije, občasna sprememba, rekord skakalnice)', ctx => {
+    const def = hillOf(ctx, 'orlova').def, g0 = def.gates.default;
+    // veter v zaletnih mestih: čelni = nižje, hrbtni = višje, brez vetra = osnova; meje
+    eq(K.windGate(def, g0, 0), g0);
+    ok(K.windGate(def, g0, 2) < g0 && K.windGate(def, g0, -2) > g0, 'čelni nižje, hrbtni višje');
+    eq(K.windGate(def, g0, 2), g0 + Math.round(K.windGate(def, g0, 2) - g0), 'celo mesto');
+    ok(K.windGate(def, g0, -3) <= g0 + 4 && K.windGate(def, 3, 3) >= 1, 'meje');
+    // začetek serije: začetno mesto po vetru = referenca (brez kompenzacije); nato sprememba šele pri razliki ≥ 2
+    let j = K.createJury(def);
+    let r = K.juryBeforeJump(j, def, 2.2);
+    ok(r.jury.gate < g0 && r.jury.start === r.jury.gate && r.change === null && /začela serijo/.test(r.msg), 'začetek serije: ' + r.msg);
+    j = r.jury;
+    r = K.juryBeforeJump(j, def, 2.0);
+    eq(r.change, null, 'majhna sprememba vetra: zalet ostane');
+    r = K.juryBeforeJump(j, def, -1.5);
+    ok(r.change && r.change.to > r.change.from && r.jury.start === j.start, 'veter se obrne: višji zalet, referenca ostane');
+    ok(/zvišala/.test(r.msg), r.msg);
+    // po dolgem skoku se zniža tudi osnova; nova serija začne znova (izbere po vetru)
+    const a = K.juryAfterJump(r.jury, def, { dist: 140 });
+    eq(a.jury.base, j.base - 1);
+    ok(K.juryNewRound(a.jury).fresh && K.juryNewRound(a.jury).base === g0, 'nova serija');
+    // rekord skakalnice (always): referenca ostane privzeto mesto, vsak skok svoje mesto, sprememba z animacijo
+    let rj = K.createJury(def);
+    r = K.juryBeforeJump(rj, def, 2.5, { always: true });
+    ok(r.change && r.change.from === g0 && r.jury.start === g0 && r.jury.gate < g0, 'rekord: sprememba glede na privzeto');
+    r = K.juryBeforeJump(r.jury, def, 2.0, { always: true });
+    ok(!r.change || Math.abs(r.change.to - r.change.from) >= 1, 'rekord: vsaka razlika šteje');
+    eq(K.juryBeforeJump(K.createJury(def, { auto: false }), def, 3).change, null, 'ročna žirija ne spreminja');
+    // pošteno: kompenzacija (zalet + veter) skoraj izravna veter — razlika v točkah bota 0,9 ostane majhna
+    const { hill } = hillOf(ctx, 'orlova');
+    const pts = w => {
+      const gate = K.windGate(def, g0, w);
+      let s = 0;
+      for (let i = 0; i < 6; i++) { const b = BOT.createBot({ skill: 0.9, seed: 3 + i }); const J = PH.simulate({ hill, P: ctx.skokiParams, gate, wind: { mode: 'const', speed: w, seed: i }, input: x => b.input(x) }); s += K.resultOf(J.s, def, ctx.skokiParams, { gate, refGate: g0, judgeSeed: 1 }).total; }
+      return s / 6;
+    };
+    const p0 = pts(0), pHead = pts(2), pTail = pts(-2);
+    ok(Math.abs(pHead - p0) < 8 && Math.abs(pTail - p0) < 8, `kompenzacija: ${pTail.toFixed(1)} / ${p0.toFixed(1)} / ${pHead.toFixed(1)} t`);
+  });
+  test('skoki: ustaljen veter serije (spremenljiv način) — podoben od skakalca do skakalca', () => {
+    const m = Array.from({ length: 30 }, (_, i) => K.steadyMean('tekma:s1', i));
+    ok(m.every(v => Math.abs(v) <= 3), 'v mejah');
+    for (let i = 1; i < m.length; i++) ok(Math.abs(m[i] - m[i - 1]) <= 0.6, `zdrs ${m[i - 1]} → ${m[i]}`);
+    ok(Math.max(...m) - Math.min(...m) <= 2.1, 'razpon v seriji ≤ 2 m/s');
+    const w = K.seriesWind('var', 'tekma:s1', 4);
+    eq([w.mode, w.speed], ['steady', K.steadyMean('tekma:s1', 4)]);
+    eq(K.seriesWind('var', 'tekma:s1', 4, { windMean: 1 }).mode, 'const', 'dnevni izziv: stalen veter dneva');
+  });
   test('skoki: enak veter za vse (isti seed serije = isti profil), spremenljiv po štartni številki', ctx => {
     const P = ctx.skokiParams;
     const a = K.seriesWind('same', 'tekma:s1', 1), b = K.seriesWind('same', 'tekma:s1', 7);

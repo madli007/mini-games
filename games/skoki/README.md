@@ -403,3 +403,20 @@ Cilj: odriv, ki ga zadene tudi človek, gladek prehod v let in let, v katerem se
   ostanejo pri istih ciljih; na letalnicah je cilj za 0,7 širši (K − 25 … K + 5 m), ker tam vsaka stopinja šteje ~20 m.
 - Skakalnice so znova uglašene (`tools/skoki-real-hills.mjs --search`, ročno Brezova, Orlovo gnezdo, Luna), fiksture
   testov znova ustvari `node tools/skoki-fixtures.mjs`. Stari ghosti (v3) se ne predvajajo; lokalni osebni rekordi ostanejo (daljava).
+
+## Žirija in veter (FIS ICR 402.1.2, 422.5–422.9)
+- **Pravila (ICR, Book III, 2024):** če je v uporabi sistem kompenzacije vetra in zaleta, žirija lahko zalet spremeni tudi med
+  serijo (pravičnost in varnost), kompenzacija gre v skupni rezultat (422.5–422.8). Trener lahko zalet zniža svojemu skakalcu, a
+  kompenzacija za zalet velja le, če skoči vsaj 95 % HS (422.9 — v igri še ni). Ko kdo doseže 95 % HS, žirija presodi, ali se
+  serija nadaljuje (402.1.2).
+- **V igri** (`contest.js`): `juryBeforeJump` pred skokom preračuna napoved vetra v zaletna mesta (`windPoints / gateFactor`, čelni
+  = nižje, hrbtni = višje, meje osnova −8 … +4). Na začetku serije izbere začetno mesto (= referenca kompenzacije), med serijo
+  zalet spremeni le pri razliki ≥ 2 mesti. Po skoku čez 95 % HS ostane znižanje (`juryAfterJump`, zniža tudi osnovo).
+- **Veter v tekmi:** »Spremenljiv« = ustaljen veter serije (`steadyMean`: povprečje serije in počasen zdrs ≤ ±1 m/s od skakalca
+  do skakalca, nov način vetra `steady` z zmernimi sunki); »Enak za vse« = isti profil za vse.
+- **Rekord skakalnice:** trije skoki v podobnem vetru (`steady`, seed seje), žirija pred vsakim skokom postavi zalet po vetru;
+  kompenzacija je glede na privzeto mesto (lestvica ostane v metrih, žirija daljave izenači).
+- **Animacija:** ob spremembi kartica »🚩 Žirija · zaletno mesto 13 ▼ 11«, razlog (veter) in kompenzacija v točkah (+ zeleno,
+  − rdeče); v traku spodaj zalet s točkami. Tekma jo pošlje vsem (`active.gateChange`).
+- **Točke na mesto** (`gateFactor`) so izmerjene: `node tools/skoki-gatefactor.mjs [--write]` (metri na mesto bota 0,7 × vrednost
+  metra), da kompenzacija res izravna mesto — test: bot 0,9 pri ±2 m/s z žirijo dobi skoraj enake točke kot brez vetra.

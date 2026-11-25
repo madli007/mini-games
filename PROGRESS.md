@@ -1122,3 +1122,10 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 - Boti: večji raztros pri nizki spretnosti; vse skakalnice znova uglašene (22/22 izpolni cilje), fiksture `tools/skoki-fixtures.mjs`.
 - Preverjeno: `node tests/run-node.mjs` 200/200; v brskalniku pravi kliki na Orlovi brez vetra: odriv −27 ms ✨, brez miške 118 m,
   nagib naprej 4° 131 m. Ni preverjeno: igranje z resnično miško/telefonom (občutek), izris na telefonu.
+
+# Smučarski skoki — žirija za veter (25. 11. 2026)
+
+- Žirija pred skokom prilagodi zalet vetru (začetek serije: začetno mesto, med serijo pri razliki ≥ 2), tudi v Rekordu skakalnice.
+- Ustaljen veter v tekmi (»Spremenljiv«) in v Rekordu skakalnice (nov način vetra `steady`).
+- Animacija spremembe zaletnega mesta s kompenzacijo; točke na mesto izmerjene (`tools/skoki-gatefactor.mjs`).
+- Preverjeno: testi 202/202, animacija v Rekordu skakalnice (hrbtni −2,4 m/s → 13 ▲ 17, −27,2 t). Ni preverjeno: spletna tekma v več zavihkih.

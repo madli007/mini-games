@@ -378,3 +378,35 @@ body.sk-match #btnPause { display: none; }
 .sk-top10__list li.me { background: rgba(79, 195, 247, .1); border-radius: 8px; }
 .sk-top10__list li.beat .d { color: #ffd23f; }
 .sk-top10__list li.beat .d::after { content: ' 🏆'; }
+
+/* =================================================================== žirija: sprememba zaletnega mesta */
+.sk-gatefx { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); pointer-events: none; z-index: 6;
+  animation: sk-gatefx-in .45s cubic-bezier(.2, 1.4, .4, 1), sk-gatefx-out .5s ease-in 3.7s forwards; }
+@keyframes sk-gatefx-in { from { transform: translateX(-50%) translateY(-24px) scale(.7); opacity: 0; } }
+@keyframes sk-gatefx-out { to { transform: translateX(-50%) translateY(-12px); opacity: 0; } }
+.sk-gatefx__box { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 26px 14px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(14, 26, 60, .92), rgba(8, 14, 34, .92)); border: 2px solid #ffd23f;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5), 0 0 28px rgba(255, 210, 63, .35); text-align: center; }
+.sk-gatefx__lbl { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #ffd23f; font-weight: 800; }
+.sk-gatefx__nums { display: flex; align-items: center; gap: 14px; font-family: var(--mg-font-title); line-height: 1; }
+.sk-gatefx__nums b { font-size: clamp(34px, 9vw, 58px); }
+.sk-gatefx__nums .from { color: #9aa6c2; position: relative; animation: sk-gate-strike .5s ease-out .35s both; }
+.sk-gatefx__nums .from::after { content: ''; position: absolute; left: -6%; right: -6%; top: 50%; height: 4px; background: #ff6b7a; border-radius: 2px;
+  transform: scaleX(0); transform-origin: left; animation: sk-gate-line .35s ease-out .45s forwards; }
+.sk-gatefx__nums .to { color: #fff; text-shadow: 0 0 18px rgba(255, 210, 63, .8); animation: sk-gate-to .6s cubic-bezier(.2, 1.6, .4, 1) .7s both; }
+.sk-gatefx__nums .arrow { font-style: normal; font-size: clamp(22px, 6vw, 34px); color: #ffd23f; animation: sk-gate-bob .7s ease-in-out .3s 3 alternate; }
+.sk-gatefx__box.up .arrow { color: #4de1ff; }
+@keyframes sk-gate-strike { to { opacity: .7; } }
+@keyframes sk-gate-line { to { transform: scaleX(1); } }
+@keyframes sk-gate-to { from { transform: scale(.3); opacity: 0; } }
+@keyframes sk-gate-bob { from { transform: translateY(-5px); } to { transform: translateY(5px); } }
+.sk-gatefx__box.up .arrow { animation-name: sk-gate-bob-up; }
+@keyframes sk-gate-bob-up { from { transform: translateY(5px); } to { transform: translateY(-5px); } }
+.sk-gatefx__why { font-size: 14px; color: #dfe7ff; font-weight: 600; }
+.sk-gatefx__pts { font-size: 18px; font-weight: 800; padding: 3px 12px; border-radius: 999px; background: rgba(255, 255, 255, .08); animation: sk-gate-to .5s ease-out 1s both; }
+.sk-gatefx__pts.plus { color: #39ff88; background: rgba(57, 255, 136, .12); }
+.sk-gatefx__pts.minus { color: #ff6b7a; background: rgba(255, 107, 122, .12); }
+#barGate small { font-size: 12px; margin-left: 4px; font-weight: 700; }
+#barGate small.plus { color: #39ff88; } #barGate small.minus { color: #ff6b7a; }
+@media (max-width: 640px) { .sk-gatefx { top: 26%; } .sk-gatefx__box { padding: 10px 18px 12px; } }
+@media (prefers-reduced-motion: reduce) { .sk-gatefx, .sk-gatefx * { animation: none !important; } .sk-gatefx__nums .from::after { transform: scaleX(1); } }

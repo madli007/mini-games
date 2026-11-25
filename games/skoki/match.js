@@ -19,7 +19,7 @@ import * as S from '../../shared/storage.js';
 import * as C from './sport/competition.js';
 import { createSender, createReceiver, verify } from './sport/live-replay.js';
 import {
-  contestSettings, FORMATS, WIND_MODES, seriesWind, createJury, juryAfterJump, juryNewRound, simulateFromInputs, resultOf,
+  contestSettings, FORMATS, WIND_MODES, seriesWind, createJury, juryAfterJump, juryNewRound, juryBeforeJump, windForecast, simulateFromInputs, resultOf,
   sameResult, distForLead, PRIZES, contestXp, humanPlace, JUMPER_SEC, isOpen, unlockKey,
 } from './contest.js';
 import { simulate } from './physics.js';
@@ -28,7 +28,7 @@ import { InputRecorder } from './ghost.js';
 import { createWind } from './wind.js';
 import { DEFAULT_SKIN } from './render/jumper.js';
 import * as JP from './jumpers.js';
-import { fmtDist } from './scoring.js';
+import { fmtDist, gatePoints } from './scoring.js';
 
 const $ = s => document.querySelector(s);
 const esc = ui.esc;
@@ -552,11 +552,16 @@ async function hostAssign() {
     const prevRound = st.jury.round ?? rIdx;
     if (prevRound !== rIdx) st.jury = juryNewRound(st.jury);
     st.jury.round = rIdx;
-    const gate = st.jury.gate, refGate = st.jury.start;
     const wind = seriesWind(st.cfg.wind, st.seed + ':s' + rIdx, p.bib);
+    // žirija pred skokom: zalet po napovedi vetra (začetek serije: začetno mesto; med serijo občasna sprememba)
+    const jb = juryBeforeJump(st.jury, def, windForecast(wind, E.P));
+    st.jury = jb.jury;
+    const gate = st.jury.gate, refGate = st.jury.start;
+    const gateChange = jb.change ? { ...jb.change, pts: gatePoints(def, jb.change.to, refGate) } : null;
+    if (jb.msg) st.msg = jb.msg;
     const judgeSeed = C.hashStr(st.seed + ':' + rIdx + ':' + id);
     const key = 'k' + rIdx + '-' + p.bib + '-' + rnd();
-    st.active = { id, key, gate, refGate, wind, judgeSeed, attempt: 0 };
+    st.active = { id, key, gate, refGate, wind, judgeSeed, attempt: 0, gateChange };
     st.phase = 'jump'; st.last = st.last && { ...st.last, old: true };
     if (p.kind === 'bot') {
       const b = st.bots[id];
@@ -688,7 +693,7 @@ function startWatch(A, jk) {
 async function runWatch(A, p, speed) {
   const w = watch;
   const r = await E.jump({
-    hillId: ST.hill, gate: A.gate, refGate: A.refGate, wind: A.wind, judgeSeed: A.judgeSeed, source: 'stream', stream: w.rcv, speed,
+    hillId: ST.hill, gate: A.gate, refGate: A.refGate, wind: A.wind, gateChange: A.gateChange, judgeSeed: A.judgeSeed, source: 'stream', stream: w.rcv, speed,
     skin: skinOf(p.kind === 'bot' ? ST.bots[p.id] : null), label: `${roundLabel(ST.comp)} · gledaš`, whoHtml: whoHtml(p), recordLine: leadLine(A), recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 600,
   });
   if (watch !== w || r.status !== 'ok') return;
@@ -713,7 +718,7 @@ async function myTurn(A, p) {
   E.audio.beep(true);
   if (navigator.vibrate && navigator.userActivation?.hasBeenActive) try { navigator.vibrate(200); } catch { /* */ }
   const r = await E.jump({
-    hillId: ST.hill, gate: A.gate, refGate: A.refGate, wind: A.wind, judgeSeed: A.judgeSeed, source: 'me', mine: true,
+    hillId: ST.hill, gate: A.gate, refGate: A.refGate, wind: A.wind, gateChange: A.gateChange, judgeSeed: A.judgeSeed, source: 'me', mine: true,
     onInput: (t, v) => sender.push(t, v), startLimit: true, relaxed: ST.cfg.relaxed,
     label: `${roundLabel(ST.comp)} · ti si na vrsti!`, whoHtml: whoHtml(p), recordLine: leadLine(A), recordLabel: 'Za vodstvo', holdMs: 800,
   });
@@ -866,8 +871,12 @@ async function runLocal(cfg, sel) {
     const p = C.participant(L.comp, id);
     const j = L.byId.get(id);
     if (L.comp.round !== lastRound) { L.jury = juryNewRound(L.jury); lastRound = L.comp.round; msg(roundLabel(L.comp) + ' — obratni vrstni red, najboljši skoči zadnji.', 4000); }
-    const gate = L.jury.gate, refGate = L.jury.start;
     const wind = seriesWind(cfg.wind, seed + ':s' + L.comp.round, p.bib);
+    const jb = juryBeforeJump(L.jury, def, windForecast(wind, E.P));
+    L.jury = jb.jury;
+    const gate = L.jury.gate, refGate = L.jury.start;
+    const gateChange = jb.change ? { ...jb.change, pts: gatePoints(def, jb.change.to, refGate) } : null;
+    if (jb.msg) msg(jb.msg, 5000);
     const judgeSeed = C.hashStr(seed + ':' + L.comp.round + ':' + id);
     renderSide({ comp: L.comp }, L.changes || {}, id);
     renderDeck(L.comp);
@@ -882,7 +891,7 @@ async function runLocal(cfg, sel) {
       if (cfg.replay === 'skip') r = { status: 'ok', res: b.res, changes: b.changes };
       else {
         renderThird(L.comp, id, { def, gate, refGate, wind });
-        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
+        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
         if (r.status === 'abort') return;
         r = { status: 'ok', res: b.res, changes: b.changes };   // uradno: izračun (enak replayu)
       }
@@ -895,7 +904,7 @@ async function runLocal(cfg, sel) {
       const go = await interstitial(p, j);
       if (local !== L) return;
       if (!go) { leaveLocal(); return; }
-      r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'me', mine: true, startLimit: true, relaxed: cfg.relaxed, skin: skinOf(j), label: `${roundLabel(L.comp)} · ${j.name}`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', holdMs: 800 });
+      r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, judgeSeed, source: 'me', mine: true, startLimit: true, relaxed: cfg.relaxed, skin: skinOf(j), label: `${roundLabel(L.comp)} · ${j.name}`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', holdMs: 800 });
       if (r.status === 'abort') return;
     }
     if (local !== L) return;

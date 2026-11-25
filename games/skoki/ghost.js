@@ -10,7 +10,7 @@ import { createJump } from './physics.js';
 
 export const GHOST_VERSION = 2;   // 2: gumb 0|1|2 (oba gumba)
 export const GHOST_MAX = 4096;
-const MODES = ['off', 'const', 'random'];
+const MODES = ['off', 'const', 'random', 'steady'];   // novi načini le na konec (indeks je v zapisu)
 
 /** Zapisovalnik vnosov: kliči push(tick, inp) za vsak tick. */
 export class InputRecorder {

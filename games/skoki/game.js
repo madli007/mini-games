@@ -13,7 +13,7 @@ import * as S from '../../shared/storage.js';
 import { buildHill, validateHill } from './hill.js';
 import { createJump, STEP, TPS, makeClock } from './physics.js';
 import { judgeScores } from './judges.js';
-import { scoreJump, encodeBoard, decodeBoard, fmtBoard, fmtDist, fmtPts } from './scoring.js';
+import { scoreJump, encodeBoard, decodeBoard, fmtBoard, fmtDist, fmtPts, gatePoints } from './scoring.js';
 import { InputRecorder, encodeGhost, decodeGhost, ghostJump, GHOST_MAX } from './ghost.js';
 import { createBot, BOT_ALPHA } from './bot.js';
 import { createWind } from './wind.js';
@@ -23,7 +23,7 @@ import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { Renderer, detectQuality, QUALITY, QUALITY_ORDER, reducedMotion } from './render/scene.js';
 import { DEFAULT_SKIN } from './render/jumper.js';
-import { resultOf, dailyPick, DAILY_TRIES, msToMidnight, isOpen, unlocksBy, unlockKey, unlockText } from './contest.js';
+import { resultOf, dailyPick, DAILY_TRIES, msToMidnight, isOpen, unlocksBy, unlockKey, unlockText, createJury, juryBeforeJump, steadyMean } from './contest.js';
 import { flagOf } from './jumpers.js';
 
 const GAME = 'skoki';
@@ -243,7 +243,7 @@ function renderMenu() {
         </div>
         <div class="mg-card">
           <h2 class="mg-title">Rekord skakalnice</h2>
-          <p class="sk-note">Trije skoki s privzetega zaletnega mesta (${H.gates.default}) in z naključnim vetrom. Šteje <b>najdaljši skok brez padca</b> (v metrih; enako dolge loči točkovanje), ki gre na lestvico ${esc(H.name)}.</p>
+          <p class="sk-note">Trije skoki v podobnem (naključnem) vetru; žirija zalet prilagodi vetru, kompenzacija je glede na privzeto mesto (${H.gates.default}). Šteje <b>najdaljši skok brez padca</b> (v metrih; enako dolge loči točkovanje), ki gre na lestvico ${esc(H.name)}.</p>
           <div class="sk-stats"><div><span class="mg-muted mg-small">Seja na ${esc(H.name)}</span><b>${tot.length} ${tot.length === 1 ? 'skok' : 'skokov'}</b></div>
             <div><span class="mg-muted mg-small">Najdaljši</span><b>${tot.length ? fmtDist(Math.max(...tot.map(j => j.dist))) : '—'}</b></div>
             <div><span class="mg-muted mg-small">Povprečje</span><b>${tot.length ? fmtDist(tot.reduce((a, j) => a + j.dist, 0) / tot.length) : '—'}</b></div>
@@ -435,7 +435,7 @@ function ensureRenderer() {
 async function startSession(hillId, mode) {
   G.ext = null;
   G.hillId = hillId; G.mode = mode;
-  G.record = mode === 'record' ? { tries: [], best: null } : null;
+  G.record = mode === 'record' ? newRecord(hillOf(hillId).def) : null;
   await enterPlay(hillId, { theme: mode === 'daily' ? G.daily?.theme : null });
   $('#hudMode').textContent = mode === 'record' ? 'Rekord skakalnice' : mode === 'daily' ? 'Dnevni izziv' : 'Trening';
   $('#barWho').innerHTML = hub.profile ? ui.who(hub.profile) : '';
@@ -475,9 +475,32 @@ async function enterPlay(hillId, { skin = null, theme = null } = {}) {
   if (!loopOn) { loopOn = true; last = performance.now(); requestAnimationFrame(loop); }
 }
 
+/** Nova seja »Rekord skakalnice«: seed ustaljenega vetra in žirija (začne pri privzetem mestu). */
+function newRecord(def) {
+  return { tries: [], best: null, seed: (Math.random() * 4294967295) >>> 0, jury: createJury(def) };
+}
+
+/* ---------------- sprememba zaletnega mesta (žirija): animacija s kompenzacijo */
+let gateFxTimer = 0;
+function hideGateChange() { clearTimeout(gateFxTimer); $('#gateFx')?.classList.add('mg-hidden'); }
+function showGateChange(ch) {
+  const el = $('#gateFx'); if (!el) return;
+  const down = ch.to < ch.from, pts = ch.pts || 0, w = ch.wind || 0;
+  const why = Math.abs(w) >= 0.05 ? `${w > 0 ? 'čelni' : 'hrbtni'} veter ${sign(w)} m/s` : 'veter se je umiril';
+  el.innerHTML = `<div class="sk-gatefx__box ${down ? 'down' : 'up'}">
+    <span class="sk-gatefx__lbl">🚩 Žirija · zaletno mesto</span>
+    <div class="sk-gatefx__nums"><b class="from">${ch.from}</b><i class="arrow">${down ? '▼' : '▲'}</i><b class="to">${ch.to}</b></div>
+    <span class="sk-gatefx__why">${esc(why)} · ${down ? 'nižji zalet' : 'višji zalet'}</span>
+    <span class="sk-gatefx__pts ${pts > 0 ? 'plus' : pts < 0 ? 'minus' : ''}">${pts ? (pts > 0 ? '+' : '') + fmt1(pts) + ' t kompenzacije' : 'brez kompenzacije'}</span></div>`;
+  el.classList.remove('mg-hidden');
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  try { audio.bells(2); } catch { /* */ }
+  clearTimeout(gateFxTimer); gateFxTimer = setTimeout(() => el.classList.add('mg-hidden'), 4200);
+}
+
 function windForJump() {
   const seed = (Math.random() * 4294967295) >>> 0;
-  if (G.mode === 'record') return { mode: 'random', seed };
+  if (G.mode === 'record') return { mode: 'steady', seed, speed: steadyMean(G.record.seed, G.record.tries.length) };
   if (settings.wind === 'const') return { mode: 'const', seed, speed: settings.windSpeed };
   return { mode: settings.wind === 'off' ? 'off' : 'random', seed };
 }
@@ -504,6 +527,14 @@ function newJump() {
   else if (G.mode === 'daily') G.gate = G.daily.gate;
   else G.gate = G.mode === 'record' ? H.def.gates.default : (G.trainGate?.[H.def.id] ?? H.def.gates.default);
   G.wind = X ? X.wind : G.mode === 'daily' ? G.daily.wind : windForJump();
+  // rekord skakalnice: žirija pred vsakim skokom prilagodi zalet vetru (kompenzacija glede na privzeto mesto)
+  let gateChange = X?.gateChange || null;
+  if (G.mode === 'record' && G.record && !H.def.physics?.noAir) {
+    const jb = juryBeforeJump(G.record.jury, H.def, G.wind.speed || 0, { always: true });
+    G.record.jury = jb.jury; G.gate = jb.jury.gate;
+    if (jb.change) gateChange = { ...jb.change, pts: gatePoints(H.def, jb.change.to, H.def.gates.default) };
+  }
+  G.gateChange = gateChange;
   G.mods = X ? X.mods || null : G.mode === 'daily' ? G.daily.mods : null;
   G.windObj = createWind(H.def.physics?.noAir ? { mode: 'off', seed: 0 } : G.wind, G.mods?.gust ? { ...P, wind: { ...P.wind, gustAmp: P.wind.gustAmp * G.mods.gust } } : P);
   G.J = createJump({ hill: H.hill, P, gate: G.gate, wind: G.wind, record: DEBUG ? 2 : 0, mods: G.mods });
@@ -524,7 +555,10 @@ function newJump() {
   if (X) { $('#hudMode').textContent = X.label || 'Tekma'; $('#barWho').innerHTML = X.whoHtml || esc(X.who?.name || ''); }
   $('#hudGhost').classList.toggle('mg-hidden', !G.ghosts.length);
   $('#hudGhost').textContent = '👻 ' + G.ghosts.map(g => g.name).join(', ');
-  $('#barGate').textContent = G.gate;
+  const refG = X ? X.refGate : G.mode === 'record' ? H.def.gates.default : null;
+  const gp = refG != null && refG !== G.gate ? gatePoints(H.def, G.gate, refG) : 0;
+  $('#barGate').innerHTML = gp ? `${G.gate} <small class="${gp > 0 ? 'plus' : 'minus'}">${gp > 0 ? '+' : ''}${fmt1(gp)}</small>` : String(G.gate);
+  if (G.gateChange) showGateChange(G.gateChange); else hideGateChange();
   $('#barSpeed').textContent = '—';
   $('#big').classList.add('mg-hidden');
   $('#comment').classList.add('mg-hidden');
@@ -950,7 +984,7 @@ function hideResult() { $('#card').classList.add('mg-hidden'); }
 function action(a) {
   audio.unlock();
   if (a === 'next') newJump();
-  else if (a === 'again') { G.record = { tries: [], best: null }; newJump(); }
+  else if (a === 'again') { G.record = newRecord(hillOf(G.hillId).def); newJump(); }
   else if (a === 'replay') startReplay();
   else if (a === 'menu') { hideResult(); showMenu(); }
   else if (a === 'daily') { hideResult(); startDaily(); }

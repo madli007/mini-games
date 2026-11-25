@@ -4,6 +4,7 @@
      off    — brez vetra
      const  — stalen veter `speed` (m/s, + = čelni), le majhni sunki
      random — povprečje iz seeda (−3 … +3 m/s), počasna sprememba vzdolž doskočišča in sunki
+     steady — povprečje `speed` (tekma, rekord skakalnice: veter je od skoka do skoka podoben), zmerni sunki
    at(t, x) → { h, v }: h = čelna komponenta (+ = proti skakalcu, ugodno), v = navpična (+ = gor).
    ===================================================================== */
 import { noise1, prng, clamp } from './dmath.js';
@@ -12,10 +13,10 @@ export const WIND_MAX = 3;
 
 /** Normaliziraj konfiguracijo vetra (za ghost in prikaz). */
 export function windConfig(c = {}) {
-  const mode = ['off', 'const', 'random'].includes(c.mode) ? c.mode : 'off';
+  const mode = ['off', 'const', 'random', 'steady'].includes(c.mode) ? c.mode : 'off';
   const seed = (c.seed >>> 0) || 0;
   const speed = clamp(Math.round((+c.speed || 0) * 10) / 10, -WIND_MAX, WIND_MAX);
-  return { mode, seed, speed: mode === 'const' ? speed : 0 };
+  return { mode, seed, speed: mode === 'const' || mode === 'steady' ? speed : 0 };
 }
 
 /**
@@ -34,6 +35,8 @@ export function createWind(cfg, P) {
     gust = W.gustAmp; along = W.varAlong;
   } else if (cfg.mode === 'const') {
     mean = cfg.speed; gust = W.gustAmp * 0.4; along = W.varAlong * 0.3;
+  } else if (cfg.mode === 'steady') {
+    mean = cfg.speed; gust = W.gustAmp * 0.75; along = W.varAlong * 0.6;
   }
   const s1 = (cfg.seed * 7 + 1) | 0, s2 = (cfg.seed * 13 + 2) | 0, s3 = (cfg.seed * 17 + 3) | 0, s4 = (cfg.seed * 19 + 4) | 0;
   const off = cfg.mode === 'off';
