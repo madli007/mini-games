@@ -11,7 +11,8 @@ import { normalizeRoomCode, level as levelOf } from '../util.js';
 const KNOWN = ['room_not_found', 'room_started', 'room_full', 'version_conflict', 'not_next_host',
   'no_profile', 'not_authenticated', 'too_many_rooms', 'move_conflict',
   'not_enough_coins', 'not_owned', 'not_free', 'locked', 'owned', 'unavailable', 'claimed', 'expired',
-  'impossible_time', 'ghost_too_big', 'unknown_level', 'invalid_level', 'level_too_big', 'too_many_levels'];
+  'impossible_time', 'ghost_too_big', 'unknown_level', 'invalid_level', 'level_too_big', 'too_many_levels',
+  'cup_closed', 'cup_already', 'cup_no_r1', 'cup_cut', 'cup_too_big', 'cup_impossible', 'cup_unknown'];
 const MESSAGES = {
   room_not_found: 'Soba s to kodo ne obstaja.',
   room_started: 'Igra v tej sobi se je že začela.',
@@ -31,6 +32,13 @@ const MESSAGES = {
   invalid_level: 'Proga ni veljavna (ime 2–40 znakov, mreža, čas autopilota).',
   level_too_big: 'Proga je prevelika za objavo (največ ~60 KB).',
   too_many_levels: 'Objaviš lahko največ 20 prog — najprej umakni katero od starih.',
+  cup_closed: 'Serija ni odprta.',
+  cup_already: 'To serijo si že skočil.',
+  cup_no_r1: 'Najprej skoči 1. serijo.',
+  cup_cut: 'Nisi se uvrstil v 2. serijo.',
+  cup_too_big: 'Zapis skoka je neveljaven ali prevelik.',
+  cup_impossible: 'Nemogoč rezultat.',
+  cup_unknown: 'Neznana postaja.',
 };
 
 /** Vrstica objavljene proge (profil avtorja splošči kot pri ghostih). */
@@ -261,6 +269,27 @@ export class SupabaseBackend {
   async getGhost({ game, level, mirror = false, userId = this.userId }) {
     const t = game.replace(/-/g, '_') + '_ghosts';
     return check(await this.client.from(t).select('user_id,time_ms,data').eq('user_id', userId).eq('level', level).eq('mirror', !!mirror).maybeSingle());
+  }
+
+  /* ------------------------------- pokal --------------------------------- */
+  // Tabela <igra>_cup_jumps (pisanje le prek RPC <igra>_cup_submit), pogled <igra>_cup_board (brez vnosov, s profilom).
+
+  async cupSubmit({ game, season, event, round, points, dist = 0, inputs, paramsVersion = 1 }) {
+    const fn = game.replace(/-/g, '_') + '_cup_submit';
+    return check(await this.client.rpc(fn, { p_season: season, p_event: event, p_round: round, p_points: points, p_dist: dist, p_inputs: inputs, p_params_version: paramsVersion }));
+  }
+
+  async cupStandings({ game, season }) {
+    const t = game.replace(/-/g, '_') + '_cup_board';
+    return check(await this.client.from(t).select('user_id,season,event,round,points,dist,params_version,created_at,nickname,avatar,equipped')
+      .eq('season', season).order('event').order('round').limit(5000)).map(r => ({ ...r, points: +r.points, dist: +r.dist }));
+  }
+
+  async cupJump({ game, season, event, round, userId }) {
+    const t = game.replace(/-/g, '_') + '_cup_jumps';
+    const r = check(await this.client.from(t).select('user_id,event,round,points,dist,params_version,inputs')
+      .eq('season', season).eq('event', event).eq('round', round).eq('user_id', userId).maybeSingle());
+    return r ? { ...r, points: +r.points, dist: +r.dist } : null;
   }
 
   /* ------------------------ objavljene proge igralcev ------------------------ */

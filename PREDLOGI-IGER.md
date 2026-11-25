@@ -16,7 +16,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 19. Zaporedje | ✅ | `games/zaporedje/` |
 | Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj | `games/herodle/` |
 | 40. Dirka frnikol | 🟡 1. del ✅, 📝 2.–4. del | `games/frnikole/` |
-| 36. Smučarski skoki | 🟡 1. in 2. faza ✅ (tekma, dnevni izziv, letalnica), prave skakalnice ✅, 📝 pokal | `games/skoki/`, prompti 12, 29, 13 |
+| 36. Smučarski skoki | ✅ vse tri faze (tekma, dnevni izziv, letalnica, svetovni pokal, kariera, oprema v trgovini), prave skakalnice ✅ | `games/skoki/`, prompti 11, 12, 29, 13 |
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
@@ -180,6 +180,8 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 
 ### Trgovina: predmeti za posamezne igre (razširitev obstoječe trgovine)
 
+**Stanje:** ✅ osnova narejena v `13-skoki-pokal` (splošno za vse igre: `GAME_ITEMS`, `equipped.games`, `hub.gameItem`, zavihek »Za igre«) — predmeti za skoke; Krogla in Pinball ⬜ (dodata le predmete).
+
 Trgovina (`prompts/02-trgovina.md`) je že narejena, vendar ima samo kozmetiko profila (`emoji`, `bg`, `frame`,
 `name`, `title`, `badge`, `win`, `banner` v `shared/cosmetics.js`). Predmetov, ki se vidijo **v sami igri**,
 še ni. To spada v ločen prompt za trgovino (npr. `03-trgovina-igre.md`) in ne v prompt posamezne igre:
@@ -313,8 +315,8 @@ dnevni lestvici takoj vidi rivalstvo.
 
 ### Šport
 
-36. 🟡 **Smučarski skoki** ★★★ (1. in 2. faza in prave skakalnice ✅ `games/skoki/`, 📝 pokal)
-    - **Stanje:** 📝 prompti napisani, čakajo: `11-skoki`, `12-skoki-tekma`, `13-skoki-pokal`
+36. ✅ **Smučarski skoki** ★★★ (vse tri faze in prave skakalnice ✅ `games/skoki/`)
+    - **Stanje:** ✅ narejeno (`11-skoki`, `12-skoki-tekma`, `29-skoki-prave-skakalnice`, `13-skoki-pokal`): svetovni pokal (sezona = mesec, Supabase/offline), Turneja 4 skakalnic, kariera v treh ligah, oprema v trgovini (»Za igre«). Ni narejeno: sled v zraku, zasebni pokal.
     - **Žanr:** 2D pogled od strani, precizen tajming in balansiranje v letu z miško. Ime, skakalnice in
       grafika so naši (ne kopija nobene obstoječe igre).
     - **Faze skoka:**
@@ -442,7 +444,7 @@ igri za TV.
 Igre v slogu Smučarskih skokov (36): jasne faze, deterministični replayi iz vnosov, prava pravila točkovanja,
 tekma med prijatelji in sezona.
 
-**Skupna osnova: športni okvir.** Ko bodo narejeni skoki, iz njih izlušči skupni modul (npr. `games/skoki/sport/`
+**Skupna osnova: športni okvir.** ✅ `shared/sport/` (tekma v serijah, replay v živo, sezona pokala, KO/turneja, kariera — `shared/sport/README.md`). Prvotni predlog: ko bodo narejeni skoki, iz njih izlušči skupni modul (npr. `games/skoki/sport/`
 ali `shared/sport.js`): tekma v serijah (v drugi obraten vrstni red), replay v živo iz vnosov, sezona svetovnega
 pokala s točkami 100-80-60…, dnevno prizorišče in vreme po seedu, kariera z odklepanjem prizorišč. Vsaka spodnja
 igra potem vse to dobi skoraj zastonj.

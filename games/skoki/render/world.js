@@ -104,7 +104,7 @@ function dashedLineAt(hill, s, w, color, emissive = 1, { dash = 1.4, gap = 0.9 }
  * @param {Object} q nastavitve kakovosti (scene.js QUALITY)
  * @returns {{group:THREE.Group, recordLine:Function, hillRecordLine:Function, gateBars:THREE.Object3D[], setGate:Function, terrainAt:Function, crowdAnchor:THREE.Vector3}}
  */
-export function buildWorld(hill, q) {
+export function buildWorld(hill, q, { crowdFlag = null } = {}) {
   const T = hill.def.theme;
   const seed = hill.id.length * 7 + 3;
   const group = new THREE.Group();
@@ -528,6 +528,8 @@ export function buildWorld(hill, q) {
     const flags = Math.round(40 * (T.crowd ?? 1) * q.decor);
     const fg = new THREE.PlaneGeometry(1.2, 0.8, 8, 2); fg.translate(0.6, 0, 0);
     const sets = [['#ffffff', '#1e66ff', '#e3263a'], ['#e3263a', '#ffffff', '#e3263a'], ['#000000', '#e3263a', '#ffd23f'], ['#1e66ff', '#ffd23f', '#1e66ff'], ['#ffffff', '#e3263a', '#ffffff']];
+    // zastavica iz trgovine (oprema skakalca): vsaka druga zastava v publiki
+    if (crowdFlag) sets.splice(0, sets.length, ...sets.flatMap(x => [x, crowdFlag]));
     const pole = new THREE.CylinderGeometry(0.02, 0.02, 2.2, 4); pole.translate(0, 1.1, 0);
     const poleM = new THREE.MeshStandardMaterial({ color: '#888', metalness: 0.8, roughness: 0.4 });
     for (let i = 0; i < flags; i++) {

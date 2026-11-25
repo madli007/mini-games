@@ -487,12 +487,12 @@ export const hub = {
       : [[], { level: 1, achievements: [], streak: 0 }];
     const owned = new Set(inv.map(i => i.item_id));
     const eq = hub.profile?.equipped || {};
-    const items = K.CATALOG.filter(i => i.active !== false).map(it => {
+    const items = [...K.CATALOG, ...K.GAME_ITEMS].filter(i => i.active !== false).map(it => {
       const u = K.checkUnlock(it.unlock, st);
       const free = K.isFree(it);
       return {
         ...it, owned: owned.has(it.id) || free, free, locked: !u.ok, reason: u.reason,
-        offer: offer.includes(it.id), priceToday: K.priceToday(it, offer), equipped: eq[it.kind] === it.id,
+        offer: offer.includes(it.id), priceToday: K.priceToday(it, offer), equipped: K.isEquipped(eq, it),
       };
     });
     return { items, offer, coins: hub.coins, equipped: eq, owned, state: st };
@@ -512,7 +512,8 @@ export const hub = {
 
   /**
    * Opremi predmet v slot (null sname).
-   * @param {'emoji'|'bg'|'frame'|'name'|'title'|'badge'|'win'|'banner'} slot
+   * Predmeti za igre: slot '<igra>.<slot>', npr. hub.equip('skoki.suit', 'skoki-suit-neon') → equipped.games.skoki.suit.
+   * @param {'emoji'|'bg'|'frame'|'name'|'title'|'badge'|'win'|'banner'|string} slot
    * @param {string|null} itemId
    */
   async equip(slot, itemId = null) {
@@ -522,6 +523,45 @@ export const hub = {
     hub._emitProfile();
     if (hub.room && !hub.room.left) hub.room._updateProfile(hub.profile);
     return equipped;
+  },
+
+  /**
+   * Moj opremljen predmet za igro (ali null): hub.gameItem('skoki', 'suit') → { id, name, value, … }.
+   * Za druge igralce: cosmetics.gameItemOf(p.equipped, igra, slot) (equipped je v room.players, lestvicah, ghostih).
+   */
+  gameItem(game, slot, equipped = hub.profile?.equipped) {
+    return K.gameItemOf(equipped, game, slot);
+  },
+
+  /* --------------------------- pokal (sezona) --------------------------- */
+  // Asinhrono tekmovanje v sezoni (npr. svetovni pokal skokov). Supabase: tabela <igra>_cup_jumps, pogled
+  // <igra>_cup_board (zapisi + profil), RPC <igra>_cup_submit (okna postaj v <igra>_cup_events). Offline: localStorage.
+  // Napake (e.code): cup_closed, cup_already, cup_no_r1, cup_cut, cup_too_big, cup_impossible, cup_unknown, no_profile.
+
+  /**
+   * Oddaj skok/rezultat serije postaje.
+   * @param {{season:string, event:number, round:1|2, points:number, dist?:number, inputs:string, paramsVersion?:number,
+   *          window?:{opens:number, r2:number, closes:number}, now?:number, cut?:number, maxPoints?:number, game?:string}} o
+   *   window/now/cut/maxPoints uporabi le offline adapter (Supabase okna in meje pozna strežnik).
+   */
+  async cupSubmit({ season, event, round, points, dist = 0, inputs, paramsVersion = 1, window = null, now = Date.now(), cut = 30, maxPoints = 1000, game = hub.gameId }) {
+    if (!hub.profile) throw codedError('no_profile', 'Najprej izberi vzdevek.');
+    return hub.backend.cupSubmit({ game, season, event, round, points: Math.round(points * 10) / 10, dist: Math.round(dist * 10) / 10, inputs, paramsVersion, window, now, cut, maxPoints });
+  },
+
+  /**
+   * Vsi zapisi sezone (brez vnosov): [{ user_id, season, event, round, points, dist, params_version, created_at, nickname, avatar, equipped }].
+   * Razvrstitve izračuna igra (shared/sport/season.js).
+   */
+  async cupStandings({ season, game = hub.gameId }) {
+    try { return await hub.backend.cupStandings({ game, season }); }
+    catch (e) { console.warn('cupStandings:', e.message); return []; }
+  },
+
+  /** En zapis z vnosi (replay, ghost): { user_id, event, round, points, dist, params_version, inputs } ali null. */
+  async cupJump({ season, event, round, userId, game = hub.gameId }) {
+    try { return await hub.backend.cupJump({ game, season, event, round, userId }); }
+    catch (e) { console.warn('cupJump:', e.message); return null; }
   },
 
   /** Moj inventar: [{ item_id, acquired_at, source }]. */

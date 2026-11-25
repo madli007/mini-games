@@ -151,10 +151,86 @@ export const CATALOG = [
 ];
 /* eslint-enable max-len */
 
-const BY_ID = new Map(CATALOG.map(i => [i.id, i]));
+/* =====================================================================
+   PREDMETI ZA POSAMEZNE IGRE (»Za igre«) — samo videz, fizika je za vse enaka.
+   { id, kind: 'game', game: '<id igre>', slot, name, desc, rarity, price, unlock, value }
+   Opremljeni so v equipped.games.<igra>.<slot>; opremljanje: hub.equip('<igra>.<slot>', id).
+   Igra jih bere s hub.gameItem(igra, slot) (moja oprema) ali gameItemOf(p.equipped, igra, slot) (drug igralec).
+   SQL: blok GAME_ITEMS v schema.sql (node tools/shop-sql.mjs). Niso v dnevni ponudbi.
+   ===================================================================== */
 
-/** Predmet po id-ju (ali undefined). */
+/** Sloti po igrah (vrstni red = podzavihki v trgovini). */
+export const GAME_SLOTS = { skoki: ['suit', 'helmet', 'skis', 'flag'] };
+export const GAME_NAMES = { skoki: 'Smučarski skoki' };
+export const GAME_ICONS = { skoki: '🎿' };
+export const GAME_SLOT_LABEL = { suit: 'Dresi', helmet: 'Čelade', skis: 'Smuči', flag: 'Zastavice' };
+export const GAME_SLOT_ONE = { suit: 'dres', helmet: 'čelada', skis: 'smuči', flag: 'zastavica' };
+
+const sk = (slot, key, name, desc, rarity, price, unlock, value) => ({ id: `skoki-${slot}-${key}`, kind: 'game', game: 'skoki', slot, name, desc, rarity, price, unlock, value });
+const ACH = a => ({ achievement: 'skoki:' + a });
+/* eslint-disable max-len */
+export const GAME_ITEMS = [
+  // dresi: { suit, suit2 }
+  sk('suit', 'klasika', 'Klasični', 'Modro-bel dres, kot ga poznamo.', C, 80, null, { suit: '#1e66ff', suit2: '#ffffff' }),
+  sk('suit', 'rdeca', 'Rdeča puščica', 'Rdeč dres s temno modrimi rokavi.', C, 100, null, { suit: '#e63946', suit2: '#1d3557' }),
+  sk('suit', 'polnoc', 'Polnočni', 'Temno moder s cian robovi.', C, 120, null, { suit: '#14183a', suit2: '#4de1ff' }),
+  sk('suit', 'neon', 'Neonski', 'Zelen neon z roza črtami — vidiš ga z Lune.', R, 250, null, { suit: '#39ff88', suit2: '#ff4fd8' }),
+  sk('suit', 'zima', 'Zimski vzorec', 'Bel dres z ledeno modrimi vzorci.', R, 280, null, { suit: '#e9f4ff', suit2: '#4d8fd6' }),
+  sk('suit', 'retro', 'Retro 80-ih', 'Oranžno-vijoličen, kot s stare kasete.', R, 320, null, { suit: '#ff8a1f', suit2: '#7b2ff7' }),
+  sk('suit', 'orel', 'Orel', 'Rjav dres z zlatimi krili.', E, 750, null, { suit: '#5a3a1a', suit2: '#ffd23f' }),
+  sk('suit', 'angel', 'Snežni angel', 'Dosežek: 50 padcev. Kdor pade, vstane.', R, 0, ACH('padci-50'), { suit: '#ffffff', suit2: '#a8d8ff' }),
+  sk('suit', 'luna', 'Lunin', 'Dosežek: skok na Luni.', E, 0, ACH('luna'), { suit: '#c9ccd6', suit2: '#3b3f55' }),
+  sk('suit', 'zlati', 'Zlati', 'Dosežek: zmaga v sezoni svetovnega pokala.', E, 0, ACH('sezona'), { suit: '#d4a017', suit2: '#fff1b0' }),
+  // čelade: { helmet }
+  sk('helmet', 'bela', 'Bela', 'Preprosta bela čelada.', C, 60, null, { helmet: '#f4f6fb' }),
+  sk('helmet', 'crna', 'Črna', 'Mat črna.', C, 80, null, { helmet: '#15161c' }),
+  sk('helmet', 'neon', 'Neon roza', 'Žareča roza čelada.', R, 220, null, { helmet: '#ff4fd8' }),
+  sk('helmet', 'plamen', 'Plamen', 'Oranžna kot ogenj.', R, 300, null, { helmet: '#ff6a00' }),
+  sk('helmet', 'krom', 'Krom', 'Zrcalna kovinska čelada.', E, 700, null, { helmet: '#c8d0e0', goggles: '#4de1ff' }),
+  sk('helmet', 'rumena', 'Rumena', 'Dosežek: vodstvo v sezoni pokala.', E, 0, ACH('rumena'), { helmet: '#ffd400' }),
+  // smuči: { skis, skiTip }
+  sk('skis', 'bele', 'Bele', 'Bele smuči z rdečimi konicami.', C, 60, null, { skis: '#f4f6fb', skiTip: '#e63946' }),
+  sk('skis', 'crne', 'Črne', 'Črne smuči z zelenimi konicami.', C, 90, null, { skis: '#111318', skiTip: '#39ff88' }),
+  sk('skis', 'les', 'Lesene', 'Retro smuči iz jesena.', R, 250, null, { skis: '#8b5a2b', skiTip: '#f2d7a6' }),
+  sk('skis', 'mavrica', 'Vijolične', 'Vijolične z rumenimi konicami.', R, 300, null, { skis: '#7b2ff7', skiTip: '#ffd23f' }),
+  sk('skis', 'ogenj', 'Ognjene', 'Rdeče-rumene, za najhitrejši zalet (le na videz).', E, 650, null, { skis: '#ff3b1f', skiTip: '#ffd23f' }),
+  sk('skis', 'letalec', 'Letalec', 'Dosežek: skok čez 200 m.', E, 0, ACH('letalec'), { skis: '#1b2a6e', skiTip: '#ffffff' }),
+  // zastavice: { code, emoji, colors } — na čeladi, ob imenu in v publiki
+  sk('flag', 'si', 'Slovenija', 'Zastavica na čeladi in v publiki.', C, 40, null, { code: 'si', emoji: '🇸🇮', colors: ['#ffffff', '#1e66ff', '#e3263a'] }),
+  sk('flag', 'at', 'Avstrija', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'at', emoji: '🇦🇹', colors: ['#ed2939', '#ffffff', '#ed2939'] }),
+  sk('flag', 'de', 'Nemčija', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'de', emoji: '🇩🇪', colors: ['#000000', '#dd0000', '#ffce00'] }),
+  sk('flag', 'no', 'Norveška', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'no', emoji: '🇳🇴', colors: ['#ba0c2f', '#ffffff', '#00205b'] }),
+  sk('flag', 'pl', 'Poljska', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'pl', emoji: '🇵🇱', colors: ['#ffffff', '#dc143c', '#dc143c'] }),
+  sk('flag', 'fi', 'Finska', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'fi', emoji: '🇫🇮', colors: ['#ffffff', '#003580', '#ffffff'] }),
+  sk('flag', 'jp', 'Japonska', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'jp', emoji: '🇯🇵', colors: ['#ffffff', '#bc002d', '#ffffff'] }),
+  sk('flag', 'ch', 'Švica', 'Zastavica na čeladi in v publiki.', C, 60, null, { code: 'ch', emoji: '🇨🇭', colors: ['#d52b1e', '#ffffff', '#d52b1e'] }),
+  sk('flag', 'pirat', 'Piratska', 'Za tiste, ki skačejo po svoje.', R, 200, null, { code: 'pirat', emoji: '🏴‍☠️', colors: ['#111111', '#ffffff', '#111111'] }),
+  sk('flag', 'mavrica', 'Mavrična', 'Vse barve na tribuni.', R, 200, null, { code: 'mavrica', emoji: '🏳️‍🌈', colors: ['#e40303', '#ffed00', '#004dff'] }),
+];
+/* eslint-enable max-len */
+
+const BY_ID = new Map([...CATALOG, ...GAME_ITEMS].map(i => [i.id, i]));
+
+/** Predmet po id-ju (ali undefined) — kozmetika profila ali predmet za igro. */
 export function item(id) { return id ? BY_ID.get(id) : undefined; }
+
+/** Slot za igro v obliki '<igra>.<slot>' → { game, slot } ali null. */
+export function parseGameSlot(s) {
+  const m = /^([a-z0-9-]{1,32})\.([a-z]{1,16})$/.exec(String(s || ''));
+  return m && GAME_SLOTS[m[1]]?.includes(m[2]) ? { game: m[1], slot: m[2] } : null;
+}
+
+/** Opremljen predmet za igro iz equipped (drug igralec: room.players[i].equipped, vrstica lestvice …) ali null. */
+export function gameItemOf(equipped, game, slot) {
+  const it = item(equipped?.games?.[game]?.[slot]);
+  return it && it.kind === 'game' && it.game === game && it.slot === slot ? it : null;
+}
+
+/** Ali je predmet opremljen v equipped (profil ali igra)? */
+export function isEquipped(equipped, it) {
+  if (!it) return false;
+  return it.kind === 'game' ? equipped?.games?.[it.game]?.[it.slot] === it.id : equipped?.[it.kind] === it.id;
+}
 
 /** Prazna oprema. */
 export function emptyEquipped() {

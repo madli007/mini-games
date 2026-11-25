@@ -13,7 +13,7 @@ import {
   uuid, dailySeed, grantableXp, bestPerUser, makeRoomCode, normalizeRoomCode, level as levelOf,
 } from '../util.js';
 import { COINS, grantableCoins, isCapped, levelReward, nextStreak, gameRewards, offerPrice } from '../economy.js';
-import { item as catalogItem, checkUnlock, isFree, dailyOffer, SLOTS } from '../cosmetics.js';
+import { item as catalogItem, checkUnlock, isFree, dailyOffer, SLOTS, parseGameSlot } from '../cosmetics.js';
 import { PERIOD_RE, QUEST_ID_RE, dayPeriod, weekPeriod } from '../quests.js';
 
 const LEASE_MS = 6000;           // glavni profil je zaseden, dokler ga zavihek osvežuje
@@ -265,11 +265,29 @@ export class LocalBackend {
   }
 
   async equip(slot, itemId = null) {
-    if (!SLOTS.includes(slot)) throw codedError('invalid', 'Neznan slot.');
+    const gs = parseGameSlot(slot);
+    if (!SLOTS.includes(slot) && !gs) throw codedError('invalid', 'Neznan slot.');
     const all = this._profiles();
     const p = all[this.userId];
     if (!p) throw codedError('no_profile');
     const eq = { ...(p.equipped || {}) };
+    if (gs) {
+      // predmet za igro: equipped.games.<igra>.<slot> (enako kot private.equip v schema.sql)
+      const games = { ...(eq.games || {}) };
+      const g = { ...(games[gs.game] || {}) };
+      if (itemId == null) delete g[gs.slot];
+      else {
+        const it = catalogItem(itemId);
+        if (!it || it.kind !== 'game' || it.game !== gs.game || it.slot !== gs.slot) throw codedError('invalid', 'Napačen predmet.');
+        if (!this._inv()[it.id] && !(isFree(it) && it.active !== false)) throw codedError('not_owned', 'Tega predmeta nimaš.');
+        g[gs.slot] = it.id;
+      }
+      if (Object.keys(g).length) games[gs.game] = g; else delete games[gs.game];
+      if (Object.keys(games).length) eq.games = games; else delete eq.games;
+      p.equipped = eq;
+      S.save('db:profiles', all);
+      return eq;
+    }
     if (itemId == null) delete eq[slot];
     else {
       const it = catalogItem(itemId);
@@ -422,6 +440,43 @@ export class LocalBackend {
   async getGhost({ game, level, mirror = false, userId = this.userId }) {
     const g = S.load('db:ghosts', {})[`${game}|${level}|${mirror ? 1 : 0}|${userId}`];
     return g ? { user_id: g.user_id, time_ms: g.time_ms, data: g.data } : null;
+  }
+
+  /* ------------------------------- pokal --------------------------------- */
+  // Enaka pravila kot RPC <igra>_cup_submit (supabase/games/skoki.sql): okno postaje (podano iz koledarja igre),
+  // en zapis na serijo, 2. serija le z 1. serijo in uvrstitvijo med `cut`, velikost vnosov, smiselne točke.
+
+  async cupSubmit({ game, season, event, round, points, dist = 0, inputs, paramsVersion = 1, window = null, now = Date.now(), cut = 30, maxPoints = 1000 }) {
+    if (!(await this.getProfile())) throw codedError('no_profile', 'Najprej izberi vzdevek.');
+    if (!/^\d{4}-\d{2}$/.test(season || '') || !(event >= 1 && event <= 40) || ![1, 2].includes(round)) throw codedError('cup_unknown', 'Neznana postaja.');
+    if (!window || !(now >= window.opens && now < window.closes) || (round === 2 && now < window.r2)) throw codedError('cup_closed', 'Serija ni odprta.');
+    if (typeof inputs !== 'string' || inputs.length > 6000 || !/^[A-Za-z0-9+/=]+$/.test(inputs)) throw codedError('cup_too_big', 'Zapis skoka je neveljaven ali prevelik.');
+    if (!(points >= 0 && points <= maxPoints) || !(dist >= 0 && dist < 500)) throw codedError('cup_impossible', 'Nemogoč rezultat.');
+    const all = S.load('db:cup', []);
+    const mine = all.filter(r => r.game === game && r.season === season && r.event === event && r.user_id === this.userId);
+    if (mine.some(r => r.round === round)) throw codedError('cup_already', 'To serijo si že skočil.');
+    if (round === 2) {
+      const my1 = mine.find(r => r.round === 1);
+      if (!my1) throw codedError('cup_no_r1', 'Najprej skoči 1. serijo.');
+      const better = all.filter(r => r.game === game && r.season === season && r.event === event && r.round === 1 && r.points > my1.points).length;
+      if (better >= cut) throw codedError('cup_cut', 'Nisi se uvrstil v 2. serijo.');
+    }
+    const row = { game, season, event, round, user_id: this.userId, points: Math.round(points * 10) / 10, dist: Math.round(dist * 10) / 10, inputs, params_version: paramsVersion | 0, created_at: new Date(now).toISOString() };
+    all.push(row);
+    S.save('db:cup', all.slice(-4000));
+    return { saved: true };
+  }
+
+  async cupStandings({ game, season }) {
+    const profs = this._profiles();
+    return S.load('db:cup', []).filter(r => r.game === game && r.season === season).map(({ inputs, game: _g, ...r }) => ({
+      ...r, nickname: profs[r.user_id]?.nickname || '???', avatar: profs[r.user_id]?.avatar || { emoji: '❔', color: '#888' }, equipped: profs[r.user_id]?.equipped || {},
+    }));
+  }
+
+  async cupJump({ game, season, event, round, userId }) {
+    const r = S.load('db:cup', []).find(x => x.game === game && x.season === season && x.event === event && x.round === round && x.user_id === userId);
+    return r ? { user_id: r.user_id, event: r.event, round: r.round, points: r.points, dist: r.dist, params_version: r.params_version, inputs: r.inputs } : null;
   }
 
   /* ------------------------ objavljene proge igralcev ------------------------ */

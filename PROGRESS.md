@@ -1140,3 +1140,92 @@ Prompt: `prompts/28-ustavi-uro.md`. Stanje: **končano** (25. 11. 2026).
 
 - Vse skakalnice odprte, Luna po skoku čez K na kateri koli letalnici; oznake ✓ K / ⭐ HS na karticah, dosežka »Zbiratelj K-točk« in »Do HS povsod«.
 - Preverjeno: testi 202/202, meni v brskalniku (21/22 odprtih, Luna zaklenjena s pravim besedilom).
+
+# Smučarski skoki — 3. faza: svetovni pokal, kariera, oprema, športni okvir (`prompts/13-skoki-pokal.md`, 26. 11. 2026)
+
+Stanje: **narejeno v kodi in preverjeno offline**; SQL **ni pognan** v Supabase (glej »Kaj mora uporabnik narediti«).
+
+### Načrt
+- [x] Športni okvir v `shared/sport/`: `season.js` (koledar sezone iz meseca + seeda, ljubljanski čas s prehodom CET/CEST,
+  točke pokala 100-80-60 … 1, razvrstitev postaje/sezone z izenačenji, rez 30, rumena majica, gibanje mest, turneja, naslovi),
+  `ko.js` (KO pari 1.–50., srečni poraženci, seštevek turneje), `career.js` (lige, rivali iz seeda s formo in značajem,
+  koledar kariera-sezone, napredovanje, izvoz/uvoz); `competition.js` dobi `ko: true` (stare tekme nespremenjene)
+- [x] Hub: predmeti za igre (splošno za vse igre: `kind: 'game'`, `game`, `slot`, `equipped.games.<igra>.<slot>`,
+  `hub.gameItem`, `hub.equip('<igra>.<slot>', id)`, oba adapterja), pokal (`hub.cupSubmit/cupStandings/cupJump`, oba adapterja)
+- [x] SQL: `schema.sql` (stolpca `game`/`slot`, `kind` 'game', blok GAME_ITEMS, `equip` za slote iger, dnevna ponudba brez
+  predmetov za igre, `equipped` do 2000 B); `skoki.sql` (`skoki_cup_events`, `skoki_cup_jumps`, pogled `skoki_cup_board`,
+  RPC `skoki_cup_submit`, blok CUP_EVENTS iz `tools/skoki-cup-sql.mjs`)
+- [x] Igra: `cup.js` (zaslon pokala, uradni skoki, trening postaje z ghosti, replay vsakega skoka, nagrade), `career-ui.js`,
+  `gear.js` (oprema → videz), `cup-config.js` (skakalni del koledarja in lige); oprema na skakalcu v treningu, tekmi
+  (presence), ghostih, replayih, zastavica v publiki in ob imenu; rumena majica v tekmi in treningu; obvestilo v meniju
+- [x] Turneja 4 skakalnic: v koledarju pokala (december) + format »Turneja« v Lokalni in spletni Tekmi (KO pari v 1. seriji)
+- [x] Trgovina: zavihek »Za igre« (filter po igri in kosu, predogled skakalca z mojo opremo), garderoba »Moje« po igrah
+- [x] 32 predmetov za skoke (10 dresov, 6 čelad, 6 smuči, 10 zastavic; 5 z odklepom z dosežki), 11 novih dosežkov, 3 naloge
+- [x] Testi: `tests/sport3.js` (13), `tests/skoki4.js` (10); vsi obstoječi testi nespremenjeni
+
+### Odločitve
+- **Okna postaj v tabeli** `skoki_cup_events` (ne koledar v PL/pgSQL): koledar je ena funkcija v JS (`cupCalendar`), SQL blok
+  ustvari orodje, test preveri, da se blok ujema s koledarjem. Sezone so vnaprej do `LAST_SEASON` 2028-12 — pred tem podaljšaj
+  in znova poženi blok (to je edina slabost).
+- **1. serija je odprta ves čas postaje, 2. le zadnji dan.** Rez (najboljših 30 po 1. seriji, izenačeni vsi) RPC preveri ob
+  oddaji 2. serije; v razvrstitvi šteje 2. serija le tistim, ki so v rezu po končni 1. seriji. Med prijatelji (< 30) gre naprej vsak.
+- **KO pari v pokalu izklopljeni** (asinhrono, < 50 skakalcev); v Lokalni/spletni Tekmi format »Turneja«: pari po istem pravilu
+  pri ≥ 4 skakalcih, srečnih poražencev round(N/10) (50 → 5), liho število = srednji brez para naprej, izenačenje v paru: oba.
+  Nasev 1. tekme naključen, nato po skupni razvrstitvi turneje.
+- **Turneja v koledarju:** v decembrski sezoni štiri postaje pred finalom (Oberstdorf → Garmisch → Innsbruck → Bischofshofen).
+  Ime »Turneja 4 skakalnic«, brez imen in podobe prave turneje.
+- **Pokal samo na pravih skakalnicah** (9 velikih + srednja Planica, letalnice); finale na letalnici (75 % Planica), ena letalnica
+  sredi sezone (»Kralj letalnic«). Pogoji: brez, sneženje, noč, sunki (brez Lune in »samo telemark«). Zalet: žirija po
+  napovedi vetra postaje (kompenzacija glede na privzeto mesto), isti za vse.
+- **Športni okvir v `shared/sport/`** (prej `games/skoki/sport/`): `competition.js`, `live-replay.js`, `season.js`, `ko.js`,
+  `career.js` nimajo skakalnih pojmov (»prizorišče«, »serija«, »točke«), zato jih lahko neposredno uporabi biatlon/slalom.
+  Stara pot `games/skoki/sport/*.js` ostane kot re-export (stari uvozi, obstoječi testi).
+- **Predmeti za igre niso v dnevni ponudbi** (kozmetika profila in njena ponudba ostaneta natanko enaki — referenčni test).
+- **Sled v zraku (`trail`) ni narejena** (neobvezno); sloti skokov: dres, čelada, smuči, zastavica.
+- **Dashboard:** ne podpira značk na karticah iger; obvestilo je v meniju igre, v hubu pa nalogi »Skoči v svetovnem pokalu« (m)
+  in »Skoči na 3 postajah pokala ta teden« (w). Dashboard ni spremenjen.
+- Kariera se shranjuje lokalno (`skoki:career:<profil>`) po vsaki tekmi + koda `KARIERA1:` (hub nima podatkov igre v profilu).
+- Zasebni pokal (neobvezno) ni narejen.
+
+### Dnevnik
+- Ekonomija: najcenejši kos 40 🪙 (1. dan), najdražji komplet (dres + čelada + smuči + zastavica) 2300 🪙 ≈ 15. dan pri tipičnem
+  igralcu (test), cene v razponih redkosti (navadno ≤ 150, redko ≤ 450, epsko ≤ 1200); 5 kosov z dosežki.
+- XP: 20 za pokalni skok (največ 2 na postajo), +100 zmaga postaje, +300 zmaga sezone (podeli se ob prvem odprtju po koncu),
+  25 za tekmo kariere, +75 napredovanje.
+- Razvojno: `?date=2026-12-03` / `?date=2026-12-03T18:30` (le offline), `?pokal=1`, `?kariera=1`, `?bot=0.9` (bot skače
+  namesto tebe tudi v pokalu in tekmi; v karieri si bot ti).
+
+### Preverjeno
+- `node tests/run-node.mjs` in `tests.html`: **225/225** (202 obstoječih + 23 novih), med njimi fizika (referenčni skoki 1.–2. faze).
+- **Pokal offline** z `?date=` in tremi identitetami (`?igralec=1/2/3`, bot namesto skokov): 1. in 2. serija na dveh postajah
+  (Willingen, Planica srednja), igralec 2 zamudi 2. postajo (DNS); točke in mesta (1. postaja 100/80/60, 2. postaja 100/80),
+  skupno 180 / 160 ↑1 / 80 ↓1, rumena majica 🟡, replay tujega skoka (ista daljava 135,0 m), ghost drugega igralca z njegovo
+  opremo v treningu postaje, konec sezone (2. 1. 2027): zmagovalec, »Najbolj stanoviten«, Dvorana slavnih, dosežki
+  `pokal-zmaga`, `sezona`, `rumena`, XP 4×20 + 100 + 300. Obvestilo v meniju (»postaja je odprta — še nisi skočil«).
+  Rez za 2. serijo, okno, dvojni zapis, velikost in nemogoče točke: test lokalnega adapterja.
+- **Kariera:** cela prva sezona (6 tekem, `?bot=0.95`): 3 zmage, zmagovalec Celinskega pokala, napredovanje v Svetovni pokal,
+  dosežek `kariera-liga-2`, novinarski napisi, shranjeno po osvežitvi (sezona 2, nov koledar).
+- **Trgovina** (offline): zavihek »Za igre« s filtri, nakup in opremljanje dresa, čelade, smuči in zastavice (1640 🪙), zlati dres
+  odklenjen z dosežkom sezone; oprema vidna v treningu (🇸🇮 ob imenu, zastave v publiki), v spletni tekmi pri drugem igralcu
+  (2 zavihka, gledalec riše skakalca z mojo opremo), v ghostu in v replayu.
+- **Lokalna Turneja 4 skakalnic** (3 boti): štiri tekme, skupna razvrstitev in rezultati.
+- Konzola brez napak: igra (pokal, kariera, tekma), trgovina, dashboard, Krogla. Telefon 375×812 (pokal, kariera, trgovina —
+  brez vodoravnega drsenja; popravljena širina tabele in številka postaje) in namizje.
+
+### Ni bilo preverjeno
+- **Pokal s Supabase** (dva igralca), varnostni preizkusi RPC z lažnimi JWT in `get_advisors` — migracija v produkcijsko bazo v tej
+  seji ni bila dovoljena; SQL je pripravljen, a ni pognan. Zato tudi ni testnih podatkov v bazi za brisanje.
+- Spletna Turneja 4 skakalnic (prehod med štirimi tekmami pri hostu, prenos hosta med turnejo) in KO pari v živo z ≥ 4 skakalci
+  (logika je v testih; lokalna turneja je bila preizkušena s tremi boti, torej brez KO).
+- Uradni pokalni skok z resnično miško (v testu je skakal bot `?bot=`); kariera na telefonu (dotik).
+- Predmeti za igre na Supabase (`equip('skoki.suit', …)`, nakup, presence z `equipped.games`).
+
+### Kaj mora uporabnik narediti v Supabaseu (po vrstnem redu)
+1. SQL Editor → poženi **`supabase/schema.sql`** (idempotentno: stolpca `game`/`slot`, `kind` 'game', blok GAME_ITEMS,
+   nova `private.equip`, dnevna ponudba brez predmetov za igre, večja meja `equipped`).
+2. Poženi **`supabase/games/skoki.sql`** (tabeli `skoki_cup_events`, `skoki_cup_jumps`, pogled `skoki_cup_board`, RPC
+   `skoki_cup_submit`, okna postaj 2026-12 … 2028-12).
+3. Advisors (Security + Performance) — pričakovano brez novih opozoril (RLS vklopljen, `security definer` le v `private`,
+   pogled `security_invoker`).
+4. Preizkus: dva igralca (`?igralec=1`, `?igralec=2`) skočita 1. serijo odprte postaje; drugi vidi razvrstitev in replay.
+5. Pred koncem 2028: `LAST_SEASON` v `tools/skoki-cup-sql.mjs` podaljšaj, `node tools/skoki-cup-sql.mjs --write`, znova poženi skoki.sql.

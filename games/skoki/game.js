@@ -22,9 +22,9 @@ import { commentator, landingGroup } from './texts.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { Renderer, detectQuality, QUALITY, QUALITY_ORDER, reducedMotion } from './render/scene.js';
-import { DEFAULT_SKIN } from './render/jumper.js';
 import { resultOf, dailyPick, DAILY_TRIES, msToMidnight, isOpen, unlocksBy, unlockKey, unlockText, createJury, juryBeforeJump, steadyMean } from './contest.js';
 import { flagOf } from './jumpers.js';
+import { skinFromEquipped, flagEmoji, YELLOW } from './gear.js';
 
 const GAME = 'skoki';
 const $ = s => document.querySelector(s);
@@ -67,6 +67,18 @@ const ACH = [
   { key: 'popotnik', title: 'Popotnik', icon: '🧳', desc: 'Skok na vseh pravih skakalnicah' },
   { key: 'vse-k', title: 'Zbiratelj K-točk', icon: '🗺️', desc: 'Čez K na vseh skakalnicah (brez Lune), brez padca' },
   { key: 'vse-hs', title: 'Do HS povsod', icon: '⭐', desc: 'Čez HS brez padca na vseh pravih velikih skakalnicah' },
+  // 3. faza: svetovni pokal, kariera, oprema
+  { key: 'pokal-prvi', title: 'Prvi pokalni skok', icon: '🏆', desc: 'Skoči v svetovnem pokalu' },
+  { key: 'pokal-zmaga', title: 'Zmaga v pokalu', icon: '🥇', desc: 'Zmagaj na postaji svetovnega pokala' },
+  { key: 'rumena', title: 'Rumena majica', icon: '🟡', desc: 'Vodi v sezoni svetovnega pokala' },
+  { key: 'sezona', title: 'Zmagovalec sezone', icon: '👑', desc: 'Zmagaj v sezoni svetovnega pokala' },
+  { key: 'vsi-skoki', title: 'Vse postaje', icon: '🗓️', desc: 'Skoči na vseh postajah ene sezone' },
+  { key: 'turneja', title: 'Zmagovalec turneje', icon: '🎄', desc: 'Zmagaj v skupni razvrstitvi Turneje 4 skakalnic' },
+  { key: 'kariera-liga-2', title: 'Svetovni pokal kariere', icon: '📈', desc: 'V karieri napreduj v svetovni pokal' },
+  { key: 'kariera-poleti', title: 'Poleti', icon: '🛫', desc: 'V karieri napreduj v ligo Poleti' },
+  { key: 'kariera-prvak', title: 'Prvak kariere', icon: '🏅', desc: 'Zmagaj v sezoni najvišje lige kariere' },
+  { key: 'garderoba', title: 'Garderoba', icon: '🎽', desc: 'Kupi 5 kosov opreme za skoke' },
+  { key: 'padci-50', title: 'Snežni angel ×50', icon: '☃️', desc: '50 padcev (odklene dres Snežni angel)' },
 ];
 // odklepi skakalnic so dosežki (veljajo na vseh napravah): odklep-<id>
 const achDef = k => ACH.find(a => a.key === k) || (k.startsWith('odklep-') ? { key: k, title: 'Odklenjena: ' + (hillOf(k.slice(7))?.def.name || k.slice(7)), icon: '🔓' } : { key: k, title: k, icon: '🏅' });
@@ -171,6 +183,12 @@ const G = {
 };
 const clock = makeClock();
 const hillOf = id => HILLS.find(h => h.def.id === id);
+/** Moj videz: oprema iz trgovine (»Za igre«) ali privzeti dres. */
+const mySkin = () => skinFromEquipped(hub.profile?.equipped);
+/** Vodilni v sezoni pokala (rumena majica) — nastavi cup.js. */
+const cupLeaders = new Set();
+/** Moje ime v traku spodaj: ui.who + zastavica + rumena majica. */
+const myWho = () => hub.profile ? ui.who(hub.profile) + (flagEmoji(hub.profile.equipped) ? ' ' + flagEmoji(hub.profile.equipped) : '') + (cupLeaders.has(hub.userId) ? ' ' + YELLOW : '') : '';
 
 /* ===================================================================== */
 /*  Nalaganje                                                            */
@@ -295,6 +313,11 @@ function renderMenu() {
         <div class="sk-tiles">${HILLS.filter(h => HILL_TABS.find(t => t.id === hillTab).has(h.def)).map(tile).join('')}</div>
       </section>
 
+      <div class="sk-cupnote mg-hidden" id="cupNote" role="status"></div>
+      <div class="sk-modesrow sk-modesrow--big">
+        <button class="mg-btn mg-btn--cyan" id="mCup">🌍 Svetovni pokal</button>
+        <button class="mg-btn mg-btn--green" id="mCareer">🎯 Kariera</button>
+      </div>
       <div class="sk-modesrow">
         <button class="mg-btn" id="mOnline">🏆 Tekma s prijatelji</button>
         <button class="mg-btn" id="mLocal">🖥️ Lokalna tekma</button>
@@ -342,6 +365,13 @@ function renderMenu() {
   $('#mLocal').onclick = () => { audio.unlock(); matchApi?.openLocal(); };
   $('#mJumpers').onclick = () => { audio.unlock(); matchApi?.openJumpers(); };
   $('#mDaily').onclick = () => { audio.unlock(); startDaily(); };
+  $('#mCup').onclick = () => { audio.unlock(); cupApi ? cupApi.open() : ui.toast('Pokal se še nalaga …'); };
+  $('#mCareer').onclick = () => { audio.unlock(); careerApi ? careerApi.open() : ui.toast('Kariera se še nalaga …'); };
+  cupApi?.notice().then(n => {
+    const el = $('#cupNote'); if (!el || !n) return;
+    el.innerHTML = n.html; el.classList.remove('mg-hidden');
+    el.querySelector('[data-cup]')?.addEventListener('click', () => { audio.unlock(); cupApi.open(); });
+  }).catch(e => console.warn(e));
   $('#selGate').onchange = e => { G.trainGate = { ...(G.trainGate || {}), [H.id]: +e.target.value }; };
   $('#selWind').onchange = e => { settings.wind = e.target.value; saveSettings(); $('#windVal').classList.toggle('mg-hidden', settings.wind !== 'const'); };
   $('#selWindSpeed').oninput = e => { settings.windSpeed = +e.target.value; $('#windValTxt').textContent = sign(settings.windSpeed) + ' m/s'; saveSettings(); };
@@ -458,7 +488,7 @@ async function pickFriendGhost(row, H) {
     const gh = decodeGhost(g.data);
     if (gh.pv !== P.paramsVersion) { ui.toast('Posnetek je iz starejše verzije fizike.', { icon: '⚠️' }); return; }
     if (gh.hill !== H.id) throw new Error('napačna skakalnica');
-    G.friendGhost = { hill: H.id, g: gh, name: row.nickname || '???', userId: row.user_id };
+    G.friendGhost = { hill: H.id, g: gh, name: row.nickname || '???', userId: row.user_id, skin: skinFromEquipped(row.equipped) };
     ui.toast(`Ghost: ${row.nickname} (${fmtDist(gh.dist)})`, { icon: '👻' });
     renderMenu();
   } catch (e) { console.warn(e); ui.toast('Posnetka ni bilo mogoče prebrati.'); }
@@ -495,13 +525,16 @@ function ensureRenderer() {
 /*  Seja in skok                                                         */
 /* ===================================================================== */
 
-async function startSession(hillId, mode) {
+/**
+ * Seja skokov. fixed (trening postaje pokala): { gate, refGate, wind, mods, theme, label, ghosts: [{ g, name, skin }], back() }.
+ */
+async function startSession(hillId, mode, fixed = null) {
   G.ext = null;
-  G.hillId = hillId; G.mode = mode;
+  G.hillId = hillId; G.mode = mode; G.fixed = fixed;
   G.record = mode === 'record' ? newRecord(hillOf(hillId).def) : null;
-  await enterPlay(hillId, { theme: mode === 'daily' ? G.daily?.theme : null });
-  $('#hudMode').textContent = mode === 'record' ? 'Rekord skakalnice' : mode === 'daily' ? 'Dnevni izziv' : 'Trening';
-  $('#barWho').innerHTML = hub.profile ? ui.who(hub.profile) : '';
+  await enterPlay(hillId, { theme: mode === 'daily' ? G.daily?.theme : fixed?.theme || null });
+  $('#hudMode').textContent = fixed?.label || (mode === 'record' ? 'Rekord skakalnice' : mode === 'daily' ? 'Dnevni izziv' : 'Trening');
+  $('#barWho').innerHTML = myWho();
   G.hintsOn = (stats.hints || 0) < 3;
   newJump();
 }
@@ -530,8 +563,8 @@ async function enterPlay(hillId, { skin = null, theme = null } = {}) {
   getInput();
   if (settings.tilt && IS_TOUCH) input.enableTilt();
   const hv = themedHill(H, theme);
-  if (renderer.hill !== hv) renderer.load(hv, skin || DEFAULT_SKIN);
-  else renderer.setSkin(skin || DEFAULT_SKIN);
+  if (renderer.hill !== hv) renderer.load(hv, skin || mySkin());
+  else renderer.setSkin(skin || mySkin());
   renderer.resize();
   $('#loader').classList.add('mg-hidden');
   $('#hudHill').textContent = `${H.def.name} · K${H.def.k}`;
@@ -562,6 +595,7 @@ function showGateChange(ch) {
 }
 
 function windForJump() {
+  if (G.fixed) return { ...G.fixed.wind };
   const seed = (Math.random() * 4294967295) >>> 0;
   if (G.mode === 'record') return { mode: 'steady', seed, speed: steadyMean(G.record.seed, G.record.tries.length) };
   if (settings.wind === 'const') return { mode: 'const', seed, speed: settings.windSpeed };
@@ -573,12 +607,13 @@ function prepGhosts(H) {
   if (G.mode === 'train') {
     const mb = localBest(H.def.id);
     if (settings.ghostMine && mb?.data) {
-      try { const g = decodeGhost(mb.data); if (g.pv === P.paramsVersion) list.push({ g, name: 'Moj rekord' }); } catch { /* */ }
+      try { const g = decodeGhost(mb.data); if (g.pv === P.paramsVersion && !G.fixed) list.push({ g, name: 'Moj rekord', skin: mySkin() }); } catch { /* */ }
     }
-    if (G.friendGhost && G.friendGhost.hill === H.def.id) list.push({ g: G.friendGhost.g, name: G.friendGhost.name });
+    if (G.friendGhost && G.friendGhost.hill === H.def.id && !G.fixed) list.push({ g: G.friendGhost.g, name: G.friendGhost.name, skin: G.friendGhost.skin });
+    for (const o of G.fixed?.ghosts || []) if (o.on !== false) list.push(o);
   }
   if (G.mode === 'daily') for (const o of G.daily.ghosts || []) if (o.on) list.push(o);
-  const mods = G.mode === 'daily' ? G.daily.mods : null;
+  const mods = G.mode === 'daily' ? G.daily.mods : G.fixed?.mods || null;
   return list.map(o => { const r = ghostJump(o.g, H.hill, P, 0, mods); return { ...o, J: r.J, input: r.input, snap: gateSnapshot(H.hill, o.g.gate) }; });
 }
 
@@ -588,6 +623,7 @@ function newJump() {
   hideResult();
   if (X) G.gate = X.gate;
   else if (G.mode === 'daily') G.gate = G.daily.gate;
+  else if (G.fixed) G.gate = G.fixed.gate;
   else G.gate = G.mode === 'record' ? H.def.gates.default : (G.trainGate?.[H.def.id] ?? H.def.gates.default);
   G.wind = X ? X.wind : G.mode === 'daily' ? G.daily.wind : windForJump();
   // rekord skakalnice: žirija pred vsakim skokom prilagodi zalet vetru (kompenzacija glede na privzeto mesto)
@@ -598,7 +634,7 @@ function newJump() {
     if (jb.change) gateChange = { ...jb.change, pts: gatePoints(H.def, jb.change.to, H.def.gates.default) };
   }
   G.gateChange = gateChange;
-  G.mods = X ? X.mods || null : G.mode === 'daily' ? G.daily.mods : null;
+  G.mods = X ? X.mods || null : G.mode === 'daily' ? G.daily.mods : G.fixed?.mods || null;
   G.windObj = createWind(H.def.physics?.noAir ? { mode: 'off', seed: 0 } : G.wind, G.mods?.gust ? { ...P, wind: { ...P.wind, gustAmp: P.wind.gustAmp * G.mods.gust } } : P);
   G.J = createJump({ hill: H.hill, P, gate: G.gate, wind: G.wind, record: DEBUG ? 2 : 0, mods: G.mods });
   G.rec = new InputRecorder();
@@ -608,7 +644,7 @@ function newJump() {
   G.stream = X?.source === 'stream' ? X.stream : null;
   G.bot = X ? (X.source === 'bot' ? createBot(X.bot) : null) : BOT_SKILL != null ? createBot({ skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 }) : null;
   renderer.setGate(G.gate);
-  renderer.setGhosts(G.ghosts.length);
+  renderer.setGhosts(G.ghosts.length, G.ghosts.map(g => g.skin || null));
   // osebni rekord skakalca na tej skakalnici (pred skokom v traku spodaj): jaz = lokalno + lestvica; v tekmi ga pošlje match.js (X.pb)
   const pb = X ? (X.pb !== undefined ? X.pb : X.mine ? myBest(H.def.id)?.dist : null) : myBest(H.def.id)?.dist;
   const rec = X ? X.recordLine || 0 : Math.max(pb || 0, ...G.ghosts.map(g => g.g.dist));
@@ -622,7 +658,7 @@ function newJump() {
   if (X) { $('#hudMode').textContent = X.label || 'Tekma'; $('#barWho').innerHTML = X.whoHtml || esc(X.who?.name || ''); }
   $('#hudGhost').classList.toggle('mg-hidden', !G.ghosts.length);
   $('#hudGhost').textContent = '👻 ' + G.ghosts.map(g => g.name).join(', ');
-  const refG = X ? X.refGate : G.mode === 'record' ? H.def.gates.default : null;
+  const refG = X ? X.refGate : G.mode === 'record' ? H.def.gates.default : G.fixed ? G.fixed.refGate : null;
   const gp = refG != null && refG !== G.gate ? gatePoints(H.def, G.gate, refG) : 0;
   $('#barGate').innerHTML = gp ? `${G.gate} <small class="${gp > 0 ? 'plus' : 'minus'}">${gp > 0 ? '+' : ''}${fmt1(gp)}</small>` : String(G.gate);
   if (G.gateChange) showGateChange(G.gateChange); else hideGateChange();
@@ -633,6 +669,8 @@ function newJump() {
   $('#replayBar').classList.add('mg-hidden');
   if (G.record) $('#hudMode').textContent = `Rekord skakalnice · skok ${G.record.tries.length + 1}/3`;
   if (G.mode === 'daily' && !X) $('#hudMode').textContent = dailyHud();
+  if (G.fixed && !X) $('#hudMode').textContent = G.fixed.label;
+  if (!X) $('#barWho').innerHTML = myWho();
   input.reset(); input.mode = 'gate'; input.resetPitch(0);
   G.state = 'gate'; G.gateT = 0; G.view = gateSnapshot(H.hill, G.gate); G.view.snap = true;
   renderer.setCheer(0.1);
@@ -909,6 +947,7 @@ function myJumpProgress(Hd, s, L, res, judges) {
   if (s.takeoff?.perfect) ach.push('popoln-odriv');
   if (judges.filter(j => j >= 19).length >= 4) ach.push('telemark-19');
   if (res.fall) ach.push('snezni-angel');
+  if ((stats.falls || 0) >= 50) ach.push('padci-50');
   if (['brezova', 'bistra', 'orlova'].every(id => stats.overK?.[id])) ach.push('vse-tri');
   if (!res.fall && L.dist < Hd.k / 2) ach.push('zavora');
   if (!res.fall && L.dist >= Hd.k && L.windAvg <= -2) ach.push('veter-v-hrbet');
@@ -1028,7 +1067,7 @@ function showResult(res, isPb) {
   const tries = rec ? `<div class="sk-tries">${rec.tries.map((t, i) => `<span class="${i === rec.bestIdx ? 'best' : ''}">${i + 1}. ${fmtDist(t.dist)} · ${fmt1(t.total)} t</span>`).join('')}</div>` : '';
   const done = rec?.done;
   el.innerHTML = `
-    <div class="sk-card__head"><b>${esc(Hd.name)} · K${Hd.k}</b><span>${G.mode === 'record' ? `Skok ${rec.tries.length}/3` : G.mode === 'daily' ? esc(G.daily.cond.icon + ' ' + G.daily.cond.name) : 'Trening'}</span></div>
+    <div class="sk-card__head"><b>${esc(Hd.name)} · K${Hd.k}</b><span>${G.mode === 'record' ? `Skok ${rec.tries.length}/3` : G.mode === 'daily' ? esc(G.daily.cond.icon + ' ' + G.daily.cond.name) : G.fixed ? esc(G.fixed.label) : 'Trening'}</span></div>
     <div class="sk-card__body"><table><tbody>
       <tr><td>Daljava <b>${fmtDist(res.dist)}</b>${isPb ? ' 🏅' : ''}</td><td>${fmtPts(res.distPts)}</td></tr>
       <tr><td colspan="2"><div class="sk-row" style="justify-content:space-between"><span>Sodniki</span><span class="sk-judges">${res.judges.map((j, i) => `<i class="${res.dropped.includes(i) ? 'x' : ''}">${fmt1(j)}</i>`).join('')}</span></div></td></tr>
@@ -1045,7 +1084,7 @@ function showResult(res, isPb) {
       ${rec && done ? `<button class="mg-btn mg-btn--pink" data-a="again">Nov poskus (R)</button>` : `<button class="mg-btn mg-btn--primary" data-a="next">${rec ? 'Naslednji skok' : 'Nov skok'} (R)</button>`}
       <button class="mg-btn" data-a="replay">Replay (Enter)</button>
       ${G.mode === 'daily' ? '<button class="mg-btn mg-btn--ghost" data-a="daily">Lestvica dneva</button>' : ''}
-      <button class="mg-btn mg-btn--ghost" data-a="menu">Meni</button>
+      <button class="mg-btn mg-btn--ghost" data-a="menu">${G.fixed?.back ? '← Pokal' : 'Meni'}</button>
     </div>`;
   el.classList.remove('mg-hidden');
   el.querySelectorAll('[data-a]').forEach(b => b.onclick = e => { e.stopPropagation(); action(b.dataset.a); });
@@ -1056,13 +1095,32 @@ function dailyCardLine() {
   return `<div class="sk-card__rank">📅 Najboljši danes: <b>${st.best ? fmt1(st.best.total) + ' t' : '—'}</b> · ${left > 0 ? 'ostali poskusi: ' + left : st.reported ? 'izziv opravljen (+20 XP) — naprej je trening' : 'poskusi porabljeni'}</div>`;
 }
 function hideResult() { $('#card').classList.add('mg-hidden'); }
+/** Iz seje nazaj: trening postaje → zaslon pokala, sicer meni. */
+function leaveSession() {
+  const back = G.fixed?.back;
+  if (back) { leavePlay(); back(); }
+  else showMenu();
+}
+/** Skrij igralno površino in pokaži #menu (brez izrisa glavnega menija) — pokal, kariera. */
+function leavePlay() {
+  if (G.ext && !G.ext.done) engine.abort();
+  G.ext = null; G.fixed = null; G.state = 'menu'; G.paused = false;
+  $('#overlay')?.classList.add('mg-hidden');
+  hideResult();
+  matchApi?.onMenu?.();
+  clearInterval(dailyTimer);
+  document.body.classList.remove('sk-playing');
+  $('#play').classList.add('mg-hidden');
+  $('#menu').classList.remove('mg-hidden');
+  audio.silence(); audio.setLoops(false);
+}
 
 function action(a) {
   audio.unlock();
   if (a === 'next') newJump();
   else if (a === 'again') { G.record = newRecord(hillOf(G.hillId).def); newJump(); }
   else if (a === 'replay') startReplay();
-  else if (a === 'menu') { hideResult(); showMenu(); }
+  else if (a === 'menu') { hideResult(); leaveSession(); }
   else if (a === 'daily') { hideResult(); startDaily(); }
 }
 
@@ -1077,15 +1135,20 @@ function dailyConfig() {
   if (G.daily?.seed === day) return G.daily;
   const pick = dailyPick(day, HILLS.map(h => h.def), sd => hub.rng(sd));
   const H = hillOf(pick.hill);
-  let theme = null;
-  if (pick.cond.id === 'noc' && !H.def.theme.spotlights) {
-    theme = { ...H.def.theme, id: H.def.theme.id + '-noc', sky: { ...H.def.theme.sky, zenith: '#03061a', horizon: '#1b2550', ground: '#10142a', sunColor: '#9fb6ff', stars: 0.7, clouds: 0.1 },
-      fog: { color: '#1c2448', density: 0.004 }, sunIntensity: 0.55, hemi: ['#4a5a9a', '#141828', 0.42], bloom: [0.85, 0.5, 0.78], spotlights: 8, phoneLights: 1 };
-  } else if (pick.cond.id === 'sneg') {
-    theme = { ...H.def.theme, id: H.def.theme.id + '-sneg', snowfall: 0.9, fog: { ...H.def.theme.fog, density: H.def.theme.fog.density * pick.cond.mods.fog }, sky: { ...H.def.theme.sky, clouds: 0.9 } };
-  }
-  G.daily = { ...pick, theme, ghosts: [] };
+  G.daily = { ...pick, theme: condTheme(H, pick.cond), ghosts: [] };
   return G.daily;
+}
+/** Tema za pogoj (noč pod reflektorji, sneženje) ali null — dnevni izziv in postaje pokala. */
+function condTheme(H, cond) {
+  if (!cond) return null;
+  if (cond.id === 'noc' && !H.def.theme.spotlights) {
+    return { ...H.def.theme, id: H.def.theme.id + '-noc', sky: { ...H.def.theme.sky, zenith: '#03061a', horizon: '#1b2550', ground: '#10142a', sunColor: '#9fb6ff', stars: 0.7, clouds: 0.1 },
+      fog: { color: '#1c2448', density: 0.004 }, sunIntensity: 0.55, hemi: ['#4a5a9a', '#141828', 0.42], bloom: [0.85, 0.5, 0.78], spotlights: 8, phoneLights: 1 };
+  }
+  if (cond.id === 'sneg') {
+    return { ...H.def.theme, id: H.def.theme.id + '-sneg', snowfall: 0.9, fog: { ...H.def.theme.fog, density: H.def.theme.fog.density * cond.mods.fog }, sky: { ...H.def.theme.sky, clouds: 0.9 } };
+  }
+  return null;
 }
 function dailyState() {
   const day = hub.dailySeed();
@@ -1186,7 +1249,7 @@ async function startDaily() {
   // ghost vodilnega dneva
   try {
     const top = await hub.getGhosts({ level: dailyLevel(D.seed), order: 'desc', limit: 1 });
-    if (top?.[0] && top[0].user_id !== hub.userId) await dailyFriendGhost({ user_id: top[0].user_id, nickname: top[0].nickname }, true);
+    if (top?.[0] && top[0].user_id !== hub.userId) await dailyFriendGhost({ user_id: top[0].user_id, nickname: top[0].nickname, equipped: top[0].equipped }, true);
   } catch (e) { console.warn(e); }
   renderDailyGhosts();
 }
@@ -1204,7 +1267,7 @@ async function dailyFriendGhost(row, leader = false) {
     const gh = decodeGhost(g.data);
     if (gh.pv !== P.paramsVersion || gh.hill !== D.hill) throw new Error('napačen ghost');
     D.ghosts = (D.ghosts || []).filter(o => o.userId !== row.user_id).slice(-2);
-    D.ghosts.push({ g: gh, name: (leader ? 'Vodilni: ' : '') + (row.nickname || '???'), userId: row.user_id, on: true });
+    D.ghosts.push({ g: gh, name: (leader ? 'Vodilni: ' : '') + (row.nickname || '???'), userId: row.user_id, on: true, skin: row.equipped ? skinFromEquipped(row.equipped) : null });
     renderDailyGhosts();
   } catch (e) { console.warn(e); }
 }
@@ -1274,7 +1337,7 @@ function togglePause(force) {
     ov.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
       togglePause(false);
       if (b.dataset.p === 'new') newJump();
-      if (b.dataset.p === 'menu') showMenu();
+      if (b.dataset.p === 'menu') leaveSession();
     });
   } else { ov.classList.add('mg-hidden'); clock.reset(); last = performance.now(); }
 }
@@ -1455,7 +1518,9 @@ const engine = {
    */
   async jump(o) {
     if (G.ext && !G.ext.done) engine.abort();
-    G.mode = 'ext'; G.record = null;
+    // razvojno: ?bot=0.9 — namesto mene skače bot (tudi v pokalu, karieri in tekmi)
+    if (BOT_SKILL != null && o.source === 'me') o = { ...o, source: 'bot', bot: { skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 } };
+    G.mode = 'ext'; G.record = null; G.fixed = null;
     await enterPlay(o.hillId, { skin: o.skin, theme: o.theme });
     return new Promise(resolve => { G.ext = { ...o, resolve, done: false }; G.paused = false; $('#overlay').classList.add('mg-hidden'); newJump(); });
   },
@@ -1468,14 +1533,34 @@ const engine = {
   renderer: () => renderer,
   /** Pogled TV: širša kamera. */
   setWide(on) { if (renderer) renderer.wide = on; },
+  // 3. faza: pokal in kariera
+  condTheme, mySkin, myWho, cupLeaders, ACH, fmt1, leavePlay,
+  /** Trening s fiksnimi pogoji (postaja pokala): glej startSession(…, fixed). */
+  train(hillId, fixed) { return startSession(hillId, 'train', fixed); },
+  /** Tekma (lokalna ali kariera) iz match.js — nastavi se ob nalaganju. */
+  get match() { return matchApi; },
+  /** Osveži trak z mojim imenom (npr. po spremembi rumene majice). */
+  refreshWho() { if ($('#barWho') && !G.ext) $('#barWho').innerHTML = myWho(); },
 };
-let matchApi = null;
+let matchApi = null, cupApi = null, careerApi = null;
 try {
   const M = await import('./match.js');
   matchApi = M.initMatch(engine);
 } catch (e) { console.error('match.js:', e); }
+try {
+  const CU = await import('./cup.js');
+  cupApi = CU.initCup(engine);
+} catch (e) { console.error('cup.js:', e); }
+try {
+  const CA = await import('./career-ui.js');
+  careerApi = CA.initCareer(engine);
+} catch (e) { console.error('career-ui.js:', e); }
+// garderoba: 5 kosov opreme za skoke (nakup v trgovini) → dosežek ob naslednjem odprtju igre
+hub.getInventory().then(inv => { if (inv.filter(i => /^skoki-/.test(i.item_id) && i.source === 'buy').length >= 5) unlock('garderoba'); }).catch(() => {});
 
 const startHill = URLP.get('hill');
 if (hub.roomFromUrl() && matchApi) matchApi.joinFromUrl();
+else if (URLP.get('pokal') === '1' && cupApi) cupApi.open();
+else if (URLP.get('kariera') === '1' && careerApi) careerApi.open();
 else if (startHill && hillOf(startHill) && hillOpen(startHill)) { G.hillId = startHill; startSession(startHill, 'train'); }
 else showMenu();

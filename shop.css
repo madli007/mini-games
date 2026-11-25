@@ -148,3 +148,8 @@
 .shop-ward__ic { display: inline-grid; place-items: center; width: 26px; height: 26px; font-size: 16px; font-family: var(--mg-font), var(--mg-emoji); }
 .shop-ward__ban { display: inline-block; width: 40px; height: 22px; border-radius: 6px; background: var(--bni); }
 .shop-cond--ok { color: var(--mg-green); }
+
+/* zavihek »Za igre« (predmeti za posamezne igre) */
+.shop-chipsep { font-size: 12px; color: var(--mg-dim); align-self: center; margin: 0 2px 0 6px; }
+.shop-pv--game svg { display: block; border-radius: 10px; max-width: 100%; height: auto; }
+.shop-gamesnote { margin: 0 0 10px; }

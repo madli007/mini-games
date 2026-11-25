@@ -9,7 +9,7 @@ import { createJump, MAX_TICKS } from './physics.js';
 import { inputFrom } from './ghost.js';
 import { judgeScores } from './judges.js';
 import { scoreJump, distancePoints, gatePoints, windPoints } from './scoring.js';
-import { hashStr, rng } from './sport/competition.js';
+import { hashStr, rng } from '../../shared/sport/competition.js';
 import { noise1, clamp } from './dmath.js';
 import { WIND_MAX, createWind } from './wind.js';
 
@@ -19,6 +19,9 @@ export const FORMATS = {
   one: { name: 'Ena serija', rounds: 1, trial: false },
   two: { name: 'Dve seriji', rounds: 2, trial: false },
   trial2: { name: 'Poskusna + dve seriji', rounds: 2, trial: true },
+  // Turneja 4 skakalnic: štiri tekme zapored (Oberstdorf → Garmisch → Innsbruck → Bischofshofen), KO pari v 1. seriji,
+  // skupna razvrstitev = vsota točk vseh štirih (sport/ko.js). Skakalnica v nastavitvah se ne upošteva.
+  tour: { name: 'Turneja 4 skakalnic (4 tekme, KO pari)', rounds: 2, trial: false, tour: true },
 };
 export const WIND_MODES = { same: 'Enak za vse', var: 'Spremenljiv (s kompenzacijo)', off: 'Brez vetra' };
 export const START_SEC = 10;     // po zeleni luči za štart

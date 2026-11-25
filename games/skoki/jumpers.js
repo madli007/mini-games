@@ -9,7 +9,7 @@
    ===================================================================== */
 import { BOT_STYLES } from './bot.js';
 export { BOT_STYLES as BOT_STYLES_NAMES };
-import { rng, shuffled } from './sport/competition.js';
+import { rng, shuffled } from '../../shared/sport/competition.js';
 
 export const JUMPERS_MAX = 60;
 export const IMPORT_MAX_CHARS = 20000;

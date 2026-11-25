@@ -3,13 +3,19 @@ import { hub, ui, util, cosmetics as K, economy as E } from './shared/hub.js';
 
 const $ = s => document.querySelector(s);
 const esc = ui.esc;
-const TABS = [...K.SLOTS, 'moje'];
-const TAB_LABEL = { ...K.SLOT_LABEL, moje: 'Moje' };
+const TABS = [...K.SLOTS, 'igre', 'moje'];
+const TAB_LABEL = { ...K.SLOT_LABEL, igre: 'Za igre', moje: 'Moje' };
+const GAMES = Object.keys(K.GAME_SLOTS);
+/** Privzeti videz skakalca (kot DEFAULT_SKIN v games/skoki/render/jumper.js) za predogled opreme. */
+const SK_BASE = { suit: '#e63946', suit2: '#ffffff', helmet: '#ffd23f', skis: '#1d3557', skiTip: '#ffd23f', flag: '' };
 const WIN_ICON = { confetti: '🎊', fireworks: '🎆', pixelrain: '🟪', stars: '⭐', gg: 'GG' };
 
 let shop = null;          // hub.getShop()
 let tab = 'frame';
 let rarity = 'all';
+let gameF = 'all', slotF = 'all';   // filtra v zavihku »Za igre«
+const slotKey = it => (it.kind === 'game' ? it.game + '.' + it.slot : it.kind);
+const slotOne = it => (it.kind === 'game' ? (K.GAME_SLOT_ONE[it.slot] || it.slot) + ' · ' + (K.GAME_NAMES[it.game] || it.game) : K.SLOT_ONE[it.kind]);
 
 /* ------------------------------------------------------------ pomožne */
 
@@ -45,14 +51,44 @@ function previewHtml(it, big = false) {
         <button type="button" class="mg-btn mg-btn--ghost mg-btn--small" data-fx="${esc(it.value)}">▶ Predogled</button></div>`;
     case 'banner':
       return `<div class="shop-pv shop-pv--banner ${it.anim ? 'mgc-anim-bg' : ''}" style="--bni:${esc(it.value)}">${ui.who(p, big ? 'lg' : '')}</div>`;
+    case 'game':
+      return gamePreview(it, big);
     default:
       return '';
   }
 }
 
+/** Predogled predmeta za igro: skakalec z mojo opremo in tem predmetom (Smučarski skoki). */
+function gamePreview(it, big = false) {
+  if (it.game !== 'skoki') return `<div class="shop-pv"><span class="shop-pv__fx">${esc(K.GAME_ICONS[it.game] || '🎮')}</span></div>`;
+  const s = { ...SK_BASE };
+  const put = x => {
+    if (!x) return;
+    const v = x.value;
+    if (x.slot === 'suit') { s.suit = v.suit; s.suit2 = v.suit2; }
+    if (x.slot === 'helmet') s.helmet = v.helmet;
+    if (x.slot === 'skis') { s.skis = v.skis; s.skiTip = v.skiTip; }
+    if (x.slot === 'flag') s.flag = v.emoji;
+  };
+  for (const sl of K.GAME_SLOTS.skoki) put(K.gameItemOf(me().equipped, 'skoki', sl));
+  put(it);
+  const w = big ? 220 : 150, id = 'sky-' + esc(it.id) + (big ? '-b' : '');
+  return `<div class="shop-pv shop-pv--game" role="img" aria-label="Predogled: ${esc(it.name)}"><svg viewBox="0 0 150 90" width="${w}" height="${Math.round(w * 0.6)}" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2a6e"/><stop offset="1" stop-color="#4d8fd6"/></linearGradient></defs>
+    <rect width="150" height="90" rx="10" fill="url(#${id})"/>
+    <path d="M0 78 Q75 58 150 70 L150 90 L0 90Z" fill="#e9f4ff"/>
+    <g transform="rotate(-14 75 45)">
+      <g transform="rotate(-10 75 60)"><rect x="20" y="58" width="104" height="4" rx="2" fill="${esc(s.skis)}"/><rect x="118" y="58" width="9" height="4" rx="2" fill="${esc(s.skiTip)}"/></g>
+      <g transform="rotate(-3 75 66)"><rect x="24" y="64" width="104" height="4" rx="2" fill="${esc(s.skis)}"/><rect x="122" y="64" width="9" height="4" rx="2" fill="${esc(s.skiTip)}"/></g>
+      <path d="M48 57 L96 40 L100 47 L54 64Z" fill="${esc(s.suit)}"/>
+      <path d="M60 53 L93 41 L94 44 L61 56Z" fill="${esc(s.suit2)}"/>
+      <circle cx="104" cy="39" r="8" fill="${esc(s.helmet)}"/><rect x="105" y="37" width="8" height="4" rx="2" fill="#ff7a1a"/>
+    </g>${s.flag ? `<text x="140" y="20" font-size="16" text-anchor="end">${esc(s.flag)}</text>` : ''}</svg></div>`;
+}
+
 /** Gumb/stanje predmeta. */
 function actionHtml(it) {
-  if (it.equipped) return `<button type="button" class="mg-btn mg-btn--ghost mg-btn--small mg-btn--block" data-unequip="${esc(it.kind)}">✓ Opremljeno · sneži</button>`;
+  if (it.equipped) return `<button type="button" class="mg-btn mg-btn--ghost mg-btn--small mg-btn--block" data-unequip="${esc(slotKey(it))}">✓ Opremljeno · sneži</button>`;
   if (it.owned) return `<button type="button" class="mg-btn mg-btn--green mg-btn--small mg-btn--block" data-equip="${esc(it.id)}">Opremi</button>`;
   if (it.locked) return `<button type="button" class="mg-btn mg-btn--ghost mg-btn--small mg-btn--block" disabled>🔒 ${esc(it.reason)}</button>`;
   if (it.price === 0) return `<button type="button" class="mg-btn mg-btn--cyan mg-btn--small mg-btn--block" data-buy="${esc(it.id)}">Odkleni</button>`;
@@ -77,7 +113,7 @@ function cardHtml(it) {
     ${previewHtml(it)}
     <div class="shop-item__body">
       <div class="shop-item__name">${esc(it.name)}</div>
-      <div class="shop-item__meta"><span class="shop-rar">${esc(K.RARITY_LABEL[it.rarity])}</span>${priceHtml(it)}</div>
+      <div class="shop-item__meta"><span class="shop-rar">${esc(K.RARITY_LABEL[it.rarity])}${it.kind === 'game' ? ' · ' + esc(K.GAME_SLOT_ONE[it.slot] || '') : ''}</span>${priceHtml(it)}</div>
       <div class="shop-item__desc mg-small mg-muted">${esc(it.desc)}</div>
       ${cond}
     </div>
@@ -111,15 +147,19 @@ function renderOffer() {
 
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(t => `<button class="mg-tab" role="tab" data-tab="${t}" aria-selected="${t === tab}">${esc(TAB_LABEL[t])}${t === 'moje' ? ' 👕' : ''}</button>`).join('');
-  $('#filters').innerHTML = tab === 'moje' ? '' : ['all', ...K.RARITIES].map(r => `<button type="button" class="shop-chip ${r === 'all' ? '' : 'mg-rar-' + r}" data-rar="${r}" aria-pressed="${r === rarity}">${r === 'all' ? 'Vse' : esc(K.RARITY_LABEL[r])}</button>`).join('');
+  const gameChips = tab !== 'igre' ? '' : `<span class="shop-chipsep">Igra:</span>${['all', ...GAMES].map(g => `<button type="button" class="shop-chip" data-gf="${g}" aria-pressed="${g === gameF}">${g === 'all' ? 'Vse igre' : esc((K.GAME_ICONS[g] || '') + ' ' + (K.GAME_NAMES[g] || g))}</button>`).join('')}
+    ${gameF !== 'all' ? `<span class="shop-chipsep">Kos:</span>${['all', ...K.GAME_SLOTS[gameF]].map(x => `<button type="button" class="shop-chip" data-sf="${x}" aria-pressed="${x === slotF}">${x === 'all' ? 'Vse' : esc(K.GAME_SLOT_LABEL[x] || x)}</button>`).join('')}` : ''}<span class="shop-chipsep">Redkost:</span>`;
+  $('#filters').innerHTML = tab === 'moje' ? '' : gameChips + ['all', ...K.RARITIES].map(r => `<button type="button" class="shop-chip ${r === 'all' ? '' : 'mg-rar-' + r}" data-rar="${r}" aria-pressed="${r === rarity}">${r === 'all' ? 'Vse' : esc(K.RARITY_LABEL[r])}</button>`).join('');
 }
 
 function renderPanel() {
   if (tab === 'moje') return renderWardrobe();
-  const list = shop.items.filter(i => i.kind === tab && (rarity === 'all' || i.rarity === rarity))
-    .sort((a, b) => K.RARITIES.indexOf(a.rarity) - K.RARITIES.indexOf(b.rarity) || a.price - b.price || (a.name < b.name ? -1 : 1));
+  const inTab = i => (tab === 'igre' ? i.kind === 'game' && (gameF === 'all' || i.game === gameF) && (slotF === 'all' || i.slot === slotF) : i.kind === tab);
+  const list = shop.items.filter(i => inTab(i) && (rarity === 'all' || i.rarity === rarity))
+    .sort((a, b) => (tab === 'igre' ? (K.GAME_SLOTS[a.game].indexOf(a.slot) - K.GAME_SLOTS[b.game].indexOf(b.slot)) : 0) || K.RARITIES.indexOf(a.rarity) - K.RARITIES.indexOf(b.rarity) || a.price - b.price || (a.name < b.name ? -1 : 1));
+  const intro = tab === 'igre' ? '<p class="mg-small mg-muted shop-gamesnote">Predmeti, ki se vidijo <b>v sami igri</b> — tudi drugim igralcem, v ghostih in replayih. Samo videz: fizika je za vse enaka.</p>' : '';
   $('#panel').innerHTML = list.length
-    ? `<div class="shop-grid">${list.map(cardHtml).join('')}</div>`
+    ? `${intro}<div class="shop-grid">${list.map(cardHtml).join('')}</div>`
     : '<div class="mg-empty">Ni predmetov za ta filter.</div>';
 }
 
@@ -137,6 +177,13 @@ function renderWardrobe() {
         : `<div class="mg-small mg-muted">Še nimaš ničesar. <button type="button" class="shop-link" data-tab="${slot}">V trgovino →</button></div>`}
     </section>`;
   }).join('');
+  const gameRows = GAMES.map(g => {
+    const mineG = shop.items.filter(i => i.kind === 'game' && i.game === g && i.owned);
+    return `<section class="shop-ward__slot"><div class="mg-row mg-row--between"><h3>${esc((K.GAME_ICONS[g] || '') + ' ' + (K.GAME_NAMES[g] || g))}</h3></div>
+      ${mineG.length ? `<div class="shop-ward__list">${mineG.map(it => `<button type="button" class="shop-ward__item mg-rar-${esc(it.rarity)}" ${it.equipped ? `data-unequip="${esc(slotKey(it))}" aria-pressed="true"` : `data-equip="${esc(it.id)}" aria-pressed="false"`} title="${esc(it.desc)}">
+          <span class="shop-ward__ic">${esc(it.slot === 'flag' ? it.value.emoji : '🎽')}</span><span>${esc(it.name)} <small class="mg-muted">${esc(K.GAME_SLOT_ONE[it.slot] || '')}</small></span></button>`).join('')}</div>`
+        : `<div class="mg-small mg-muted">Še nimaš opreme za to igro. <button type="button" class="shop-link" data-tab="igre">Za igre →</button></div>`}</section>`;
+  }).join('');
   const banner = K.item(p.equipped?.banner);
   $('#panel').innerHTML = `<div class="shop-ward">
     <div class="mg-card shop-ward__pv ${banner?.anim ? 'mgc-anim-bg' : ''}" style="--bni:${banner?.kind === 'banner' ? esc(banner.value) : 'none'}">
@@ -145,7 +192,7 @@ function renderWardrobe() {
       ${p.equipped?.win ? `<button type="button" class="mg-btn mg-btn--ghost mg-btn--small" data-fx="${esc(K.item(p.equipped.win)?.value || '')}">▶ Moj učinek ob zmagi</button>` : ''}
       <p class="mg-small mg-muted" style="margin:0">Tako te vidijo drugi: v glavi, lobbyju, na lestvicah in stopničkah.</p>
     </div>
-    <div class="shop-ward__slots">${rows}</div></div>`;
+    <div class="shop-ward__slots">${rows}${gameRows}</div></div>`;
 }
 
 function wardThumb(it) {
@@ -183,7 +230,7 @@ async function buy(id) {
     title: it.price === 0 ? 'Odkleni predmet' : 'Potrdi nakup',
     html: `<div class="shop-confirm mg-rar-${esc(it.rarity)}">${previewHtml(it, true)}
       <div class="shop-item__name">${esc(it.name)}</div>
-      <div class="shop-rar">${esc(K.RARITY_LABEL[it.rarity])} · ${esc(K.SLOT_ONE[it.kind])}</div>
+      <div class="shop-rar">${esc(K.RARITY_LABEL[it.rarity])} · ${esc(slotOne(it))}</div>
       <p class="mg-muted">${esc(it.desc)}</p>
       ${it.price ? `<p>Cena: <b>${ui.coins(it.priceToday)} 🪙</b>${it.offer ? ` <s class="mg-muted">${ui.coins(it.price)}</s>` : ''} · po nakupu ti ostane <b>${ui.coins(hub.coins - it.priceToday)} 🪙</b></p>` : ''}</div>`,
     actions: [{ label: 'Prekliči', value: false }, { label: it.price ? `Kupi · ${ui.coins(it.priceToday)} 🪙` : 'Odkleni', value: true, kind: 'primary' }],
@@ -212,7 +259,7 @@ async function buy(id) {
 async function equip(id) {
   const it = K.item(id);
   try {
-    await hub.equip(it.kind, id);
+    await hub.equip(slotKey(it), id);
     ui.toast(`Opremljeno: ${it.name}`, { icon: '✨' });
   } catch (e) {
     ui.toast(e.message || 'Napaka', { icon: '⚠️' });
@@ -223,7 +270,8 @@ async function equip(id) {
 async function unequip(slot) {
   try {
     await hub.equip(slot, null);
-    ui.toast(`Snel si: ${K.SLOT_ONE[slot]}`, { icon: '👕' });
+    const gs = /^([a-z0-9-]+)\.([a-z]+)$/.exec(slot);
+    ui.toast(`Snel si: ${gs ? K.GAME_SLOT_ONE[gs[2]] || gs[2] : K.SLOT_ONE[slot]}`, { icon: '👕' });
   } catch (e) {
     ui.toast(e.message || 'Napaka', { icon: '⚠️' });
   }
@@ -259,6 +307,8 @@ async function main() {
     if (!b || b.disabled) return;
     if (b.dataset.tab) setTab(b.dataset.tab);
     else if (b.dataset.rar) { rarity = b.dataset.rar; renderTabs(); renderPanel(); }
+    else if (b.dataset.gf) { gameF = b.dataset.gf; slotF = 'all'; renderTabs(); renderPanel(); }
+    else if (b.dataset.sf) { slotF = b.dataset.sf; renderTabs(); renderPanel(); }
     else if (b.dataset.buy) buy(b.dataset.buy);
     else if (b.dataset.equip) equip(b.dataset.equip);
     else if (b.dataset.unequip) unequip(b.dataset.unequip);

@@ -30,6 +30,7 @@ Igre **ne vedo**, ali teče Supabase ali offline način — API je isti.
 | `quests.js` | generator dnevnih/tedenskih nalog in napredek (čista logika) |
 | `cosmetics.js`, `cosmetics.css` | katalog kozmetike (94 predmetov), dnevna ponudba, pogoji; izgled |
 | `storage.js` | varen `localStorage` (vse v `try/catch`) |
+| `sport/` | športni okvir: tekma v serijah, replay v živo, sezona pokala, KO/turneja, kariera (glej `sport/README.md`) |
 | `config.js` | Supabase URL in javni ključ (prazno = offline) |
 | `adapters/local.js` | offline: `localStorage` + `BroadcastChannel` |
 | `adapters/supabase.js` | Supabase: anonimna prijava, RPC, realtime |
@@ -169,12 +170,40 @@ await hub.getInventory();                      // [{ item_id, acquired_at, sourc
   `play:<igra>`, `daily:<igra>`, `score:<igra>` ali ime iz `hub.reportEvent`; `cmp`/`goal` = prag vrednosti).
   Splošni dogodki iz `reportGame`: `play`, `play:<igra>`, `mp` (≥2), `win`, `party` (≥4), `daily`, `distinct`, `ach`.
 - **Sloti opreme** (`profile.equipped`): `emoji`, `bg`, `frame`, `name`, `title`, `badge`, `win`, `banner`
-  (id-ji iz `cosmetics.js`). `equipped` je tudi v `room.players[i]`, v vrsticah `getLeaderboard`, `topXp`
+  (id-ji iz `cosmetics.js`) in `games` (predmeti za igre, spodaj). `equipped` je tudi v `room.players[i]`, v vrsticah `getLeaderboard`, `topXp`
   in `listLobbies` (`host_equipped`).
 - **Prikaz:** `ui.who(p)` in `ui.avatar(p, size)` sama narišeta okvir, ozadje, premium emoji, barvo vzdevka,
   značko in naslov — **podaj celega igralca** (`{ nickname, avatar, equipped }`), ne le `p.avatar`.
   `ui.results` pokaže zmagovalčev učinek (`players[0].equipped.win`); `ui.winFx('confetti')` ga sproži ročno.
   Animacije spoštujejo `prefers-reduced-motion`. CSS: `cosmetics.css` (naloži za `ui.css`; hub ga doda sam).
+
+### Predmeti za posamezne igre (»Za igre« v trgovini)
+Predmeti, ki se vidijo **v sami igri** (samo videz — fizika enaka za vse). V `cosmetics.js` so v `GAME_ITEMS`
+(`{ id, kind: 'game', game, slot, name, desc, rarity, price, unlock, value }`), sloti po igrah v `GAME_SLOTS`
+(`{ skoki: ['suit', 'helmet', 'skis', 'flag'] }`). Opremljeni so v `equipped.games.<igra>.<slot>` (zato so v presence,
+lestvicah, ghostih …). Nova igra (npr. Krogla) doda vnos v `GAME_SLOTS` in predmete — hub in trgovina ostaneta nespremenjena.
+```js
+await hub.equip('skoki.suit', 'skoki-suit-neon');       // slot '<igra>.<slot>'; null sname · napake: invalid, not_owned
+hub.gameItem('skoki', 'suit');                          // moj opremljen predmet ({ value: { suit, suit2 } … }) ali null
+cosmetics.gameItemOf(player.equipped, 'skoki', 'suit'); // drug igralec (room.players[i], vrstica lestvice, ghost)
+```
+Nakup kot pri kozmetiki (`hub.buy`, RPC `buy_item` / `unlock_item`), opremljanje prek RPC `equip`. SQL: blok GAME_ITEMS v
+`schema.sql` (`node tools/shop-sql.mjs --write`; stolpca `game`, `slot`). Niso v dnevni ponudbi.
+
+### Pokal (sezona, asinhrono)
+Splošen API za športne igre (svetovni pokal skokov, kasneje npr. biatlon). Koledar izračuna igra (`sport/season.js`); hub hrani zapise.
+```js
+await hub.cupSubmit({ season: '2026-12', event: 4, round: 1, points: 128.4, dist: 131.5, inputs, paramsVersion: 6,
+  window: { opens, r2, closes }, now });   // window/now/cut/maxPoints uporabi le offline adapter
+const rows = await hub.cupStandings({ season: '2026-12' });   // [{ user_id, event, round, points, dist, nickname, avatar, equipped }]
+const j = await hub.cupJump({ season, event, round, userId }); // { …, inputs } za replay / ghost
+```
+- Napake (`e.code`): `cup_closed` (serija ni odprta), `cup_already` (serija že skočena), `cup_no_r1`, `cup_cut` (ni med najboljših 30),
+  `cup_too_big` (vnosi > 6000 znakov ali ne base64), `cup_impossible` (točke/daljava nad mejo), `cup_unknown`, `no_profile`.
+- Offline: `localStorage` (`db:cup`), okno preveri iz podanega `window` in `now` (podpira simuliran datum).
+- Supabase: tabele `<igra>_cup_events` (okna postaj), `<igra>_cup_jumps` (branje vsi prijavljeni, pisanje le prek RPC),
+  pogled `<igra>_cup_board` (security invoker, s profilom) in RPC `<igra>_cup_submit(p_season, p_event, p_round, p_points, p_dist,
+  p_inputs, p_params_version)` — glej `supabase/games/skoki.sql`.
 
 ### Dnevni seed in naključnost
 ```js

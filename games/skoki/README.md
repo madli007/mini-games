@@ -1,7 +1,7 @@
 # Smučarski skoki (`games/skoki/`)
 
 Zalet, odriv v pravem trenutku, let, ki ga loviš z miško, in telemark. Deterministična 2D fizika, 2,5D izris
-(Three.js 0.160), prava pravila točkovanja, veter, ghosti. 1. in 2. faza od treh in prave skakalnice (`prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`, `prompts/29-skoki-prave-skakalnice.md`; naslednja: `13-skoki-pokal.md`).
+(Three.js 0.160), prava pravila točkovanja, veter, ghosti. Vse tri faze in prave skakalnice (`prompts/11-skoki.md`, `prompts/12-skoki-tekma.md`, `prompts/29-skoki-prave-skakalnice.md`, `prompts/13-skoki-pokal.md`).
 
 ## Kontrole
 
@@ -230,7 +230,7 @@ Meje pristanka so v »zemeljskih« metrih (`hEq` z `P.g`). `paramsVersion` ostan
 ### Moduli 2. faze
 | Modul | Vsebina |
 |---|---|
-| `sport/competition.js`, `sport/live-replay.js` | splošno tekmovanje in tok vnosov (glej `sport/README.md`) |
+| `sport/competition.js`, `sport/live-replay.js` | splošno tekmovanje in tok vnosov — od 3. faze v `shared/sport/` (glej `shared/sport/README.md`) |
 | `contest.js` | skakalni del: simulacija iz vnosov, veter serije, žirija, za vodstvo, nagrade, dnevni izbor, odklepi, XP |
 | `jumpers.js` | lastni skakalci, izvoz/uvoz, statistika, izmišljeni boti |
 | `match.js` | DOM: soba, host, gledanje, reakcije, TV, lokalna tekma, Moji skakalci |
@@ -464,3 +464,51 @@ plapola v vetru (senčilnik kot pri zastavicah publike). Luna: temno modra zasta
 - **Letalnice:** meje udarca so pomnožene z `landing.flyFactor` 2,1 (le `size: 'letalnica'`), ker se za HS doskočišče izravna in
   udarec hitro raste. Čist pristanek je mogoč do ~HS + 10 m (npr. 251 m na Planici), dlje dotik, nato padec — rekordne daljave
   (pravi svetovni rekord 254,5 m) so dosegljive le z zelo dobrim pristankom.
+
+## 3. faza: svetovni pokal, kariera, oprema (`prompts/13-skoki-pokal.md`)
+
+Meni ima dva velika gumba **🌍 Svetovni pokal** in **🎯 Kariera**; nad njima obvestilo, če je postaja odprta in še nisi skočil.
+
+### Svetovni pokal (asinhrono, Supabase ali offline)
+- **Sezona = koledarski mesec** (»Pokal Decembra 2026«, prva sezona 2026-12). Koledar se izračuna iz meseca in seeda
+  (`cup-config.js` → `shared/sport/season.js`): ceil(dni / 3) postaj (10–11), vsaka **odprta 2–3 dni od polnoči po Ljubljani**;
+  **1. serija** ves čas postaje (en skok, poskus se porabi ob štartu), **2. serija zadnji dan** postaje za najboljših 30 po 1. seriji
+  (izenačeni na meji vsi; med prijatelji gredo vsi). Pred 1. serijo neomejen **trening** na isti skakalnici, vetru in pogoju (z ghosti).
+- Samo **prave skakalnice** (devet velikih, srednja Planica); **finale vedno na letalnici** (~75 % Planica), ena letalnica sredi sezone.
+  Pogoji postaje: brez, sneženje, noč pod reflektorji, sunkovit veter; veter −1,5 … +1,5 m/s; zalet postavi žirija po vetru (isti za vse).
+- **Turneja 4 skakalnic** v decembrski sezoni: štiri postaje pred finalom (Oberstdorf → Garmisch → Innsbruck → Bischofshofen), ločena
+  skupna razvrstitev = vsota točk skokov, kdor zamudi postajo, izpade. KO pari so v pokalu izklopljeni (< 50 skakalcev), so pa v formatu
+  **»Turneja 4 skakalnic«** Lokalne in spletne Tekme (pari 1.–N., srečnih poražencev round(N/10), izenačenje v paru: oba naprej).
+- **Točke pokala** 100-80-60-50-45-40-36-32-29-26-24-22-20-18-16-15-14 … 1 (30. mesto); izenačeni enake točke; skupno = vsota,
+  izenačenje: več zmag, nato več drugih mest. **Rumena majica 🟡** (vodilni) se vidi tudi v tekmah in treningu.
+- Zaslon: koledar (kartice s stanjem prihaja/odprto/2. serija/končano in mojim mestom), postaja (pogoji, odštevanje, gumbi, rezultati,
+  povzetek v slogu prenosa: oder, najdaljši skok, replay zmagovalnega skoka), skupna razvrstitev z gibanjem mest, turneja,
+  Dvorana slavnih (zmagovalci preteklih sezon), konec sezone (zmagovalec, »Kralj letalnic«, »Najbolj stanoviten«), pretekle sezone ◀ ▶.
+- **Replay vsakega pokalnega skoka** (klik na točke serije) in **👻 ghost** za trening postaje — z opremo igralca, čigar je skok.
+- Hub: XP 20 za pokalni skok (največ 2 na postajo), +100 zmaga postaje, +300 zmaga sezone; `reportEvent('skoki:pokal')` enkrat na
+  postajo; `reportGame` po 2. seriji (ali 1., če se nisi uvrstil). Dosežki `pokal-prvi`, `pokal-zmaga`, `rumena`, `sezona`, `vsi-skoki`, `turneja`.
+- Podatki: `hub.cupSubmit / cupStandings / cupJump` (`shared/README.md`), Supabase `skoki_cup_*` in RPC `skoki_cup_submit`
+  (`supabase/games/skoki.sql`; okna postaj v `skoki_cup_events` iz `node tools/skoki-cup-sql.mjs --write`).
+
+### Kariera (solo proti 29 botom)
+Celinski pokal (Mini, mala, srednja) → Svetovni pokal (srednja, velika) → Poleti (velika, letalnice). Kariera-sezona ima 6–8 tekem z
+dvema serijama in 30 skakalci; med najboljših 10 v sezoni = višja liga. Rivali so stalni (izmišljena imena ali boti iz »Moji skakalci«,
+manjkajoče dopolnijo vgrajeni), z močjo znotraj lige, značajem (stabilen, nestanoviten, borec, mojster) in formo, ki niha (▲▼). Brez
+nadgradenj fizike. Shrani se po vsaki tekmi (`skoki:career:<profil>`), izvoz/uvoz s kodo `KARIERA1:`. Novinarski napisi, statistika
+(zmage, odri, najdaljši, sezone, naslovi). XP 25 za tekmo, +75 za napredovanje; dosežki `kariera-liga-2`, `kariera-poleti`, `kariera-prvak`.
+
+### Oprema v trgovini (zavihek »Za igre«)
+Sloti `suit`, `helmet`, `skis`, `flag` (`shared/cosmetics.js` → `GAME_ITEMS`): 10 dresov, 6 čelad, 6 smuči, 10 zastavic. Z dosežki:
+zlati dres (zmaga sezone), rumena čelada (vodstvo v sezoni), Lunin dres (skok na Luni), smuči Letalec (200 m), dres Snežni angel
+(50 padcev, dosežek `padci-50`). **Samo videz** (`gear.js` → `skin`): trening, tekma (drugi vidijo prek presence), ghosti, replayi,
+zastavica ob imenu in v publiki. Dosežek `garderoba` (5 kupljenih kosov).
+
+### Moduli 3. faze
+| Modul | Vsebina |
+|---|---|
+| `cup-config.js` | skakalni del koledarja (skakalnice, finale, turneja, pogoji) in lige kariere (brez DOM-a) |
+| `cup.js`, `career-ui.js` | DOM: zaslon pokala in kariere |
+| `gear.js` | oprema iz trgovine → videz skakalca, zastavica, rumena majica |
+| `../../shared/sport/` | `season.js`, `ko.js`, `career.js` (+ `competition.js`, `live-replay.js` iz 2. faze) — glej `shared/sport/README.md` |
+
+Razvojno: `?pokal=1`, `?kariera=1`, `?date=2026-12-03[T18:30]` (simuliran datum, samo offline), `?bot=0.9` (bot skače namesto tebe).

@@ -106,7 +106,7 @@ export class Renderer {
     this.sunDir = sd;
     this.sun.color.set(T.sky.sunColor); this.sun.intensity = T.sunIntensity ?? 3;
     this.hemi.color.set(T.hemi[0]); this.hemi.groundColor.set(T.hemi[1]); this.hemi.intensity = T.hemi[2];
-    this.world = buildWorld(hill, this.q);
+    this.world = buildWorld(hill, this.q, { crowdFlag: skin?.crowdFlag || null });
     this.scene.add(this.world.group);
     this.me = makeJumper(skin);
     this.me.root.scale.setScalar(T.jumperScale || 1);   // otroška skakalnica: manjši skakalec
@@ -125,15 +125,27 @@ export class Renderer {
 
   /** Zamenjaj dres/čelado skakalca (tekma: vsak skakalec svoje barve). */
   setSkin(skin) {
-    if (!this.me || !skin || (this.skin && this.skin.suit === skin.suit && this.skin.helmet === skin.helmet && String(this.skin.flag) === String(skin.flag))) return;
+    const same = (a, b) => a.suit === b.suit && a.suit2 === b.suit2 && a.helmet === b.helmet && a.skis === b.skis && a.skiTip === b.skiTip && a.goggles === b.goggles && String(a.flag) === String(b.flag);
+    if (!this.me || !skin || (this.skin && same(this.skin, skin))) return;
     this.scene.remove(this.me.root); this.me.dispose();
     this.me = makeJumper(skin); this.me.root.scale.setScalar(this.hill?.def.theme.jumperScale || 1); this.scene.add(this.me.root); this.skin = skin;
   }
 
-  /** Število ghostov (prosojni skakalci). */
-  setGhosts(n) {
-    while (this.ghosts.length > n) { const g = this.ghosts.pop(); this.scene.remove(g.root); g.dispose(); }
-    while (this.ghosts.length < n) { const g = makeJumper(GHOST_SKIN, { ghost: true }); g.root.scale.setScalar(this.hill?.def.theme.jumperScale || 1); this.scene.add(g.root); this.ghosts.push(g); }
+  /**
+   * Število ghostov (prosojni skakalci). skins[i]: videz ghosta (oprema igralca, čigar je skok) ali null = privzeti ghost.
+   */
+  setGhosts(n, skins = []) {
+    const want = i => skins[i] || GHOST_SKIN;
+    // ghost z drugačnim videzom zgradi znova
+    for (let i = 0; i < Math.min(n, this.ghosts.length); i++) {
+      if (this.ghosts[i].skinId !== (want(i).id || 'ghost')) { this.scene.remove(this.ghosts[i].root); this.ghosts[i].dispose(); this.ghosts[i] = null; }
+    }
+    while (this.ghosts.length > n) { const g = this.ghosts.pop(); if (g) { this.scene.remove(g.root); g.dispose(); } }
+    for (let i = 0; i < n; i++) {
+      if (this.ghosts[i]) continue;
+      const g = makeJumper(want(i), { ghost: true }); g.skinId = want(i).id || 'ghost';
+      g.root.scale.setScalar(this.hill?.def.theme.jumperScale || 1); this.scene.add(g.root); this.ghosts[i] = g;
+    }
   }
 
   setRecord(s) { this.world?.recordLine(s); }

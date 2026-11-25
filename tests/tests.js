@@ -30,6 +30,8 @@ import { herodle2Tests } from './herodle2.js';
 import { frnikoleTests } from './frnikole.js';
 import { skokiTests } from './skoki.js';
 import { ustaviUroTests } from './ustavi-uro.js';
+import { sport3Tests } from './sport3.js';
+import { skoki4Tests } from './skoki4.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1494,6 +1496,9 @@ frnikoleTests(test, { eq, ok });
 skokiTests(test, { eq, ok });
 /* ------------------------------------------------------- Ustavi uro (tests/ustavi-uro.js) */
 ustaviUroTests(test, { eq, ok });
+/* ------------------------------------------------------- športni okvir in Smučarski skoki, 3. faza (tests/sport3.js, tests/skoki4.js) */
+sport3Tests(test, { eq, ok });
+skoki4Tests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

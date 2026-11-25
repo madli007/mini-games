@@ -650,6 +650,20 @@ create policy shop_items_select on public.shop_items for select to authenticated
 revoke all on table public.shop_items from anon, authenticated;
 grant select on table public.shop_items to authenticated;
 
+-- Predmeti za posamezne igre (kind 'game', stolpca game in slot): opremljeni so v profiles.equipped.games.<igra>.<slot>.
+alter table public.shop_items add column if not exists game text check (game is null or game ~ '^[a-z0-9-]{1,32}$');
+alter table public.shop_items add column if not exists slot text check (slot is null or slot ~ '^[a-z]{1,16}$');
+alter table public.shop_items drop constraint if exists shop_items_kind_check;
+alter table public.shop_items add constraint shop_items_kind_check
+  check (kind in ('emoji', 'bg', 'frame', 'name', 'title', 'badge', 'win', 'banner', 'game'));
+alter table public.shop_items drop constraint if exists shop_items_game_check;
+alter table public.shop_items add constraint shop_items_game_check
+  check ((kind = 'game') = (game is not null and slot is not null));
+-- več prostora za opremo po igrah (equipped.games)
+alter table public.profiles drop constraint if exists profiles_equipped_check;
+alter table public.profiles add constraint profiles_equipped_check
+  check (jsonb_typeof(equipped) = 'object' and pg_column_size(equipped) < 2000);
+
 -- SHOP_ITEMS:BEGIN (ustvari: node tools/shop-sql.mjs)
 insert into public.shop_items (id, kind, rarity, price, unlock, active) values
   ('frame-thin', 'frame', 'common', 0, '{"free":true}'::jsonb, true),
@@ -748,15 +762,54 @@ insert into public.shop_items (id, kind, rarity, price, unlock, active) values
   ('banner-rainbow', 'banner', 'legendary', 3800, null, true)
 on conflict (id) do update set kind = excluded.kind, rarity = excluded.rarity, price = excluded.price,
   unlock = excluded.unlock, active = excluded.active;
-update public.shop_items set active = false where id not in ('frame-thin', 'frame-thin-cyan', 'frame-thin-pink', 'frame-double', 'frame-neon-pink', 'frame-neon-cyan', 'frame-neon-green', 'frame-neon-yellow', 'frame-pixel', 'frame-bolt', 'frame-streak', 'frame-ice', 'frame-arcade', 'frame-fire', 'frame-crown', 'frame-gold', 'frame-rainbow', 'frame-pixel-rainbow', 'emoji-dino', 'emoji-penguin', 'emoji-owl', 'emoji-donut', 'emoji-bee', 'emoji-otter', 'emoji-flamingo', 'emoji-guitar', 'emoji-cowboy', 'emoji-shark', 'emoji-wolf', 'emoji-eagle', 'emoji-vampire', 'emoji-skull', 'emoji-rainbow', 'emoji-ninja', 'emoji-wizard', 'emoji-ufo', 'emoji-dragon', 'emoji-crown', 'bg-mint', 'bg-sunset', 'bg-ocean', 'bg-dots', 'bg-stripes', 'bg-checker', 'bg-silver', 'bg-gold', 'bg-galaxy', 'bg-aurora', 'name-yellow', 'name-cyan', 'name-pink', 'name-green', 'name-sunset', 'name-ice', 'name-neon', 'name-gold', 'name-rainbow', 'title-novinec', 'title-nocna-ptica', 'title-mirna-roka', 'title-bliskovit', 'title-party', 'title-kralj-sobe', 'title-flipper', 'title-zbiratelj', 'title-neustavljiv', 'title-veteran', 'title-pikselni-vitez', 'title-arkadni-mojster', 'title-legenda', 'badge-pad', 'badge-star', 'badge-moon', 'badge-bolt', 'badge-target', 'badge-fire', 'badge-rocket', 'badge-clover', 'badge-invader', 'badge-trophy', 'badge-diamond', 'win-stars', 'win-confetti', 'win-gg', 'win-pixelrain', 'win-fireworks', 'banner-dots', 'banner-sunset', 'banner-stripes', 'banner-synthwave', 'banner-night', 'banner-aurora', 'banner-gold', 'banner-rainbow');
+update public.shop_items set active = false where kind <> 'game' and id not in ('frame-thin', 'frame-thin-cyan', 'frame-thin-pink', 'frame-double', 'frame-neon-pink', 'frame-neon-cyan', 'frame-neon-green', 'frame-neon-yellow', 'frame-pixel', 'frame-bolt', 'frame-streak', 'frame-ice', 'frame-arcade', 'frame-fire', 'frame-crown', 'frame-gold', 'frame-rainbow', 'frame-pixel-rainbow', 'emoji-dino', 'emoji-penguin', 'emoji-owl', 'emoji-donut', 'emoji-bee', 'emoji-otter', 'emoji-flamingo', 'emoji-guitar', 'emoji-cowboy', 'emoji-shark', 'emoji-wolf', 'emoji-eagle', 'emoji-vampire', 'emoji-skull', 'emoji-rainbow', 'emoji-ninja', 'emoji-wizard', 'emoji-ufo', 'emoji-dragon', 'emoji-crown', 'bg-mint', 'bg-sunset', 'bg-ocean', 'bg-dots', 'bg-stripes', 'bg-checker', 'bg-silver', 'bg-gold', 'bg-galaxy', 'bg-aurora', 'name-yellow', 'name-cyan', 'name-pink', 'name-green', 'name-sunset', 'name-ice', 'name-neon', 'name-gold', 'name-rainbow', 'title-novinec', 'title-nocna-ptica', 'title-mirna-roka', 'title-bliskovit', 'title-party', 'title-kralj-sobe', 'title-flipper', 'title-zbiratelj', 'title-neustavljiv', 'title-veteran', 'title-pikselni-vitez', 'title-arkadni-mojster', 'title-legenda', 'badge-pad', 'badge-star', 'badge-moon', 'badge-bolt', 'badge-target', 'badge-fire', 'badge-rocket', 'badge-clover', 'badge-invader', 'badge-trophy', 'badge-diamond', 'win-stars', 'win-confetti', 'win-gg', 'win-pixelrain', 'win-fireworks', 'banner-dots', 'banner-sunset', 'banner-stripes', 'banner-synthwave', 'banner-night', 'banner-aurora', 'banner-gold', 'banner-rainbow');
 -- SHOP_ITEMS:END
+
+-- GAME_ITEMS:BEGIN (ustvari: node tools/shop-sql.mjs)
+insert into public.shop_items (id, kind, rarity, price, unlock, active, game, slot) values
+  ('skoki-suit-klasika', 'game', 'common', 80, null, true, 'skoki', 'suit'),
+  ('skoki-suit-rdeca', 'game', 'common', 100, null, true, 'skoki', 'suit'),
+  ('skoki-suit-polnoc', 'game', 'common', 120, null, true, 'skoki', 'suit'),
+  ('skoki-suit-neon', 'game', 'rare', 250, null, true, 'skoki', 'suit'),
+  ('skoki-suit-zima', 'game', 'rare', 280, null, true, 'skoki', 'suit'),
+  ('skoki-suit-retro', 'game', 'rare', 320, null, true, 'skoki', 'suit'),
+  ('skoki-suit-orel', 'game', 'epic', 750, null, true, 'skoki', 'suit'),
+  ('skoki-suit-angel', 'game', 'rare', 0, '{"achievement":"skoki:padci-50"}'::jsonb, true, 'skoki', 'suit'),
+  ('skoki-suit-luna', 'game', 'epic', 0, '{"achievement":"skoki:luna"}'::jsonb, true, 'skoki', 'suit'),
+  ('skoki-suit-zlati', 'game', 'epic', 0, '{"achievement":"skoki:sezona"}'::jsonb, true, 'skoki', 'suit'),
+  ('skoki-helmet-bela', 'game', 'common', 60, null, true, 'skoki', 'helmet'),
+  ('skoki-helmet-crna', 'game', 'common', 80, null, true, 'skoki', 'helmet'),
+  ('skoki-helmet-neon', 'game', 'rare', 220, null, true, 'skoki', 'helmet'),
+  ('skoki-helmet-plamen', 'game', 'rare', 300, null, true, 'skoki', 'helmet'),
+  ('skoki-helmet-krom', 'game', 'epic', 700, null, true, 'skoki', 'helmet'),
+  ('skoki-helmet-rumena', 'game', 'epic', 0, '{"achievement":"skoki:rumena"}'::jsonb, true, 'skoki', 'helmet'),
+  ('skoki-skis-bele', 'game', 'common', 60, null, true, 'skoki', 'skis'),
+  ('skoki-skis-crne', 'game', 'common', 90, null, true, 'skoki', 'skis'),
+  ('skoki-skis-les', 'game', 'rare', 250, null, true, 'skoki', 'skis'),
+  ('skoki-skis-mavrica', 'game', 'rare', 300, null, true, 'skoki', 'skis'),
+  ('skoki-skis-ogenj', 'game', 'epic', 650, null, true, 'skoki', 'skis'),
+  ('skoki-skis-letalec', 'game', 'epic', 0, '{"achievement":"skoki:letalec"}'::jsonb, true, 'skoki', 'skis'),
+  ('skoki-flag-si', 'game', 'common', 40, null, true, 'skoki', 'flag'),
+  ('skoki-flag-at', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-de', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-no', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-pl', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-fi', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-jp', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-ch', 'game', 'common', 60, null, true, 'skoki', 'flag'),
+  ('skoki-flag-pirat', 'game', 'rare', 200, null, true, 'skoki', 'flag'),
+  ('skoki-flag-mavrica', 'game', 'rare', 200, null, true, 'skoki', 'flag')
+on conflict (id) do update set kind = excluded.kind, rarity = excluded.rarity, price = excluded.price,
+  unlock = excluded.unlock, active = excluded.active, game = excluded.game, slot = excluded.slot;
+update public.shop_items set active = false where kind = 'game' and id not in ('skoki-suit-klasika', 'skoki-suit-rdeca', 'skoki-suit-polnoc', 'skoki-suit-neon', 'skoki-suit-zima', 'skoki-suit-retro', 'skoki-suit-orel', 'skoki-suit-angel', 'skoki-suit-luna', 'skoki-suit-zlati', 'skoki-helmet-bela', 'skoki-helmet-crna', 'skoki-helmet-neon', 'skoki-helmet-plamen', 'skoki-helmet-krom', 'skoki-helmet-rumena', 'skoki-skis-bele', 'skoki-skis-crne', 'skoki-skis-les', 'skoki-skis-mavrica', 'skoki-skis-ogenj', 'skoki-skis-letalec', 'skoki-flag-si', 'skoki-flag-at', 'skoki-flag-de', 'skoki-flag-no', 'skoki-flag-pl', 'skoki-flag-fi', 'skoki-flag-jp', 'skoki-flag-ch', 'skoki-flag-pirat', 'skoki-flag-mavrica');
+-- GAME_ITEMS:END
 
 -- Dnevna ponudba: 4 predmeti (isti algoritem kot cosmetics.dailyOffer).
 create or replace function private.mg_daily_offer(p_day date)
 returns text[] language sql stable security definer set search_path = '' as $$
   select (private.mg_shuffle(
     to_char(p_day, 'YYYY-MM-DD') || ':shop',
-    array(select s.id from public.shop_items s where s.price > 0 and s.active order by s.id collate "C")
+    array(select s.id from public.shop_items s where s.price > 0 and s.active and s.kind <> 'game' order by s.id collate "C")
   ))[1:4];
 $$;
 revoke all on function private.mg_daily_offer(date) from public, anon, authenticated;
@@ -1054,6 +1107,7 @@ grant execute on function public.unlock_item(text) to authenticated;
 
 -- ---------------------------------------------------------------------
 --  RPC: equip (samo iz inventarja ali brezplačni brez pogoja; null sname)
+--  Predmeti za igre: p_slot '<igra>.<slot>' (npr. 'skoki.suit') → equipped.games.<igra>.<slot>.
 --  napake: invalid · not_owned
 -- ---------------------------------------------------------------------
 create or replace function private.equip(p_slot text, p_item text default null)
@@ -1062,9 +1116,38 @@ declare
   uid uuid := auth.uid();
   it  public.shop_items;
   eq  jsonb;
+  v_g text;
+  v_s text;
+  gm  jsonb;
 begin
   if uid is null then raise exception 'not_authenticated'; end if;
-  if p_slot is null or p_slot not in ('emoji', 'bg', 'frame', 'name', 'title', 'badge', 'win', 'banner') then
+  if p_slot is null then raise exception 'invalid'; end if;
+  if p_slot ~ '^[a-z0-9-]{1,32}\.[a-z]{1,16}$' then
+    v_g := split_part(p_slot, '.', 1);
+    v_s := split_part(p_slot, '.', 2);
+    if not exists (select 1 from public.shop_items x where x.kind = 'game' and x.game = v_g and x.slot = v_s) then raise exception 'invalid'; end if;
+    perform 1 from public.profiles p where p.id = uid for update;
+    if not found then raise exception 'no_profile'; end if;
+    select coalesce(p.equipped -> 'games' -> v_g, '{}'::jsonb) into gm from public.profiles p where p.id = uid;
+    if p_item is null then
+      gm := gm - v_s;
+    else
+      select * into it from public.shop_items x where x.id = p_item;
+      if not found or it.kind <> 'game' or it.game <> v_g or it.slot <> v_s then raise exception 'invalid'; end if;
+      if not exists (select 1 from public.inventory i where i.user_id = uid and i.item_id = it.id)
+         and not (it.price = 0 and it.active and (it.unlock is null or coalesce((it.unlock ->> 'free')::boolean, false))) then
+        raise exception 'not_owned';
+      end if;
+      gm := gm || jsonb_build_object(v_s, it.id);
+    end if;
+    update public.profiles p set equipped = case
+        when gm = '{}'::jsonb and (coalesce(p.equipped -> 'games', '{}'::jsonb) - v_g) = '{}'::jsonb then p.equipped - 'games'
+        when gm = '{}'::jsonb then jsonb_set(p.equipped, '{games}', (p.equipped -> 'games') - v_g)
+        else jsonb_set(p.equipped, '{games}', coalesce(p.equipped -> 'games', '{}'::jsonb) || jsonb_build_object(v_g, gm)) end
+      where p.id = uid returning p.equipped into eq;
+    return eq;
+  end if;
+  if p_slot not in ('emoji', 'bg', 'frame', 'name', 'title', 'badge', 'win', 'banner') then
     raise exception 'invalid';
   end if;
   perform 1 from public.profiles p where p.id = uid for update;

@@ -186,7 +186,10 @@
       { "id": "w-skok-50", "tier": "w", "text": "Skoči 50 skokov ta teden", "event": "skoki:skok", "target": 50 },
       { "id": "zmaga-tekma", "tier": "m", "text": "Zmagaj na tekmi v skokih", "event": "skoki:zmaga", "target": 1 },
       { "id": "letalnica-k", "tier": "h", "text": "Preleti K na letalnici", "event": "skoki:letalnica", "target": 1 },
-      { "id": "w-tekme-5", "tier": "w", "text": "Odskači 5 tekem ta teden", "event": "skoki:tekma", "target": 5 }
+      { "id": "w-tekme-5", "tier": "w", "text": "Odskači 5 tekem ta teden", "event": "skoki:tekma", "target": 5 },
+      { "id": "pokal", "tier": "m", "text": "Skoči v svetovnem pokalu", "event": "skoki:pokal", "target": 1 },
+      { "id": "kariera-zmaga", "tier": "h", "text": "Zmagaj na tekmi kariere", "event": "skoki:kariera-zmaga", "target": 1 },
+      { "id": "w-pokal-3", "tier": "w", "text": "Skoči na 3 postajah pokala ta teden", "event": "skoki:pokal", "target": 3 }
     ]
   },
   {
