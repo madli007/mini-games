@@ -1255,3 +1255,4 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
   upočasni animacijo — njegov skok je presegel 90 s in host ga je po pravilih označil DNF, seštevek je zato 0, kar je pravilno).
 
 - Popravek: boti in replayi ne sprožijo več proslave »REKORD SKAKALNICE!« in ne premaknejo zlate črte (oznaka `noRecord` v motorju skoka; prej le prikaz, v lestvico se boti niso nikoli zapisali — rekordi se shranjujejo le v načinu Rekord skakalnice).
+- Popravek: med tekmo (tudi Pokal / Turneja) je sprotna razvrstitev desno zgoraj prekrivala vetrokaz — vetrokaz je zdaj levo ob razvrstitvi (namizje, TV); na telefonu je razvrstitev spodaj. Preverjeno brez prekrivanja pri 1280×720, 820×600 in 375×812.

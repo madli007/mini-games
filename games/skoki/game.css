@@ -547,3 +547,8 @@ body.sk-match #btnPause { display: none; }
 .sk-series__quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .sk-series__hills { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 2px 10px; max-height: 220px; overflow: auto; }
 .sk-series .mg-check { grid-column: auto; }
+
+/* tekma: vetrokaz levo ob sprotni razvrstitvi (prej ga je razvrstitev prekrivala) */
+body.sk-match .sk-windbox { right: calc(max(10px, env(safe-area-inset-right)) + min(330px, 34vw) + 10px); }
+body.sk-match.sk-tv .sk-windbox { right: calc(max(10px, env(safe-area-inset-right)) + min(420px, 28vw) + 10px); }
+@media (max-width: 700px) and (orientation: portrait) { body.sk-match .sk-windbox { right: max(12px, env(safe-area-inset-right)); } }
