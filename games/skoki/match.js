@@ -1049,10 +1049,11 @@ function results(comp, rows, { xp = 0, again = 'Še enkrat', exit = 'V meni', pr
     const p = C.participant(comp, r.id);
     const pl = r.kind === 'human' && !p.meta?.local ? (room?.players.find(x => x.id === r.id) || ST?.people?.[r.id]) : null;
     const base = pl ? { ...pl } : { nickname: (p.meta?.flag ? JP.flagOf(p.meta.flag) + ' ' : '') + p.name, avatar: { emoji: r.kind === 'bot' ? '🤖' : '🎿', color: p.meta?.suit || '#4fc3f7' } };
-    // daljave po serijah (le pri rezultatih tekme; skupna razvrstitev serije tekem ima r.unit)
+    // skupna razvrstitev serije tekem (r.unit): le skupno — razčlenitev po tekmah je na zaslonu Skupna razvrstitev (pri
+    // veliko tekmah bi bila predolga); rezultat tekme: točke in daljave po serijah
     const dists = r.unit ? [] : comp.rounds.filter(R => R.kind === 'score' && R.results[r.id]?.status === 'ok' && R.results[r.id].data?.dist != null).map(R => fmtDist(R.results[r.id].data.dist));
     const dTxt = dists.length ? ' · ' + dists.join(' / ') : '';
-    return { ...base, id: r.id, scoreText: r.status === 'ok' ? (r.unit === 'pts' ? `${r.total} točk (${r.scores.map(x => x ?? 0).join(' + ')})` : `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})${dTxt}`) : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
+    return { ...base, id: r.id, scoreText: r.status === 'ok' ? (r.unit ? (r.unit === 'pts' ? `${r.total} točk` : `${fmt1(r.total)} t`) : `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})${dTxt}`) : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
   });
   const teams = C.teamStandings(comp);
   const extra = `${prizes.length ? `<h3 class="mg-title">Posebne nagrade</h3><ul class="sk-prizes">${prizes.map(z => `<li>${z.icon} <b>${esc(z.title)}</b>: ${whoHtml(C.participant(comp, z.id))} <span class="mg-muted">${esc(z.text)}</span></li>`).join('')}</ul>` : ''}
