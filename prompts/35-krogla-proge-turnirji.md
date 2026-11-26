@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Hrčkova krogla — nove proge in več turnirjev
 
-> **Stanje:** ⬜ čaka — lahko takoj (pred 30 ali po njem; glej »Usklajevanje z drugimi prompti«)
+> **Stanje:** ✅ narejeno (commit `72588a7`, 27. 11. 2026)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/35-krogla-proge-turnirji.md in ga v celoti izvedi.«**

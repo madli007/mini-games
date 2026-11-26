@@ -433,9 +433,9 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 
 - 📝 **Dirka dveh:** online realtime na isti progi (original ima deljen zaslon), z ghosti ostalih.
   Prompt: `prompts/19-krogla-dirka.md` (čaka). Okolica prog: `prompts/20-krogla-okras.md` (čaka).
-- 📝 **Nove proge in več turnirjev:** 16 novih prog različnih dolžin (sprinti ~10 s do maratonov ~2 min) in težavnosti,
+- ✅ **Nove proge in več turnirjev:** 16 novih prog različnih dolžin (sprinti ~10 s do maratonov ~2 min) in težavnosti,
   pokali (Hrčkov, Sprint, Svetovna turneja, Maraton, Peklenski, Tedenski) s svojimi lestvicami in odklepi, izmerjen balans.
-  Prompt: `prompts/35-krogla-proge-turnirji.md` (čaka).
+  Prompt: `prompts/35-krogla-proge-turnirji.md` (narejeno, commit `72588a7`).
 - ✅ **Skrite ključavnice** na progah, ki odklenejo skrivne arene v Rušilcu (narejeno s promptom 07, `games/krogla/secrets.js`).
 - ✅ **Skupnostne proge:** urejevalnik shrani progo v Supabase (`krogla_*` tabela), drugi jo igrajo in ocenijo,
   »proga tedna« gre na lestvico (narejeno, commit `c0011e0`).
