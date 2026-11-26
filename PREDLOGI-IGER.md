@@ -22,6 +22,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
 | 6. Motorist (fizikalni trial) | 📝 | prompti 32–34 |
+| 61. Kresnik (klasični 2D platformer) | 📝 | prompti 36–39 |
 | 18. Ustavi uro | ✅ | `games/ustavi-uro/` (prompt 28) |
 | Vse ostale točke | ⬜ | — |
 
@@ -558,6 +559,45 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
 
 **Vrstni red teh štirih:** Rudar → Alu obramba → Topovi → Jamar.
 
+> Jamar (60) se žanrsko prekriva s Kresnikom (61). Ko je 61 narejen, Jamar ni več samostojna igra, ampak
+> kvečjemu nov svet (ledena doba, vulkan) ali tema v Kresnikovem urejevalniku.
+
+### Klasični platformer
+
+61. 📝 **Kresnik (klasični platformer v duhu starih 2D platformerjev, npr. prvega Raymana)** ★★★ — prompti
+    [`36-kresnik`](prompts/36-kresnik.md), [`37-kresnik-svetova`](prompts/37-kresnik-svetova.md),
+    [`38-kresnik-finale`](prompts/38-kresnik-finale.md), [`39-kresnik-urejevalnik`](prompts/39-kresnik-urejevalnik.md)
+    - **Žanr in občutek:** singleplayer 2D platformer s stranskim pogledom, **ročno »poslikanimi« svetovi** z globino
+      (več plasti paralakse, mehke barve, svetloba), živahne animacije s stiskom in raztegom (squash & stretch),
+      sposobnosti se odklepajo med igro, zemljevid sveta s potjo med nivoji, šefi na koncu svetov. Navdih je
+      občutek starih platformerjev (Rayman 1995), **ne** njihovi liki, imena, nivoji ali grafika: junak, svetovi,
+      sovražniki, glasba in zgodba so naši (slovenske pripovedke in pokrajine).
+    - **Junak:** Kresnik, majhen svetlobni duh iz slovenskih pripovedk. Coprnica Mora je ukradla **Sonce** in ga
+      razbila na drobce. Kresnik mora zbrati drobce in vrniti svetlobo deželi.
+    - **Gibanje:** tek, skok z višino glede na to, kako dolgo držiš tipko, coyote time, buffer skoka, oprijem roba,
+      kasneje lebdenje (listni plašč), prijem in zamah na kavljih (lijane, lučke) ter šprint.
+    - **Napad:** **svetlobna krogla**, ki jo nabiješ (dlje držiš, dlje leti) in se vrne k tebi kot bumerang.
+      Z njo omamiš sovražnike, prižigaš svetilke in zadevaš stikala.
+    - **Zbiranje:** **iskrice** (100 = dodatno življenje oz. točke), v vsakem nivoju **6 ugaslih svetilk** (nekatere
+      skrite), ki jih prižgeš; drobci Sonca so nagrada za šefe. Za finalni svet morajo biti prižgane vse svetilke
+      (stara trda zasnova) ali vsaj 80 % (milejša nastavitev, odloči se ob uglaševanju).
+    - **Svetovi (5 + finale):** 1 Pravljični gozd (Pohorje, jase, gobe, lijane), 2 Kraške jame (kapniki, podzemna
+      reka, človeška ribica kot prijazen lik), 3 Planine (oblaki, veter, sneg, led), 4 Mlinska dolina (vodna kolesa,
+      zobniki, žage, vodni tokovi), 5 Barje (megla, kolišča, močvirne luči), finale Morin grad. Šefi: Gobji kralj,
+      Jamski rak, Ledeni orel, Mlinar-stroj, Vešča z Barja, Mora.
+    - **Življenja:** klasično (3 življenja, več z iskricami, ob koncu »Konec igre« → nazaj na zemljevid) ali moderen
+      način brez življenj (smrti se le štejejo). Izbereš ob začetku shranjene igre.
+    - **Hub:** medalje glede na čas in svetilke, lestvica po nivoju in za celo igro (speedrun), ghost prijatelja v
+      načinu »Na čas«, dosežki (100 %, vsi šefi brez poškodb), kasneje kozmetika (barva svetlobe, plašč, sled),
+      urejevalnik nivojev in dnevni nivo.
+    - **Tehnika:** lastna deterministična fizika na mreži ploščic (AABB, fiksen korak 120 Hz, brez knjižnice), izris
+      v **Canvas 2D** (proceduralno narisani in v repoju ročno narisani SVG liki, brez tujih slik), Web Audio zvok.
+      Ker je fizika lastna in čista, je posnetek vnosov determinističen tudi v Node → nivoje preverja posnetek vnosov.
+    - **Razdelitev (4 prompti):** 36 = motor, gibanje, Kresnik, 1. svet (6 nivojev + šef), zemljevid, svetilke,
+      življenja, medalje, ghost, drsniki; 37 = svetova 2–3, lebdenje, kavlji, voda, veter, led, nova sovražnika in šefa;
+      38 = svetova 4–5, finale z Moro, šprint, način »Na čas« za celo igro, kozmetika v trgovini; 39 = urejevalnik
+      nivojev, nivoji skupnosti, nivo tedna, dnevni nivo.
+
 ## Predlagan vrstni red (posodobljeno 23. 11. 2026)
 
 Hub, Ladjice, Krogla, Rušilec, Zaporedje, Herodle (1–2) in Dirka frnikol (1. del) so narejeni. Naprej:
@@ -567,6 +607,7 @@ Hub, Ladjice, Krogla, Rušilec, Zaporedje, Herodle (1–2) in Dirka frnikol (1. 
 2. **Majhne igre ★** (16–34), ko je malo porabe: npr. Stolp, Tarče, Kača.
 3. **Party igre** (11–13) za večjo družbo: Kdo je izdajalec, Kviz.
 4. **Večje nove igre:** Rudar (57) → Alu obramba (58) → Topovi (59) → Bomba arena (7) → Plemena (1).
+   **Kresnik (61)** ima prompte že napisane (36–39) in se lahko začne kadarkoli.
 
 ## Kako dodati novo igro ali prompt
 

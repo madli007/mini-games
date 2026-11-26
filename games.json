@@ -301,6 +301,18 @@
     "color": "#ff4fd8"
   },
   {
+    "id": "kresnik",
+    "name": "Kresnik",
+    "description": "Klasični 2D platformer: s svetlobno kroglo skozi poslikane svetove slovenskih pripovedk. Prižgi svetilke in vrni Sonce.",
+    "icon": "✨",
+    "path": "games/kresnik/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["platformer", "arkada"],
+    "status": "soon",
+    "color": "#ffb347"
+  },
+  {
     "id": "celice",
     "name": "Celice arena",
     "description": "Pojej manjše, izogni se večjim, razdeli se ob pravem trenutku.",

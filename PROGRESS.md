@@ -1289,3 +1289,16 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
   predmeti v trgovini). 32 in 33 na koncu posodobita naslednji prompt z dejanskimi spoznanji.
 - Posodobljeno: kazalo `prompts/README.md` (naslednja prosta številka 35), oznaka 📝 v `PREDLOGI-IGER.md`, opis in oznake
   vnosa `motorist` v `games.json` (še vedno `soon`), korenski `README.md`. Igra še ni narejena.
+
+# Kresnik — prompti (26. 11. 2026)
+- Nova točka »61. Kresnik (klasični platformer)« v `PREDLOGI-IGER.md`: singleplayer 2D platformer v duhu starih
+  platformerjev (občutek prvega Raymana: poslikani svetovi, sposobnosti, zemljevid, šefi), a z lastnim junakom,
+  svetovi in zgodbo iz slovenskih pripovedk (Kresnik, coprnica Mora, ukradeno Sonce, svetilke namesto zbirk).
+- Napisani prompti: `prompts/36-kresnik.md` (lastna deterministična fizika na mreži ploščic, gibanje s coyote/buffer,
+  svetlobna krogla, 1. svet Pravljični gozd s 6 nivoji in Gobjim kraljem, zemljevid, reže, življenja, svetilke, medalje,
+  ghost, posnetki vnosov, drsniki `?debug=1`), `prompts/37-kresnik-svetova.md` (Kraške jame, Planine, prijem in zamah,
+  lebdenje, voda, veter, led), `prompts/38-kresnik-finale.md` (Mlinska dolina, Barje, Morin grad in konec, šprint,
+  speedrun in 100 %, kozmetika) in `prompts/39-kresnik-urejevalnik.md` (urejevalnik, nivoji skupnosti, nivo tedna,
+  dnevni nivo). Vsak del na koncu posodobi naslednje prompte z dejanskimi spoznanji.
+- Posodobljeno: kazalo `prompts/README.md` (naslednja prosta številka 40), vnos `kresnik` v `games.json` (`soon`),
+  korenski `README.md`. Opomba pri Jamarju (60) o prekrivanju s Kresnikom. Igra še ni narejena.

@@ -23,6 +23,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [35-krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog (kratke/srednje/dolge, ★–★★★★★) in 7 turnirjev | veliko |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
+| [36-kresnik](36-kresnik.md) | Kresnik: klasični 2D platformer, 1. del (nova igra) | veliko |
 
 ## Vsi prompti
 
@@ -63,9 +64,13 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 33 | [motorist-urejevalnik](33-motorist-urejevalnik.md) | Motorist: urejevalnik, skupnostne proge, dnevna proga, sklopa 3–4 | 2/3 | ⬜ | | 32 |
 | 34 | [motorist-dirka](34-motorist-dirka.md) | Motorist: dirka do 10 igralcev v živo, sezona, predmeti v trgovini | 3/3 | ⬜ | | 32 (33 priporočeno) |
 | 35 | [krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog, turnirji (pokali), tedenski pokal, merjenje balansa | — | ⬜ | | 03 ✅ (30 neobvezno) |
+| 36 | [kresnik](36-kresnik.md) | Kresnik: motor platformerja, gibanje, svetlobna krogla, 1. svet (6 nivojev + šef), zemljevid, reže, medalje, ghost | 1/4 | ⬜ | | 01 ✅ |
+| 37 | [kresnik-svetova](37-kresnik-svetova.md) | Kresnik: Kraške jame in Planine, prijem in zamah, lebdenje, voda, veter, led, 2 šefa | 2/4 | ⬜ | | 36 |
+| 38 | [kresnik-finale](38-kresnik-finale.md) | Kresnik: Mlinska dolina, Barje, Morin grad in konec, šprint, speedrun in 100 %, trgovina | 3/4 | ⬜ | | 37 |
+| 39 | [kresnik-urejevalnik](39-kresnik-urejevalnik.md) | Kresnik: urejevalnik nivojev, nivoji skupnosti, nivo tedna, dnevni nivo | 4/4 | ⬜ | | 36 (37, 38 priporočena) |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 36.**
+**Naslednja prosta številka: 40.**
 
 ## Pravila (da se ne izgubimo)
 

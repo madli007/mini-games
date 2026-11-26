@@ -14,7 +14,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
   **Zaporedje**, **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila
   točkovanja, veter, trening z ghosti in rekord skakalnice) in napovedane igre (npr. **Motorist**, fizikalni trial — prompti
-  32–34 v [`prompts/README.md`](prompts/README.md)).
+  32–34, in **Kresnik**, klasični 2D platformer v duhu starih platformerjev — prompti 36–39 v
+  [`prompts/README.md`](prompts/README.md)).
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
 - Backend: Supabase (anonimna prijava, RLS, realtime). Brez njega vse deluje v **offline načinu**.
 
