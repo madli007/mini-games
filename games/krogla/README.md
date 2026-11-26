@@ -92,7 +92,7 @@ Vsi sovražniki so deterministični (poti in časovniki iz časa proge, nasilne�
 ## Kako dodati progo
 
 1. V `tools/krogla-levels.mjs` dodaj `def({ id: '13-ime', name, set, theme, desc }, () => { const T = new Track(); … return T; })`.
-   »Želvica« (`T.go(n, { w, ch, up, down, conv })`, `T.turn('E')`, `T.gap(n, dh)`, `T.mark('star' | 'clock' | 'cp' | 'goal')`,
+   »Želvica« (`editor/track.js`: `T.go(n, { w, ch, up, down, conv })`, `T.turn('E')`, `T.gap(n, dh)`, `T.mark('star' | 'clock' | 'cp' | 'goal')`,
    `T.pocket(...)`, `T.add('movers', {...})`, `T.wp({...})`) sproti zapiše tudi pot za autopilota.
 2. `node tools/krogla-levels.mjs --dump=13` izriše progo s potjo autopilota in mesti padcev; popravljaj, dokler ne pride do cilja.
 3. `node tools/krogla-levels.mjs` zapiše JSON-e, `index.json` in zlate čase v `supabase/games/krogla.sql` (blok `BEGIN LEVELS`).
@@ -164,3 +164,49 @@ Proge skupnosti ne vplivajo na turnir, odklepe, dnevni izziv in dosežke; ghost 
    (ostanejo na svojem mestu), validira jih in njihove zlate čase doda v SQL blok `BEGIN LEVELS`.
 4. `node tests/run-node.mjs` (validator + rešljivost vseh prog v `index.json`), nato na Supabase ponovno poženi
    `supabase/games/krogla.sql` (proga v `krogla_levels`, sicer RPC zavrne ghost).
+
+## Naključne proge (generator)
+
+»🎲 Naključna proga« v urejevalniku (📁 Proge ali okno v praznem urejevalniku) ustvari novo, **zagotovo rešljivo**
+progo, ki se shrani kot nov osnutek (ime »Naključna 7F3K«, `desc` s semenom in nastavitvami, `verified` z `levelHash`).
+Takoj jo lahko označiš »✅ Pripravljeno«, deliš ali objaviš; nadaljnje urejanje deluje kot pri ročni progi (sprememba
+mreže razveljavi preverjanje). »🎲 Znova« naredi novo različico z novim semenom (prejšnji osnutek ostane), »▶ Ustvari in
+igraj« jo odpre v igri (`?play=<osnutek>`). V meniju igre je pri »Moje proge« še **»🎲 Hitra naključna proga«**
+(težavnost + dolžina → takoj igraj; po cilju »💾 Shrani med moje proge«) — kot Moje proge: brez uradne lestvice,
+odklepov in dosežkov.
+
+Moduli: `editor/track.js` (želvica `Track` + `finish`, skupna z `tools/krogla-levels.mjs`), `editor/generate.js` (čista
+logika, testi v `tests/tests.js`), `editor/gen-worker.js` (Web Worker; brez modulnih workerjev teče generator v kosih na
+glavni niti), `editor/genui.js` (okno, povzetek, zagon). `tools/frnikole-tracks.mjs` ima svojo kopijo želvice (drug format
+prog) — združitev je možna kasneje.
+
+**Gradnja.** `generateLevel(opts) → { L, seed, tries, ok, report }`. Proga je zaporedje odsekov: polnila (ravnina,
+zavoj, klanec gor/dol, ozek most — tudi cikcak ali s padajočimi/ledenimi ploščicami, led/lepilo/valovi, tekoči trak
+naprej/nazaj, padajoče ploščice) in posebni gradniki, ki so kopije preverjenih vzorcev iz uradnih prog: skok z rampe
+(vedno s spustom pred njim — na ravnem krogla doseže le ~7 m/s) ali z vzmetjo, premična plošča vstran čez prepad
+(`movers` + `wp({ mover, until })`), vrtiljak, kladiva na časovnik, slalom med odbijači, ventilatorji, skleda, stikalo
+v stranskem žepu + vrata, arena z nasilnežem (pot autopilota obide območje lova), žage in ose s pravim časovnim oknom
+(`until`), sesalec in magneti ob ozkem mostu. Vsak gradnik doda tudi točke poti za autopilota. Proga nikoli ne gre proti
+kameri (jug); proti severu gre le en gradnik, nato zavoj vzhod/zahod (stopnice, ob robu mreže nazaj). Pred vsakim
+gradnikom se na kopiji želvice preveri, da se proga ne seka sama s sabo (tudi prostor nad prepadi in pot plošč) in da
+ostane v `MAX_W × MAX_D`; če ne gre, poskusi z drugim zavojem, ravnino ali prenese gradnik naprej. Obvezno: start, cilj,
+točno 5 zvezdic (žepi, posebna mesta, nato enakomerno po poti), kontrolne točke na koncu odsekov, ure, tema in `look`.
+
+**Preverjanje.** `validateLevel` + `runAutopilot`; brez padca → konec, sicer novo pod-seme `seed + ':' + k` (največ
+`maxTries`, privzeto 20, na šibkih napravah 8 in manjša mreža 90 × 120). Uspešna proga dobi `medals`, `timeBonus` in
+`dev` iz `scoringFromRun` (ista formula kot uradne proge). Če autopilot v nobenem poskusu ne pride do cilja, se vrne
+najboljši poskus z opozorilom (osnutek ni označen kot rešljiv). `report`: odseki, ploščice, velikost, postavljeno/želeno
+po vrstah, podlage, žepi, kontrolne točke, ure, čas autopilota, padci, poskusi, opozorila (npr. »Žage: 2 ni bilo mogoče
+postaviti«, če zmanjka prostora).
+
+**Nastavitve** (`krogla:gen:opts`): *preprosto* — težavnost 1–5 (Lahka · Srednja · Težka · Zelo težka · Nemogoča),
+dolžina (Kratka/Srednja/Dolga ≈ 20/40/70 s autopilota), lokacija/tema ali naključno, seme. *Napredno* (`<details>`;
+ob spremembi težavnosti ali dolžine se nastavijo na privzete, ročna sprememba → »Po meri«): odseki 6–40, širina poti
+min/max, delež ozkih mostov, višinske razlike, število vsakega sovražnika in ovire (0 = izklop), delež podlag, skoki čez
+prepad, zidovi ob strani, kontrolne točke (pogosto/redko/brez), ure 0–5, delež zvezdic v žepih. Privzete količine
+izhajajo iz časovnega proračuna (`presetOpts`: delež ciljnega časa za ovire × razmerje vrst, ocena sekund na kos
+`COST`; preostanek zapolnijo navadni odseki, `estimateTime`).
+
+**Seme.** Isti `opts` + isto seme → ista proga (mulberry32 iz `shared/util.js`, `rng(seed)`, poskusi `seed:k`, tema
+`seed:tema`), zato se seme da deliti. Zaradi zaokroževanja Math funkcij se lahko na drugem brskalniku (zelo redko) izbere
+drug poskus; deljena povezava (🔗 Deli) vedno prenese točno progo.

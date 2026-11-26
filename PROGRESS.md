@@ -1302,3 +1302,33 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
   dnevni nivo). Vsak del na koncu posodobi naslednje prompte z dejanskimi spoznanji.
 - Posodobljeno: kazalo `prompts/README.md` (naslednja prosta številka 40), vnos `kresnik` v `games.json` (`soon`),
   korenski `README.md`. Opomba pri Jamarju (60) o prekrivanju s Kresnikom. Igra še ni narejena.
+
+# Hrčkova krogla — naključne proge (prompt 30, 26. 11. 2026)
+- **Želvica v skupnem modulu** `games/krogla/editor/track.js` (`Track`, `finish`, `D4`, `RAMP_UP` …); `tools/krogla-levels.mjs`
+  jo uvozi. Uradne proge so bajtno enake (`node tools/krogla-levels.mjs` → brez razlik v `levels/` in `krogla.sql`).
+  `tools/frnikole-tracks.mjs` ima svojo želvico (drug format) — ni združena (zapisano v README).
+- **Generator** `editor/generate.js` (`generateLevel`, `generateSteps`, `generateLevelAsync`, `presetOpts`, `normalizeOpts`,
+  `estimateTime`): gradniki po vzoru uradnih prog, preverjanje trkov in velikosti mreže pred vsakim gradnikom, točno 5 zvezdic,
+  validator + autopilot s pod-semeni (`seed:k`), medalje po formuli generatorja. Web Worker `editor/gen-worker.js`
+  (rezerva: v kosih na glavni niti), okno `editor/genui.js` (preprosto + napredne nastavitve, povzetek, sličica).
+- **Spoznanja med uglaševanjem** (vsak gradnik posebej, 30–40 semen): (1) na ravnem krogla doseže le ~6,9 m/s (trenje 1,6),
+  zato skok z rampe brez spusta pred njim pade v prepad — uradne proge imajo vedno spust; (2) točka pristanka z `r: 1,5`
+  takoj za prepadom se doseže še v zraku → autopilot zavira in pade; zdaj 3 ploščice za prepadom; (3) diagonala do stikala
+  ali v areno reže čez praznino → točka poti na sredini pred tem; (4) na tekočem traku nazaj s počasnejšo naslednjo točko
+  krogla obstane → točka 1 ploščico za trakom; (5) nasilnež: pot obide območje lova (`zone`), sicer ga izrine;
+  (6) globina mreže (160) je ozko grlo → proti severu le en gradnik, nato vzhod/zahod po prostoru do roba mreže.
+  Prednastavitve so umerjene na izmerjene čase (20 semen): ≈ 20/40/70 s, Nemogoča nekoliko dlje.
+- **UI:** »🎲 Naključna proga« v 📁 Proge in v praznem urejevalniku; osnutek je takoj preverjeno rešljiv (`verified` + `levelHash`);
+  »🎲 Znova« = nova različica, »▶ Ustvari in igraj« → igra. V meniju igre »🎲 Hitra naključna proga« (težavnost + dolžina →
+  takoj igraj, po cilju »💾 Shrani med moje proge«). Nastavitve v `krogla:gen:opts`.
+- **Testi:** 20 semen × 5 težavnosti (validator, 5 zvezdic, autopilot pod `levelTime` na Normalni, medalje, `sanitizeLevel`),
+  determinizem, »0 sovražnikov/ovir« = 0, štetje po drsnikih (ali opozorilo v `report`), nastavitve, preverjenost osnutka.
+  `node tests/run-node.mjs` 232/232, `node tools/krogla-levels.mjs --check` brez razlik.
+- **Preverjeno v brskalniku** (`?offline=1`): okno na vseh 5 težavnostih (Worker, vse v 1. poskusu, ~0,2 s), napredne nastavitve
+  in »Po meri«, osnutek po osvežitvi »✔ Rešljiva«, autopilot v brskalniku = isti čas kot v Node (48,97 s), »✅ Pripravljeno«,
+  🔗 Deli (povezava se odpre v igri), sprememba mreže razveljavi preverjanje, hitra naključna proga v igri (cilj sprožen prek razvojnega dostopa) in »Shrani med moje proge«,
+  telefon 375×812, konzola brez napak.
+- **Ni preverjeno:** celotna vožnja v pravi zanki igre z `?bot=1` (skrit zavihek brskalnika ustavi animacijo; isti autopilot
+  je preverjen v urejevalniku in testih), objava med »Proge skupnosti« na Supabase (le offline adapter), Safari/iOS (modulni Worker).
+- Pri skrajnih naprednih nastavitvah (npr. vse ovire in sovražniki na maksimum) zmanjka prostora v mreži 120 × 160 — proga je
+  krajša, `report` pa našteje, česa ni bilo mogoče postaviti.

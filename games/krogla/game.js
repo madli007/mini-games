@@ -241,7 +241,8 @@ function mainHtml() {
         <p class="mg-muted" style="margin:0">Nariši svojo progo v urejevalniku, jo preizkusi in deli s prijatelji s povezavo. Lokalni rekordi in ghosti, brez uradnih lestvic.</p>
         <p class="mg-small" style="margin:0">Pripravljenih prog: <b>${CD.readyDrafts().length}</b></p>
         <div class="kr-row"><button class="mg-btn mg-btn--cyan" data-act="custom">Moje proge</button>
-          <a class="mg-btn mg-btn--ghost" href="${editorUrl()}">✏️ Urejevalnik</a></div>
+          <a class="mg-btn mg-btn--ghost" href="${editorUrl()}">✏️ Urejevalnik</a>
+          <button class="mg-btn mg-btn--ghost" data-act="quick-random" title="Nova, zagotovo rešljiva proga iz generatorja">🎲 Hitra naključna proga</button></div>
       </div>
       <div class="mg-card">
         <h2 class="mg-title">Proge skupnosti</h2>
@@ -341,6 +342,7 @@ function bindMenu(view, arg) {
       else if (act === 'daily') startDaily();
       else if (act === 'start-trial') startTrial(b.dataset.id);
       else if (act === 'custom') showMenu('custom');
+      else if (act === 'quick-random') quickRandom();
       else if (act === 'community') showMenu('community');
       else if (act === 'comm-tab') { commTab = b.dataset.tab; showMenu('community'); }
       else if (act === 'comm-play') { if (commLevel) startCustom(commLevel.L, { community: commLevel.row }); }
@@ -603,7 +605,7 @@ function clearCustomParam() {
 }
 
 /** Igraj lastno progo (Na čas brez uradne lestvice, lokalni rekord in ghost). */
-function startCustom(L, { key = null, community = null } = {}) {
+function startCustom(L, { key = null, community = null, gen = null } = {}) {
   const errs = validateLevel(L);
   if (errs.length) { ui.toast('Proga ni veljavna: ' + errs[0].replace(/^proga[^:]*: /, ''), { icon: '⚠️', duration: 4000 }); return; }
   clearCustomParam();
@@ -611,10 +613,58 @@ function startCustom(L, { key = null, community = null } = {}) {
   const ghosts = [];
   const g = CD.customGhost(hash);
   if (g) try { ghosts.push({ frames: decode(g), color: '#4de1ff', label: 'Jaz' }); } catch { /* pokvarjen */ }
-  mode = { kind: 'trial', custom: { hash, key, community }, mirror: false, levels: [L], idx: 0, phys: {}, ghosts };
+  mode = { kind: 'trial', custom: { hash, key, community, gen }, mirror: false, levels: [L], idx: 0, phys: {}, ghosts };
   if (community) hub.levelPlayed(community.id);
   enterPlay();
   startLevel();
+}
+
+/* ------------------------------------------------------------ hitra naključna proga (editor/generate.js) */
+
+/**
+ * 🎲 Hitra naključna proga: izbereš težavnost in dolžino, generator (v Web Workerju) sestavi zagotovo
+ * rešljivo progo in jo takoj odigraš. Velja kot »Moje proge«: brez uradne lestvice, odklepov in dosežkov.
+ */
+async function quickRandom() {
+  const [{ loadOpts, runGenerator, deviceLimits }, G] = await Promise.all([import('./editor/genui.js'), import('./editor/generate.js')]);
+  const { o, base } = loadOpts();
+  let diff = base, len = o.length;
+  const box = document.createElement('div');
+  box.className = 'mg-stack';
+  box.innerHTML = `<p class="mg-muted mg-small" style="margin:0">Generator sestavi novo, <b>zagotovo rešljivo</b> progo (preveri jo autopilot). Igra se kot »Moje proge«: brez uradne lestvice, odklepov in dosežkov. Po vožnji jo lahko shraniš.</p>
+    <div><div class="mg-small mg-muted">Težavnost</div><div class="kr-row">${G.DIFF_NAMES.map((n, i) => `<button type="button" class="mg-btn mg-btn--small" data-d="${i + 1}">${n}</button>`).join('')}</div></div>
+    <div><div class="mg-small mg-muted">Dolžina</div><div class="kr-row">${G.LENGTH_IDS.map(l => `<button type="button" class="mg-btn mg-btn--small" data-l="${l}">${G.LENGTHS[l].name} · ≈${G.LENGTHS[l].target} s</button>`).join('')}</div></div>`;
+  const paint = () => {
+    for (const b of box.querySelectorAll('[data-d]')) { const on = +b.dataset.d === diff; b.classList.toggle('mg-btn--primary', on); b.classList.toggle('mg-btn--ghost', !on); b.setAttribute('aria-pressed', on); }
+    for (const b of box.querySelectorAll('[data-l]')) { const on = b.dataset.l === len; b.classList.toggle('mg-btn--primary', on); b.classList.toggle('mg-btn--ghost', !on); b.setAttribute('aria-pressed', on); }
+  };
+  box.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.d) diff = +b.dataset.d; if (b.dataset.l) len = b.dataset.l; paint(); });
+  paint();
+  const v = await ui.modal({ title: '🎲 Hitra naključna proga', content: box, actions: [{ label: 'Prekliči', value: false }, { label: '▶ Igraj', value: true, kind: 'primary' }] });
+  if (!v) return;
+  const lim = deviceLimits();
+  let closeProg = null;
+  const job = runGenerator({ ...G.presetOpts(diff, len), seed: G.randomSeed(), maxTries: lim.maxTries, ...(lim.maxW ? { maxW: lim.maxW, maxD: lim.maxD } : {}) }, {
+    onProgress: p => { const el = document.getElementById('qProg'); if (el && p.k > 1) el.textContent = `Poskus ${p.k}/${p.tries} … (autopilot preverja rešljivost)`; },
+  });
+  ui.modal({ title: '🎲 Gradim progo …', html: '<p id="qProg" style="margin:0"><span class="mg-spin"></span> Sestavljam progo in jo preverjam z autopilotom …</p>', dismissible: false,
+    actions: [{ label: 'Prekliči', value: 'cancel' }], onOpen: (_, c) => { closeProg = c; } }).then(r => { if (r === 'cancel') job.cancel(); });
+  let res;
+  try { res = await job.promise; }
+  catch (err) { closeProg?.(null); if (err?.name !== 'AbortError') ui.toast('Generator je odpovedal.', { icon: '⚠️' }); return; }
+  closeProg?.(null);
+  if (!res.ok) { ui.toast('Tokrat ni uspelo sestaviti rešljive proge — poskusi znova.', { icon: '⚠️', duration: 3500 }); return; }
+  startCustom(res.L, { gen: res });
+}
+
+/** Po vožnji naključne proge: shrani jo med »Moje proge« (preverjeno rešljiv osnutek). */
+async function saveGenerated(c) {
+  const { draftFromResult } = await import('./editor/genui.js');
+  const d = draftFromResult(c.gen, { ready: true });
+  CD.saveDraft(d);
+  c.key = d.key;
+  ui.toast('Proga je med »Moje proge« (in v urejevalniku).', { icon: '💾' });
+  showMenu('custom', d.key);
 }
 
 /* ------------------------------------------------------------ proge skupnosti (Supabase / offline adapter) */
@@ -1375,11 +1425,13 @@ async function customDone(time, stars, falls) {
     <p class="kr-note" style="margin:0">${cm ? (sent ? 'Proga skupnosti — čas je na lestvici proge' : 'Proga skupnosti') : 'Moja proga — brez uradne lestvice'}${record ? ' · ghost shranjen lokalno' : ''}${falls ? ` · padci: ${falls}` : ''}</p>
     <button class="mg-btn mg-btn--primary mg-btn--big" data-o="again">Še enkrat <span class="kr-kbd">(R / Enter)</span></button>
     ${c.key ? '<button class="mg-btn mg-btn--cyan" data-o="edit">✏️ Uredi progo</button>' : ''}
+    ${c.gen && !c.key ? '<button class="mg-btn mg-btn--cyan" data-o="save">💾 Shrani med moje proge</button>' : ''}
     <button class="mg-btn mg-btn--ghost" data-o="menu">${cm ? 'Proge skupnosti' : 'Moje proge'}</button>
   </div>`, v => {
     play.next = null;
     if (v === 'again') startLevel();
     else if (v === 'edit') location.href = editorUrl('draft=' + encodeURIComponent(c.key));
+    else if (v === 'save') saveGenerated(c);
     else if (cm) showMenu('community', cm.id);
     else showMenu('custom', c.key);
   });

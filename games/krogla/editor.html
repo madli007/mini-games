@@ -43,6 +43,12 @@
     <section class="ed-center" aria-label="Tloris proge">
       <canvas id="cv2d" aria-label="Tloris proge"></canvas>
       <div class="ed-coords" id="coords"></div>
+      <div class="ed-empty mg-card mg-hidden" id="edEmpty">
+        <b>Prazen urejevalnik</b>
+        <p class="ed-hint">Nariši svojo progo ali naj jo sestavi generator — zagotovo rešljivo, nato jo poljubno urejaš.</p>
+        <div class="ed-row"><button class="mg-btn mg-btn--primary mg-btn--small" id="edEmptyGen" type="button">🎲 Naključna proga</button>
+          <button class="mg-btn mg-btn--ghost mg-btn--small" id="edEmptyClose" type="button">Riši sam</button></div>
+      </div>
       <div class="ed-zoom"><button class="ed-ib" id="zIn" type="button" aria-label="Povečaj">＋</button><button class="ed-ib" id="zOut" type="button" aria-label="Pomanjšaj">－</button><button class="ed-ib" id="zFit" type="button" aria-label="Cela proga" title="Cela proga (Home)">⤢</button></div>
     </section>
     <aside class="ed-right">

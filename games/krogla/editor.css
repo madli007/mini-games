@@ -111,3 +111,7 @@ body.ed-no3d .ed-3d { display: none; }
   .ed-actions .mg-btn { white-space: nowrap; flex: none; }
   .ed-status { gap: 8px; font-size: 12px; }
 }
+
+/* prazno stanje (še noben osnutek) */
+.ed-empty { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: min(360px, calc(100% - 24px)); z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
+.ed-empty .mg-btn { touch-action: manipulation; }

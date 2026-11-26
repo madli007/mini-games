@@ -15,6 +15,7 @@ import * as M from './editor/model.js';
 import * as D from './editor/drafts.js';
 import { encodeLevel, sanitizeLevel, MAX_LINK } from './editor/share.js';
 import { View2D, drawThumb } from './editor/view2d.js';
+import { openGenerator } from './editor/genui.js';
 
 const $ = s => document.querySelector(s);
 const esc = ui.esc;
@@ -60,8 +61,11 @@ const LAYERS = [
 async function boot() {
   $('#btnBack').href = withQs('index.html');
   view = new View2D($('#cv2d'), { onDown, onMove, onUp, onHover, onContext, onCancel });
+  const empty = !D.listDrafts().length;
   const d = pickInitialDraft();
   openDraft(d, { fit: true });
+  // prazno stanje (še noben osnutek): ponudi naključno progo
+  if (empty && !QS.get('draft')) $('#edEmpty').classList.remove('mg-hidden');
   bindUi();
   renderLayers();
   addEventListener('resize', () => { view.resize(); preview?.resize(); });
@@ -107,6 +111,7 @@ function loop2d() {
 /* ===================================================================== */
 
 function openDraft(d, { fit = true } = {}) {
+  $('#edEmpty')?.classList.add('mg-hidden');
   st.L = M.normalize(clone(d.L));
   st.key = d.key; st.ready = !!d.ready; st.verified = d.verified || null; st.published = d.published || null;
   st.sel = null; st.routeSel = null; st.pathEdit = false; st.pathSel = null; st.trace = null; st.startHere = null;
@@ -919,6 +924,7 @@ async function filesModal() {
   const box = document.createElement('div');
   box.className = 'mg-stack';
   box.innerHTML = `<div class="ed-row"><button type="button" class="mg-btn mg-btn--primary mg-btn--small" data-a="new">＋ Nova proga</button>
+      <button type="button" class="mg-btn mg-btn--cyan mg-btn--small" data-a="random">🎲 Naključna proga</button>
       <label class="ed-row ed-hint">Velikost <input class="mg-input" type="number" id="nW" min="5" max="${M.MAX_W}" value="15" style="width:64px"> × <input class="mg-input" type="number" id="nD" min="5" max="${M.MAX_D}" value="22" style="width:64px"></label></div>
     <h3 class="mg-title" style="margin:6px 0 0;font-size:14px">Moji osnutki (${D.listDrafts().length}/${D.MAX_DRAFTS})</h3>
     <div class="ed-list" id="dList"></div>
@@ -951,7 +957,8 @@ async function filesModal() {
     if (b.dataset.a === 'new') {
       const W = +box.querySelector('#nW').value || 15, Dd = +box.querySelector('#nD').value || 22;
       done({ key: D.newKey(), L: M.newLevel({ name: 'Nova proga', W, D: Dd }), ready: false, verified: null });
-    } else if (b.dataset.open) { const d = D.getDraft(b.dataset.open); if (d) { close?.(); openDraft(d); } }
+    } else if (b.dataset.a === 'random') { close?.(); randomModal(); }
+    else if (b.dataset.open) { const d = D.getDraft(b.dataset.open); if (d) { close?.(); openDraft(d); } }
     else if (b.dataset.del) {
       if (!(await ui.confirm('Izbrišem ta osnutek? Tega ni mogoče razveljaviti.', { danger: true, yes: 'Izbriši' }))) return;
       D.removeDraft(b.dataset.del);
@@ -975,6 +982,16 @@ async function filesModal() {
     if (!list.length) o.textContent = 'Uradnih prog ni bilo mogoče naložiti.';
   });
   ui.modal({ title: '📁 Proge', content: box, wide: true, actions: [{ label: 'Zapri', value: null }], onOpen: (_, c) => { close = c; } });
+}
+
+/** 🎲 Naključna proga: generator (editor/generate.js) ustvari nov, že preverjeno rešljiv osnutek. */
+function randomModal() {
+  flushSave();
+  $('#edEmpty').classList.add('mg-hidden');
+  openGenerator({
+    onCreate: d => openDraft(d),
+    onPlay: d => { location.href = withQs('index.html', 'play=' + encodeURIComponent(d.key)); },
+  });
 }
 
 function importText(text, done) {
@@ -1178,6 +1195,8 @@ function bindUi() {
     if (e.target.id === 'hValue') { const v = Math.max(0, Math.min(17.5, Math.round(+e.target.value * 2) / 2)); st.hValue = Number.isFinite(v) ? v : 0; e.target.value = st.hValue; }
   };
   $('#btnFiles').onclick = filesModal;
+  $('#edEmptyGen').onclick = randomModal;
+  $('#edEmptyClose').onclick = () => $('#edEmpty').classList.add('mg-hidden');
   $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
   $('#btnTest').onclick = () => testDrive(null);
   $('#btnBot').onclick = runBot;
@@ -1252,4 +1271,4 @@ function onKey(e) {
 boot();
 
 // razvojni dostop (samo za preverjanje v brskalniku)
-if (QS.has('dev')) window.__ed = { st, history, M, D, commit, undo, redo, runBot, testDrive, endDrive, openDraft, flushSave, setLayer, selectObj, get preview() { return preview; }, get view() { return view; } };
+if (QS.has('dev')) window.__ed = { st, history, M, D, randomModal, commit, undo, redo, runBot, testDrive, endDrive, openDraft, flushSave, setLayer, selectObj, get preview() { return preview; }, get view() { return view; } };

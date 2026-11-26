@@ -24,6 +24,7 @@ import * as KL2 from '../games/krogla/level.js';
 import * as KE from '../games/krogla/editor/model.js';
 import * as KS from '../games/krogla/editor/share.js';
 import * as KD from '../games/krogla/editor/drafts.js';
+import * as KN from '../games/krogla/editor/generate.js';
 import { rusilecTests } from './rusilec.js';
 import { herodleTests } from './herodle.js';
 import { herodle2Tests } from './herodle2.js';
@@ -1481,6 +1482,101 @@ test('krogla urejevalnik: osnutki (omejitev, pripravljene ostanejo)', () => {
   KE.setTile(d.L, 0, 0, '.'); ok(!KD.isVerified(d), 'sprememba mreže razveljavi preverjanje');
   KD.removeDraft('pripravljena'); eq(KD.getDraft('pripravljena'), null);
   S.remove(KD.DRAFTS_KEY);
+});
+
+/* ------------------------------------------------------- Hrčkova krogla: naključne proge */
+
+test('krogla generator: 20 semen × 5 težavnosti — veljavne, 5 zvezdic, autopilot pod časom proge', () => {
+  const out = [];
+  for (let d = 1; d <= 5; d++) {
+    let t = 0;
+    for (let i = 0; i < 20; i++) {
+      const res = KN.generateLevel({ diff: d, seed: 'test' + i });
+      const L = res.L, id = `težavnost ${d}, seme test${i}`;
+      ok(res.ok, `${id}: ni preverjena (${res.report.warnings.join('; ')})`);
+      eq(KL2.validateLevel(L), [], id);
+      eq(L.pickups.filter(p => p.t === 'star').length, 5, id + ': zvezdice');
+      ok(L.size[0] <= KE.MAX_W && L.size[1] <= KE.MAX_D, id + ': prevelika mreža ' + L.size);
+      const run = KA.runAutopilot(L);
+      ok(run.finished && run.time < KR.levelTime(L, 'normalna'), `${id}: autopilot ${run.time} s, čas proge ${L.timeBonus} s`);
+      eq(L.medals, KR.medalsFromTime(run.time), id + ': medalje po formuli generatorja');
+      eq(KS.sanitizeLevel(JSON.parse(JSON.stringify(L))).map, L.map, id + ': prestane sanitizeLevel (deljenje, objava)');
+      t += run.time;
+    }
+    out.push(`${KN.DIFF_NAMES[d - 1]} ${Math.round(t / 20)} s`);
+  }
+  return out.join(', ');
+});
+
+test('krogla generator: isto seme in nastavitve → ista proga; drugo seme → druga', () => {
+  const o = { diff: 3, length: 'short', seed: 'ABCD' };
+  const a = KN.generateLevel(o), b = KN.generateLevel({ ...o });
+  eq(KL2.formatLevelJson(a.L), KL2.formatLevelJson(b.L));
+  eq(a.tries, b.tries);
+  ok(KL2.formatLevelJson(KN.generateLevel({ ...o, seed: 'ABCE' }).L) !== KL2.formatLevelJson(a.L), 'drugo seme');
+  ok(KL2.formatLevelJson(KN.generateLevel({ ...o, diff: 4 }).L) !== KL2.formatLevelJson(a.L), 'druge nastavitve');
+  ok(/seme ABCD/.test(a.L.desc) && a.L.name === 'Naključna ABCD', a.L.name + ' · ' + a.L.desc);
+  ok(/^50-nakljucna-abcd$/.test(a.L.id), a.L.id);
+});
+
+test('krogla generator: število sovražnikov in ovir ustreza drsnikom (0 = izklop)', () => {
+  const none = o => Object.fromEntries(Object.keys(o).map(k => [k, 0]));
+  const base = KN.presetOpts(4, 'medium');
+  const zero = KN.generateLevel({ ...base, diff: null, seed: 'nic', enemies: none(KN.ENEMIES) });
+  eq((zero.L.enemies || []).length, 0, 'brez sovražnikov');
+  ok(zero.ok);
+  const zero2 = KN.generateLevel({ ...base, diff: null, seed: 'nic2', enemies: none(KN.ENEMIES), obstacles: none(KN.OBSTACLES), jumps: 0 });
+  for (const k of ['movers', 'spinners', 'hammers', 'bumpers', 'fans', 'bowls', 'switches', 'doors', 'springs', 'enemies']) eq((zero2.L[k] || []).length, 0, 'brez ' + k);
+  const want = { bully: 1, saw: 3, wasp: 2, vacuum: 1, magnet: 2 }, obs = { mover: 1, spinner: 1, hammer: 4, bumper: 3, fan: 2, bowl: 1, door: 1 };
+  const out = [];
+  for (const seed of ['s1', 's2', 's3', 's4']) {
+    const res = KN.generateLevel({ ...base, diff: null, seed, segments: 10, enemies: want, obstacles: obs, jumps: 2 });
+    ok(res.ok, seed);
+    const L = res.L, r = res.report;
+    const en = t => (L.enemies || []).filter(e => e.t === t).length;
+    const cnt = { bully: en('bully'), saw: en('saw'), wasp: en('wasp'), vacuum: en('vacuum'), magnet: en('magnet'),
+      mover: (L.movers || []).length, spinner: (L.spinners || []).length, hammer: (L.hammers || []).length, bumper: (L.bumpers || []).length,
+      fan: (L.fans || []).length, bowl: (L.bowls || []).length, door: (L.doors || []).length };
+    for (const [k, v] of Object.entries(cnt)) {
+      eq(v, r.placed[k], `${seed}: report.placed.${k}`);
+      // če kaj ni bilo mogoče postaviti, je to zapisano v opozorilih
+      if (v !== { ...want, ...obs }[k]) ok(r.warnings.some(w => /ni bilo mogoče postaviti/.test(w)), `${seed}: ${k} ${v}/${{ ...want, ...obs }[k]} brez opozorila`);
+      else out.push(k);
+    }
+    eq((L.switches || []).length, cnt.door, 'stikalo za vsaka vrata');
+    eq(r.placed.jump, 2, seed + ': skoki');
+  }
+  return `ujemanj ${out.length}/48`;
+});
+
+test('krogla generator: nastavitve (prednastavitve, omejitve, po meri)', () => {
+  for (let d = 1; d <= 5; d++) for (const l of KN.LENGTH_IDS) {
+    const p = KN.presetOpts(d, l);
+    ok(KN.isPreset(p), `prednastavitev ${d}/${l}`);
+    ok(p.segments >= KN.SEG_MIN && p.segments <= KN.SEG_MAX, 'odseki ' + p.segments);
+  }
+  ok(KN.presetOpts(5, 'medium').enemies.saw > KN.presetOpts(1, 'medium').enemies.saw, 'težje = več sovražnikov');
+  const n = KN.normalizeOpts({ diff: 9, segments: 999, wMin: 4, wMax: 2, narrow: 7, enemies: { saw: -3, bully: 99 }, checkpoints: 'xx', theme: 'nič', neznano: 1 });
+  eq([n.diff, n.segments, n.wMin, n.wMax, n.narrow, n.enemies.saw, n.enemies.bully, n.theme], [5, KN.SEG_MAX, 4, 4, 1, 0, KN.ENEMIES.bully.max, 'random']);
+  eq(n.checkpoints, KN.presetOpts(5).checkpoints);
+  ok(!('neznano' in n));
+  const c = { ...KN.presetOpts(2), enemies: { ...KN.presetOpts(2).enemies, saw: 4 } };
+  ok(!KN.isPreset(c), 'ročna sprememba = po meri');
+  ok(/^[A-HJ-NP-Z2-9]{4}$/.test(KN.randomSeed()), 'seme');
+  const none = KN.generateLevel({ diff: 2, seed: 'cp' });
+  // brez kontrolnih točk (napredna nastavitev) — nastavitev po meri
+  const cus = KN.generateLevel({ ...KN.presetOpts(2), diff: null, seed: 'cp', checkpoints: 'none', clocks: 0 });
+  eq(cus.L.checkpoints.length, 0); eq(cus.L.pickups.filter(p => p.t === 'clock').length, 0);
+  ok(none.L.checkpoints.length > 0, 'prednastavitev Srednja ima kontrolne točke');
+});
+
+test('krogla generator: osnutek je takoj preverjeno rešljiv (hash) in nadaljnja sprememba to razveljavi', () => {
+  const res = KN.generateLevel({ diff: 2, length: 'short', seed: 'OSNUTEK' });
+  const d = { key: 'x', L: KE.normalize(JSON.parse(JSON.stringify(res.L))), ready: true, verified: { hash: KE.levelHash(res.L), time: res.report.time, by: 'autopilot' } };
+  ok(KD.isVerified(d), 'po generaciji preverjeno');
+  const r = d.L.map.findIndex(row => row.includes('.'));
+  KE.setTile(d.L, d.L.map[r].indexOf('.'), r, ' ');
+  ok(!KD.isVerified(d), 'sprememba mreže razveljavi preverjanje');
 });
 
 /* ------------------------------------------------------- Rušilec (tests/rusilec.js) */
