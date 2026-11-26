@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { P, hammerPhase, magnetState, doorOpenness, groundBelow } from '../physics.js';
+import { P, hammerPhase, magnetState, fanState, doorOpenness, groundBelow } from '../physics.js';
 import { surface, warnDecal, hazardStripes, clockFace, carbon, waspStripes, streaks, sawBlur, rings, flagCloth, softDot } from './textures.js';
 import { withFade, withWave, surfaceMaterial } from './materials.js';
 import { tintFor } from './terrain.js';
@@ -193,8 +193,10 @@ export function buildObjects({ L, w, th, look, q, parent, fx, reduced }) {
     blades.position.z = 0.15; g.add(blades);
     // tok zraka: prosojni animirani trakovi
     const flowMat = new THREE.MeshBasicMaterial({ color: hdr('#d8f6ff', 1.1), alphaMap: streakTex, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    const flows = [];
     for (const yy of [-0.2, 0.05, 0.25]) {
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.85, f.len, 1, 1).rotateX(Math.PI / 2), flowMat);
+      flows.push(pl);
       pl.position.set(0, yy, 0.2 + f.len / 2);
       pl.renderOrder = 6;
       g.add(pl);
@@ -205,7 +207,7 @@ export function buildObjects({ L, w, th, look, q, parent, fx, reduced }) {
     const pts = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3)),
       new THREE.PointsMaterial({ color: '#ffffff', size: 0.06, map: softDot(), transparent: true, opacity: 0.75, depthWrite: false }));
     pts.frustumCulled = false; parent.add(pts);
-    g.userData = { blades, pts, f, y, seeds: Array.from({ length: N }, (_, k) => [(k * 0.618) % 1, ((k * 0.381) % 1) - 0.5, ((k * 0.73) % 1) * 0.6]) };
+    g.userData = { blades, pts, flows, flowMat, spin: 0, f, y, seeds: Array.from({ length: N }, (_, k) => [(k * 0.618) % 1, ((k * 0.381) % 1) - 0.5, ((k * 0.73) % 1) * 0.6]) };
     return add(g, true);
   });
 
@@ -452,8 +454,17 @@ function update(o, w, t, dt, ctx, fx, q, reduced, accent) {
     s.userData.coil.scale.y = 1 + lift / 0.12;
   }
   for (const f of o.fans) {
-    f.userData.blades.rotation.z = t * 16;
     const { pts, f: fan, y, seeds } = f.userData;
+    // ventilator v ritmu: med premorom se lopatice skoraj ustavijo in tok izgine; tik pred sunkom tok utripa
+    const st = fan.period ? fanState(w, fan) : null;
+    if (st) {
+      f.userData.spin += dt * (st.on ? 16 : st.warn ? 8 : 1.5);
+      f.userData.blades.rotation.z = f.userData.spin;
+      const show = st.on || st.warn;
+      for (const pl of f.userData.flows) pl.visible = show;
+      pts.visible = st.on;
+      f.userData.flowMat.opacity = st.on ? 0.32 : 0.1 + 0.1 * Math.sin(t * 40);
+    } else f.userData.blades.rotation.z = t * 16;
     const pos = pts.geometry.attributes.position;
     const px = -fan.dir[1], pz = fan.dir[0];
     seeds.forEach((sd, k) => {

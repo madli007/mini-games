@@ -206,6 +206,22 @@ insert into public.krogla_levels (level, gold_ms) values
   ('09-nasilnezi', 18000),
   ('10-neon', 24000),
   ('11-nebo', 20000),
-  ('12-nemogoce', 25000)
+  ('12-nemogoce', 25000),
+  ('13-tobogan', 9000),
+  ('14-odskocna-deska', 11900),
+  ('15-britev', 13400),
+  ('16-sivankino-uho', 14800),
+  ('17-pekarna', 27000),
+  ('18-botanicni-vrt', 22000),
+  ('19-drsalisce', 36000),
+  ('20-rudnik', 42000),
+  ('21-laboratorij', 36000),
+  ('22-panj', 43000),
+  ('23-ognjenik', 36000),
+  ('24-nedeljski-sprehod', 58000),
+  ('25-velika-tura', 82000),
+  ('26-kristalna-jama', 60000),
+  ('27-nebesna-lestev', 97000),
+  ('28-hrckov-maraton', 126000)
 on conflict (level) do update set gold_ms = excluded.gold_ms;
 -- END LEVELS

@@ -16,7 +16,7 @@
 .kr-back { margin-bottom: 12px; }
 
 /* mreža prog */
-.kr-levels { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.kr-levels { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); }
 .kr-lvl { position: relative; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--mg-line); background: var(--mg-panel);
   color: var(--mg-text); cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 4px; min-height: 96px; touch-action: manipulation; }
 .kr-lvl:hover, .kr-lvl:focus-visible { border-color: var(--mg-cyan); }
@@ -27,6 +27,47 @@
 .kr-lvl__medal { position: absolute; right: 10px; top: 8px; font-size: 22px; }
 .kr-lvl.locked { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
 .kr-set { grid-column: 1 / -1; margin: 6px 0 0; font-size: 13px; color: var(--mg-dim); letter-spacing: .08em; text-transform: uppercase; }
+.kr-lvl__tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* oznake dolžine in težavnosti */
+.kr-badge { display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 7px; border-radius: 999px; border: 1px solid var(--mg-line);
+  color: var(--mg-dim); white-space: nowrap; vertical-align: middle; }
+.kr-badge--kratka { color: #4de1ff; border-color: rgba(77, 225, 255, .45); }
+.kr-badge--srednja { color: #39ff88; border-color: rgba(57, 255, 136, .4); }
+.kr-badge--dolga { color: #ff4fd8; border-color: rgba(255, 79, 216, .45); }
+.kr-badge--diff { color: var(--mg-yellow); border-color: rgba(255, 210, 63, .4); letter-spacing: -1px; }
+.kr-badge--rec { color: #0b0b1a; background: var(--mg-green, #39ff88); border-color: transparent; font-weight: 700; }
+.kr-dots { color: var(--mg-yellow); letter-spacing: 1px; }
+
+/* turnirji (pokali) */
+.kr-cards .kr-cupcard { grid-column: 1 / -1; min-width: 0; }
+.kr-cups { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
+.kr-cup__title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.kr-cup { display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--mg-line);
+  background: var(--mg-panel); color: var(--mg-text); font: inherit; cursor: pointer; touch-action: manipulation; min-height: 64px; min-width: 0; }
+.kr-cup:hover, .kr-cup:focus-visible { border-color: var(--mg-cyan); }
+.kr-cup.locked { opacity: .55; cursor: not-allowed; }
+.kr-cup.locked .kr-cup__icon { filter: grayscale(1); }
+.kr-cup__icon { font-size: 30px; line-height: 1; flex: none; }
+.kr-cup__main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.kr-cup__week { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kr-cup__save { color: var(--mg-green, #39ff88); }
+.kr-cup__best { flex: none; text-align: right; display: flex; flex-direction: column; align-items: flex-end; min-width: 64px; }
+.kr-cup__best b { color: var(--mg-yellow); font-size: 17px; }
+.kr-cupdiff .mg-tab { padding: 6px 10px; }
+.kr-cuplist { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; }
+.kr-cuplist li span:first-child { font-weight: 700; margin-right: 4px; }
+.kr-next { font-size: 14px; color: var(--mg-dim); }
+.kr-next b { color: var(--mg-text); }
+.kr-filters { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
+.kr-scroll { overflow-x: auto; flex-wrap: nowrap; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.kr-scroll .mg-tab { white-space: nowrap; touch-action: manipulation; }
+@media (max-width: 560px) {
+  .kr-cups { grid-template-columns: 1fr; }
+  .kr-cup { padding: 10px; gap: 10px; }
+  .kr-cup__icon { font-size: 26px; }
+}
+
 .kr-detail { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
 @media (max-width: 720px) { .kr-detail { grid-template-columns: 1fr; } }
 .kr-medals { display: flex; gap: 12px; flex-wrap: wrap; font-size: 14px; }

@@ -12,7 +12,7 @@ const MAX_JSON = 400000;               // bajtov po razširitvi
 
 /** Polja proge, ki jih sprejmemo od drugod (ostalo zavržemo). */
 const KEYS = ['id', 'name', 'set', 'desc', 'size', 'theme', 'look', 'camYaw', 'timeBonus', 'medals', 'map', 'hmap', 'start', 'goal', 'checkpoints', 'pickups',
-  'movers', 'spinners', 'springs', 'fans', 'bumpers', 'bowls', 'hammers', 'switches', 'doors', 'blocks', 'enemies', 'route', 'dev'];
+  'movers', 'spinners', 'springs', 'fans', 'bumpers', 'bowls', 'hammers', 'switches', 'doors', 'blocks', 'enemies', 'route', 'routes', 'shortcuts', 'diff', 'len', 'tags', 'scoring', 'dev'];
 
 const hasCS = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
 

@@ -1,6 +1,6 @@
 /* =====================================================================
-   HRČKOVA KROGLA — game.js: meni, načini (turnir, na čas, zrcalni turnir,
-   dnevni izziv), stanja igre (odštevanje, igra, pavza, povzetek, konec) in hub.
+   HRČKOVA KROGLA — game.js: meni, načini (turnirji/pokali iz levels/cups.json, na čas, zrcalni turnir,
+   tedenski pokal, dnevni izziv), stanja igre (odštevanje, igra, pavza, povzetek, konec) in hub.
    ===================================================================== */
 import { hub, ui, util } from '../../shared/hub.js';
 import * as S from '../../shared/storage.js';
@@ -26,6 +26,8 @@ const isTouch = matchMedia('(pointer: coarse)').matches;
 /** Razvojni način: ?bot=1 — proge vozi autopilot (za preverjanje v pravi zanki igre). */
 const QS = new URLSearchParams(location.search);
 const BOT = QS.get('bot') === '1';
+/** Razvojni način: ?bot=1&fast=N — simulacija N-krat hitrejša (preverjanje dolgih pokalov). */
+const FAST = BOT ? Math.max(1, Math.min(8, parseInt(QS.get('fast') || '1', 10) || 1)) : 1;
 /** Razvojna parametra: ?lvl=N — takoj odpri progo N (Na čas, brez odklepa); ?q=ultra|high|medium|low — vsili kakovost. */
 const DEV_LVL = parseInt(QS.get('lvl') || '', 10) || 0;
 const DEV_Q = QS.get('q');
@@ -34,7 +36,7 @@ const DEV_Q = QS.get('q');
 
 const settings = Object.assign({
   control: 'keys', touch: 'stick', sfx: true, music: true, camRotate: true, quality: 'auto', fps: false, post: true, dof: true, shakeCam: true,
-  menuBg: 'anim', qPicked: false, v: 2,
+  menuBg: 'anim', qPicked: false, v: 2, cupDiff: 'normalna',
 }, S.load('krogla:settings', {}));
 // v2: privzeto samo tipkovnica (prej je miška sama prevzela vožnjo); kdor je kakovost že ročno izbral, izbirnika ne vidi
 if (settings.v !== 2) { settings.control = 'keys'; settings.qPicked = settings.quality !== 'auto'; settings.v = 2; }
@@ -44,6 +46,9 @@ const skin = Object.assign({}, DEFAULT_SKIN, S.load('krogla:skin', {}));
 /* ------------------------------------------------------------ stanje */
 
 let LEVELS = [], ORDER = [];
+let CUPS = { cups: [] };     // levels/cups.json
+const cupById = id => CUPS.cups.find(c => c.id === id);
+const lvl = id => LEVELS.find(L => L.id === id);
 let myAch = new Set();
 let renderer = null, input = null;
 const audio = new Audio();
@@ -57,6 +62,7 @@ let lastReportTrial = 0;
 let best = {};          // { 'id|m': ms } (za trenutnega igralca)
 const uk = k => 'krogla:u:' + hub.userId + ':' + k;   // lokalni ključi na igralca
 let reached = new Set();
+let trialView = { len: 'all', sort: 'num' };   // filter in razvrstitev v »Na čas« (na igralca)
 const mkey = (id, mirror) => id + '|' + (mirror ? 1 : 0);
 
 /* ===================================================================== */
@@ -67,8 +73,11 @@ async function boot() {
   await hub.init({ gameId: GAME });
   ui.header({ title: 'Hrčkova krogla' });
   try {
-    LEVELS = await loadLevels(new URL('./levels/', import.meta.url));
+    const base = new URL('./levels/', import.meta.url);
+    [LEVELS, CUPS] = await Promise.all([loadLevels(base), fetch(new URL('cups.json', base), { cache: 'no-cache' }).then(r => r.json())]);
     ORDER = LEVELS.map(L => L.id);
+    const ce = R.validateCups(CUPS, ORDER);
+    if (ce.length) console.warn('[krogla] cups.json:', ce.join(' · '));
   } catch (e) {
     console.error(e);
     $('#menu').innerHTML = '<div class="mg-card mg-empty">Prog ni bilo mogoče naložiti.</div>';
@@ -76,6 +85,7 @@ async function boot() {
   }
   best = S.load(uk('best'), {});
   reached = new Set(S.load(uk('reached'), []));
+  trialView = Object.assign({ len: 'all', sort: 'num' }, S.load(uk('trialView'), {}));
   await refreshAch();
   showMenu();
   if (DEV_LVL && ORDER[DEV_LVL - 1]) startTrial(ORDER[DEV_LVL - 1]);
@@ -107,10 +117,14 @@ async function unlock(k) {
 function mirrorUnlocked() { return myAch.has('turnir') || S.load(uk('mirror'), false); }
 function unlockedIds() {
   const r = new Set(reached);
-  // dosežki veljajo na vseh napravah
-  if (myAch.has('sklop-1')) LEVELS.forEach((L, i) => { if (L.set === 1 || LEVELS[i - 1]?.set === 1) r.add(L.id); });
-  if (myAch.has('sklop-2')) LEVELS.forEach((L, i) => { if (L.set <= 2 || LEVELS[i - 1]?.set === 2) r.add(L.id); });
-  return new Set(R.unlockedLevels(ORDER, r, { tourney: myAch.has('turnir') }));
+  // dosežki veljajo na vseh napravah (sklopi in »turnir« le za klasične proge)
+  const classic = LEVELS.filter(L => R.isClassic(L.id));
+  if (myAch.has('sklop-1')) classic.forEach((L, i) => { if (L.set === 1 || classic[i - 1]?.set === 1) r.add(L.id); });
+  if (myAch.has('sklop-2')) classic.forEach((L, i) => { if (L.set <= 2 || classic[i - 1]?.set === 2) r.add(L.id); });
+  if (myAch.has('turnir')) classic.forEach(L => r.add(L.id));
+  // končan pokal odklene vse svoje proge
+  for (const c of CUPS.cups) if (R.cupDone(c, myAch)) (c.levels || []).forEach(id => r.add(id));
+  return new Set(R.unlockedLevels(ORDER, r));
 }
 
 /* ===================================================================== */
@@ -181,14 +195,91 @@ function fmtLeft(ms) {
 
 function dailyInfo() {
   const seed = hub.dailySeed();
-  const pick = R.dailyPick(hub.rng, seed, ORDER);
+  const pick = R.dailyPick(hub.rng, seed, ORDER, R.DAILY_POOL);
   const mod = R.DAILY_MODS.find(d => d.id === pick.mod);
   const official = !S.load(uk('daily:') + seed, false);
   return { seed, pick, mod, official };
 }
 
+/* ------------------------------------------------------------ turnirji (pokali) */
+
+const thisWeek = () => R.isoWeek(hub.dailySeed());
+/** Proge pokala (tedenski: izbor tedna). */
+function cupLevelIds(c, week = thisWeek()) { return c.weekly ? R.weeklyPick(hub.rng, week, LEVELS) : c.levels.filter(id => lvl(id)); }
+const cupSave = c => (c.save ? S.load(uk('save:' + c.id), null) : null);
+const fmtDur = sec => (sec >= 90 ? '≈ ' + Math.round(sec / 60) + ' min' : '≈ ' + Math.round(sec) + ' s');
+const lenBadge = L => `<span class="kr-badge kr-badge--${R.lenOf(L)}">${R.LENS[R.lenOf(L)].name.toLowerCase()}</span>`;
+const diffBadge = L => `<span class="kr-badge kr-badge--diff" title="Težavnost ${R.diffOf(L)}/5">${R.diffStars(R.diffOf(L))}</span>`;
+
+function cupsCardHtml() {
+  const diff = R.DIFFS[settings.cupDiff] ? settings.cupDiff : 'normalna';
+  const fresh = !CUPS.cups.some(c => R.cupDone(c, myAch));
+  const rows = CUPS.cups.map(c => {
+    const ids = cupLevelIds(c);
+    const ls = ids.map(lvl);
+    const open = R.cupUnlocked(c, CUPS, myAch);
+    const dur = ls.reduce((a, L) => a + (L.dev?.time || 30), 0);
+    const avg = Math.round(ls.reduce((a, L) => a + R.diffOf(L), 0) / Math.max(1, ls.length));
+    const allowed = R.cupDiffs(c).includes(diff);
+    const seed = allowed ? R.cupBoard(c, diff, thisWeek()) : '';
+    const sv = cupSave(c);
+    const sub = c.weekly ? `<span class="mg-small mg-muted kr-cup__week">${esc(thisWeek())} · ${ls.map(L => esc(L.name)).join(' · ')}</span>` : '';
+    return `<button type="button" class="kr-cup ${open ? '' : 'locked'}" data-cup="${c.id}" ${open ? '' : 'aria-disabled="true"'}>
+      <span class="kr-cup__icon" aria-hidden="true">${c.icon}</span>
+      <span class="kr-cup__main"><span class="kr-cup__title"><b>${esc(c.name)}</b>${c.recommended && fresh ? ' <span class="kr-badge kr-badge--rec">priporočeno</span>' : ''}${R.cupDone(c, myAch) ? ' <span title="Končan">✅</span>' : ''}</span>
+        <span class="mg-small mg-muted">${ls.length} prog · ${fmtDur(dur)} · <span class="kr-dots" title="Težavnost ${avg}/5">${R.diffDots(avg)}</span>${c.clock && c.clock !== 1 ? ` · ura ×${String(c.clock).replace('.', ',')}` : ''}</span>
+        ${sub}
+        ${open ? (sv ? '<span class="mg-small kr-cup__save">⏸ Shranjen napredek — nadaljuj</span>' : '') : `<span class="mg-small kr-lock">🔒 ${esc(R.unlockText(c.unlock, CUPS))}</span>`}</span>
+      <span class="kr-cup__best" data-seed="${seed}">${allowed ? '—' : '<span class="mg-small mg-muted">ni na voljo</span>'}</span>
+    </button>`;
+  }).join('');
+  return `<div class="mg-card kr-cupcard">
+    <div class="mg-row mg-row--between" style="flex-wrap:wrap;gap:8px"><h2 class="mg-title" style="margin:0">🏆 Turnirji</h2>
+      <div class="mg-tabs kr-cupdiff" role="tablist" aria-label="Težavnost za prikaz rekordov">${R.DIFF_IDS.map(id => `<button class="mg-tab" role="tab" aria-selected="${id === diff}" data-act="cupdiff" data-diff="${id}">${R.DIFFS[id].name}</button>`).join('')}</div></div>
+    <p class="mg-muted mg-small" style="margin:0">Proge zapored s prenosom časa. Točke: 1000 na progo + 20 na preostalo sekundo + 100 na zvezdico (× težavnost). Vsak pokal ima svojo lestvico.
+      Lahka: ×1,4 časa, pol točk, nič se ne odklene. Noro: ×0,75 časa, ×1,5 točk.</p>
+    <div class="kr-cups">${rows}</div>
+    <p class="mg-small mg-muted" style="margin:0">Desno: tvoj najboljši rezultat na izbrani težavnosti.</p>
+  </div>`;
+}
+
+/** Najboljši rezultati v vrsticah pokalov (asinhrono). */
+async function fillCupBest() {
+  for (const el of document.querySelectorAll('.kr-cup__best[data-seed]')) {
+    const seed = el.dataset.seed;
+    if (!seed) continue;
+    try { const v = await hub.getMyBest({ seed, order: 'desc' }); if (el.isConnected && v != null) el.innerHTML = `<b>${R.fmtPts(v)}</b><span class="mg-small mg-muted">točk</span>`; } catch { /* brez povezave */ }
+  }
+}
+
+/** Izbira težavnosti (le dovoljene) in začetek pokala. */
+async function cupDialog(id) {
+  const c = cupById(id);
+  if (!c) return;
+  if (!R.cupUnlocked(c, CUPS, myAch)) { ui.toast('🔒 Odklene se: ' + R.unlockText(c.unlock, CUPS), { icon: '🔒', duration: 3200 }); return; }
+  const ls = cupLevelIds(c).map(lvl);
+  const sv = cupSave(c);
+  const mu = c.mirror && mirrorUnlocked();
+  const btn = (v, label, kind) => `<button type="button" class="mg-btn mg-btn--${kind}" data-v="${v}">${label}</button>`;
+  const html = `<div class="mg-stack" style="text-align:left">
+    <p class="mg-muted" style="margin:0">${esc(c.desc || '')}</p>
+    <ol class="kr-cuplist">${ls.map(L => `<li><span>${esc(L.name)}</span> ${lenBadge(L)} ${diffBadge(L)}</li>`).join('')}</ol>
+    ${c.weekly ? `<p class="mg-small mg-muted" style="margin:0">Teden ${esc(thisWeek())} · samo Normalna · lestvica tedna (šteje najboljši poskus).</p>` : ''}
+    ${sv ? `<div class="kr-row">${btn('resume', `▶ Nadaljuj (${R.DIFFS[sv.diff]?.name}, proga ${sv.idx + 1}/${ls.length})`, 'green')}</div>
+      <p class="mg-small mg-muted" style="margin:0">Nadaljevan maraton je »prekinjen« — ne šteje za lestvico. Nov začetek zbriše shranjen napredek.</p>` : ''}
+    <div class="kr-diffs">${R.cupDiffs(c).map(d => btn('d:' + d, R.DIFFS[d].name, d === 'normalna' ? 'primary' : d === 'noro' ? 'pink' : 'cyan')).join('')}</div>
+    ${c.mirror ? (mu ? `<p class="mg-small mg-muted" style="margin:0">🪞 Zrcalni turnir (vse proge zrcaljene, ločena lestvica):</p><div class="kr-diffs">${R.DIFF_IDS.map(d => btn('m:' + d, R.DIFFS[d].name, 'ghost')).join('')}</div>`
+      : '<p class="kr-lock" style="margin:0">🪞 Zrcalni turnir se odklene, ko končaš Klasični turnir na Normalni ali Noro.</p>') : ''}
+  </div>`;
+  const v = await ui.modal({ title: `${c.icon} ${c.name}`, html, actions: [{ label: 'Prekliči', value: null }],
+    onOpen: (box, close) => box.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) close(b.dataset.v); }) });
+  if (!v) return;
+  if (v === 'resume') resumeCup(c);
+  else if (v.startsWith('d:')) startCup(c.id, v.slice(2));
+  else if (v.startsWith('m:')) startCup(c.id, v.slice(2), { mirror: true });
+}
+
 function mainHtml() {
-  const mu = mirrorUnlocked();
   const d = dailyInfo();
   const names = d.pick.levels.map(id => LEVELS.find(L => L.id === id)?.name).join(' · ');
   return `
@@ -210,23 +301,12 @@ function mainHtml() {
       </div>
     </div>
     <div class="kr-cards">
-      <div class="mg-card">
-        <h2 class="mg-title">Turnir</h2>
-        <p class="mg-muted" style="margin:0">Vseh ${LEVELS.length} prog zapored s prenosom časa. Točke: 1000 na progo + 20 na preostalo sekundo + 100 na zvezdico.</p>
-        <div class="kr-diffs">${R.DIFF_IDS.map(id => `<button class="mg-btn ${id === 'normalna' ? 'mg-btn--primary' : id === 'noro' ? 'mg-btn--pink' : 'mg-btn--cyan'}" data-act="tourney" data-diff="${id}">${R.DIFFS[id].name}</button>`).join('')}</div>
-        <p class="mg-small mg-muted" style="margin:0">Lahka: ×1,4 časa, pol točk, nič se ne odklene. Noro: ×0,75 časa, ×1,5 točk.</p>
-      </div>
+      ${cupsCardHtml()}
       <div class="mg-card">
         <h2 class="mg-title">Na čas</h2>
         <p class="mg-muted" style="margin:0">Posamezne proge brez ure. Bron, srebro, zlato in ghost najboljše vožnje — tvoje ali s lestvice.</p>
         <div class="kr-best" id="trialSummary"></div>
         <button class="mg-btn mg-btn--green mg-btn--block" data-act="trial">Izberi progo</button>
-      </div>
-      <div class="mg-card">
-        <h2 class="mg-title">Zrcalni turnir</h2>
-        ${mu ? `<p class="mg-muted" style="margin:0">Vse proge zrcaljene po osi X. Ločena lestvica.</p>
-          <div class="kr-diffs">${R.DIFF_IDS.map(id => `<button class="mg-btn mg-btn--ghost" data-act="mirror" data-diff="${id}">${R.DIFFS[id].name}</button>`).join('')}</div>`
-        : `<p class="kr-lock">🔒 Odklene se, ko končaš turnir na Normalni ali Noro.</p>`}
       </div>
       <div class="mg-card">
         <h2 class="mg-title">Dnevni izziv</h2>
@@ -263,22 +343,36 @@ function trialHtml(sel) {
   const un = unlockedIds();
   const mir = !!S.load(uk('trialMirror'), false) && mirrorUnlocked();
   const sets = ['Vrt in kuhinja', 'Steklo, tovarna, stolp, led', 'Nevarnosti'];
+  const tv = trialView;
+  const chip = (act, key, v, label) => `<button type="button" class="mg-tab" role="tab" aria-selected="${tv[key] === v}" data-act="${act}" data-${key}="${v}">${label}</button>`;
+  let list = LEVELS.map((L, i) => ({ L, i })).filter(({ L }) => tv.len === 'all' || R.lenOf(L) === tv.len);
+  if (tv.sort === 'diff') list.sort((a, b) => R.diffOf(a.L) - R.diffOf(b.L) || a.i - b.i);
+  if (tv.sort === 'len') list.sort((a, b) => (a.L.dev?.time || 0) - (b.L.dev?.time || 0));
   let html = `<button class="mg-btn mg-btn--ghost mg-btn--small kr-back" data-act="menu">← Meni</button>
   <div class="mg-card mg-stack">
     <div class="mg-row mg-row--between"><h2 class="mg-title" style="margin:0">Na čas</h2>
       ${mirrorUnlocked() ? `<label class="mg-check"><input type="checkbox" id="mirrorChk" ${mir ? 'checked' : ''}> Zrcaljeno</label>` : ''}</div>
-    <p class="mg-muted mg-small" style="margin:0">Proga se odklene, ko jo dosežeš v turnirju na Normalni ali Noro.</p>
+    <p class="mg-muted mg-small" style="margin:0">Proga se odklene, ko jo dosežeš v kateremkoli turnirju na Normalni ali Noro (ali ko pokal končaš).</p>
+    <div class="kr-filters">
+      <div class="mg-tabs kr-scroll" role="tablist" aria-label="Dolžina">${chip('trial-filter', 'len', 'all', 'Vse')}${R.LEN_IDS.map(l => chip('trial-filter', 'len', l, R.LENS[l].many)).join('')}</div>
+      <div class="mg-tabs kr-scroll" role="tablist" aria-label="Razvrsti">${chip('trial-sort', 'sort', 'num', 'Po številki')}${chip('trial-sort', 'sort', 'diff', 'Po težavnosti')}${chip('trial-sort', 'sort', 'len', 'Po dolžini')}</div>
+    </div>
     <div class="kr-levels">`;
-  let lastSet = 0;
-  LEVELS.forEach((L, i) => {
-    if (L.set !== lastSet) { html += `<div class="kr-set">Sklop ${L.set} · ${sets[L.set - 1]}</div>`; lastSet = L.set; }
+  let lastGroup = null;
+  for (const { L, i } of list) {
+    if (tv.sort === 'num' && tv.len === 'all') {
+      const g = R.isClassic(L.id) ? 'Sklop ' + L.set + ' · ' + sets[L.set - 1] : 'Proge pokalov';
+      if (g !== lastGroup) { html += `<div class="kr-set">${g}</div>`; lastGroup = g; }
+    }
     const lock = !un.has(L.id);
     const b = best[mkey(L.id, mir)];
     const md = b != null ? R.medalFor(L, b / 1000) : null;
     html += `<button class="kr-lvl ${lock ? 'locked' : ''}" data-lvl="${L.id}" ${lock ? 'aria-disabled="true"' : ''} aria-pressed="${sel === L.id}">
       <span class="kr-lvl__n">${String(i + 1).padStart(2, '0')}</span><span class="kr-lvl__name">${lock ? '🔒 ' : ''}${esc(L.name)}</span>
+      <span class="kr-lvl__tags">${lenBadge(L)}${diffBadge(L)}</span>
       <span class="kr-lvl__t">${b != null ? R.fmtTime(b) : '—'}</span>${md ? `<span class="kr-lvl__medal">${R.MEDAL[md].icon}</span>` : ''}</button>`;
-  });
+  }
+  if (!list.length) html += '<p class="mg-empty" style="grid-column:1/-1">Ni prog s to dolžino.</p>';
   html += `</div></div><div id="detail"></div>`;
   return html;
 }
@@ -289,8 +383,11 @@ function boardsHtml() {
     <h2 class="mg-title" style="margin:0">Lestvice</h2>
     <div class="kr-row">
       <select class="mg-select" id="bMode" aria-label="Način">
-        <option value="tourney">Turnir</option><option value="mirror">Zrcalni turnir</option><option value="daily">Dnevni izziv</option><option value="level">Proga (Na čas)</option><option value="level-m">Zrcaljena proga</option>
+        <option value="tourney">Turnir / pokal</option><option value="mirror">Zrcalni turnir</option><option value="daily">Dnevni izziv</option><option value="level">Proga (Na čas)</option><option value="level-m">Zrcaljena proga</option>
       </select>
+      <select class="mg-select" id="bCup" aria-label="Pokal">${CUPS.cups.map(c => `<option value="${c.id}">${c.icon} ${esc(c.name)}</option>`).join('')}</select>
+      <select class="mg-select mg-hidden" id="bWeek" aria-label="Teden">${Array.from({ length: 6 }, (_, k) => R.weekShift(thisWeek(), -k)).map((w, k) => `<option value="${w}">${k ? w : 'Ta teden (' + w + ')'}</option>`).join('')}</select>
+      <select class="mg-select mg-hidden" id="bKind" aria-label="Lestvica"><option value="pts">Točke</option><option value="time">Skupni čas</option></select>
       <select class="mg-select" id="bDiff" aria-label="Težavnost">${R.DIFF_IDS.map(d => `<option value="${d}" ${d === 'normalna' ? 'selected' : ''}>${R.DIFFS[d].name}</option>`).join('')}</select>
       <select class="mg-select mg-hidden" id="bLvl" aria-label="Proga">${LEVELS.map((L, i) => `<option value="${L.id}">${i + 1}. ${esc(L.name)}</option>`).join('')}</select>
     </div>
@@ -337,8 +434,9 @@ function bindMenu(view, arg) {
       else if (act === 'qpick') { setQuality(b.dataset.q); showMenu('main'); }
       else if (act === 'boards') showMenu('boards');
       else if (act === 'trial') showMenu('trial');
-      else if (act === 'tourney') startTourney(b.dataset.diff, false);
-      else if (act === 'mirror') startTourney(b.dataset.diff, true);
+      else if (act === 'cupdiff') { settings.cupDiff = b.dataset.diff; saveSettings(); showMenu('main'); }
+      else if (act === 'trial-filter') { trialView.len = b.dataset.len; S.save(uk('trialView'), trialView); showMenu('trial'); }
+      else if (act === 'trial-sort') { trialView.sort = b.dataset.sort; S.save(uk('trialView'), trialView); showMenu('trial'); }
       else if (act === 'daily') startDaily();
       else if (act === 'start-trial') startTrial(b.dataset.id);
       else if (act === 'custom') showMenu('custom');
@@ -364,6 +462,8 @@ function bindMenu(view, arg) {
       }
       return;
     }
+    const cup = e.target.closest('[data-cup]');
+    if (cup && view === 'main') { audio.play('click'); cupDialog(cup.dataset.cup); return; }
     const lv = e.target.closest('[data-lvl]');
     const cm = e.target.closest('[data-comm]');
     if (cm && view === 'community') {
@@ -378,7 +478,7 @@ function bindMenu(view, arg) {
       return;
     }
     if (lv && view === 'trial') {
-      if (lv.classList.contains('locked')) { ui.toast('Progo najprej dosezi v turnirju (Normalna ali Noro).', { icon: '🔒' }); return; }
+      if (lv.classList.contains('locked')) { ui.toast('Progo najprej dosezi v kateremkoli turnirju (Normalna ali Noro).', { icon: '🔒' }); return; }
       m.querySelectorAll('.kr-lvl').forEach(x => x.setAttribute('aria-pressed', x === lv));
       trialDetail(lv.dataset.lvl);
     }
@@ -396,6 +496,7 @@ function bindMenu(view, arg) {
     clearInterval(bindMenu._mid);
     bindMenu._mid = setInterval(() => { const el = $('#midnight'); if (el) el.textContent = fmtLeft(nextMidnight() - Date.now()); else clearInterval(bindMenu._mid); }, 30000);
     syncBest();
+    fillCupBest();
   }
   if (view === 'custom') fillCustomList(arg);
   if (view === 'community') fillCommunity(arg);
@@ -405,12 +506,26 @@ function bindMenu(view, arg) {
   }
   if (view === 'boards') {
     const draw = () => {
-      const md = $('#bMode').value, df = $('#bDiff').value, lv = $('#bLvl').value;
-      $('#bDiff').classList.toggle('mg-hidden', !['tourney', 'mirror'].includes(md));
+      const md = $('#bMode').value, lv = $('#bLvl').value;
+      const c = cupById($('#bCup').value);
+      // težavnosti, ki jih pokal dovoli
+      const dsel = $('#bDiff'), allowed = md === 'tourney' ? R.cupDiffs(c) : R.DIFF_IDS;
+      for (const o of dsel.options) o.disabled = !allowed.includes(o.value);
+      if (!allowed.includes(dsel.value)) dsel.value = allowed.includes('normalna') ? 'normalna' : allowed[0];
+      const df = dsel.value;
+      $('#bCup').classList.toggle('mg-hidden', md !== 'tourney');
+      $('#bWeek').classList.toggle('mg-hidden', !(md === 'tourney' && c.weekly));
+      $('#bKind').classList.toggle('mg-hidden', !(md === 'tourney' && c.timeBoard));
+      $('#bDiff').classList.toggle('mg-hidden', !['tourney', 'mirror'].includes(md) || (md === 'tourney' && c.weekly));
       $('#bLvl').classList.toggle('mg-hidden', !md.startsWith('level'));
       let o;
-      if (md === 'tourney' || md === 'mirror') {
-        const seed = md === 'tourney' ? R.boardSeed.tourney(df) : R.boardSeed.mirror(df);
+      if (md === 'tourney' && c.weekly) {
+        o = { title: '', format: R.fmtPts, order: 'desc', tabs: [{ label: 'Teden ' + $('#bWeek').value, seed: R.cupBoard(c, 'normalna', $('#bWeek').value) }] };
+      } else if (md === 'tourney' && c.timeBoard && $('#bKind').value === 'time') {
+        const seed = R.cupTimeBoard(c, df);
+        o = { title: '', format: R.fmtTime, order: 'asc', tabs: [{ label: 'Danes', seed, period: 'today' }, { label: 'Teden', seed, period: 'week' }, { label: 'Vseh časov', seed }] };
+      } else if (md === 'tourney' || md === 'mirror') {
+        const seed = md === 'tourney' ? R.cupBoard(c, df) : R.boardSeed.mirror(df);
         o = { title: '', format: R.fmtPts, order: 'desc', tabs: [{ label: 'Danes', seed, period: 'today' }, { label: 'Teden', seed, period: 'week' }, { label: 'Vseh časov', seed }] };
       } else if (md === 'daily') {
         o = { title: '', format: R.fmtPts, order: 'desc', tabs: [{ label: 'Danes', seed: hub.dailySeed() }] };
@@ -420,7 +535,7 @@ function bindMenu(view, arg) {
       }
       ui.leaderboard($('#bBoard'), o);
     };
-    ['#bMode', '#bDiff', '#bLvl'].forEach(s => $(s).addEventListener('change', draw));
+    ['#bMode', '#bCup', '#bWeek', '#bKind', '#bDiff', '#bLvl'].forEach(s => $(s).addEventListener('change', draw));
     draw();
   }
   if (view === 'settings') {
@@ -469,6 +584,7 @@ function trialDetail(id) {
   el.innerHTML = `<div class="kr-detail" style="margin-top:16px">
     <div class="mg-card mg-stack">
       <h2 class="mg-title" style="margin:0">${esc(L.name)}${mir ? ' 🪞' : ''}</h2>
+      <div class="kr-row" style="gap:6px">${lenBadge(L)}${diffBadge(L)}${(L.tags || []).map(t => `<span class="kr-badge">${esc(t)}</span>`).join('')}</div>
       <p class="mg-muted" style="margin:0">${esc(L.desc || '')}</p>
       <div class="kr-medals"><span>🥇 ${L.medals.gold} s</span><span>🥈 ${L.medals.silver} s</span><span>🥉 ${L.medals.bronze} s</span></div>
       <div>Moj najboljši: <b>${b != null ? R.fmtTime(b) : '—'}</b> ${b != null && R.medalFor(L, b / 1000) ? R.MEDAL[R.medalFor(L, b / 1000)].icon : ''}</div>
@@ -768,7 +884,11 @@ function help() {
         <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> = pavza.</p>
       <p><b>Nevarnosti:</b> padajoče ploščice se zatresejo, preden padejo; kladiva se dvignejo in zasvetijo rdeče; magneti utripajo pred vklopom;
         nasilneži te lovijo v svojem območju; žage in ose sledijo vzorcu — opazuj in počakaj na pravi trenutek.</p>
-      <p><b>Načini:</b> Turnir (vse proge), Na čas (medalje, ghosti), Zrcalni turnir (po končanem turnirju), Dnevni izziv (3 proge in dodatek dneva, prvi poskus šteje).</p>
+      <p><b>Načini:</b> Turnirji — pokali z različnim značajem (Klasični turnir s 12 progami, Hrčkov pokal za začetnike, Sprint, Svetovna turneja,
+        Maraton s shranjevanjem napredka, Peklenski pokal in Tedenski pokal, ki je isti za vse cel teden); Na čas (medalje, ghosti, filtri po dolžini);
+        Zrcalni turnir (po končanem Klasičnem turnirju); Dnevni izziv (3 proge in dodatek dneva, prvi poskus šteje).</p>
+      <p><b>Proge</b> so kratke (⚡ sprinti do ~16 s), srednje ali dolge (do ~2 min); težavnost ★–★★★★★ je izmerjena z meritvami. Na nekaterih progah je
+        <b>razcep</b>: varna pot ali hitrejša, tvegana bližnjica.</p>
     </div>`,
   });
 }
@@ -890,10 +1010,10 @@ function frame(now) {
   if (!play || $('#play').classList.contains('mg-hidden')) return;
   const w = play.world;
   if (play.state === 'run') {
-    play.acc += dt;
+    play.acc += dt * FAST;
     let n = 0;
-    while (play.acc >= STEP && n < 30 && play.state === 'run') { simStep(); play.acc -= STEP; n++; }
-    if (n >= 30) play.acc = 0;
+    while (play.acc >= STEP && n < 30 * FAST && play.state === 'run') { simStep(); play.acc -= STEP; n++; }
+    if (n >= 30 * FAST) play.acc = 0;
   }
   const a = play.state === 'run' ? Math.min(1, play.acc / STEP) : 1;
   const b = w.ball, pb = play.prevBall;
@@ -931,6 +1051,8 @@ function simStep() {
   w.events.length = 0;
   step(w, ix, iz);
   play.rec.sample(w.t, b);
+  // bližnjica (razcep): ali je krogla zapeljala na ozek most
+  if (!play.cut && w.L.shortcuts) play.cut = w.L.shortcuts.some(q => b.x >= q.x && b.x <= q.x + q.w && b.z >= q.z && b.z <= q.z + q.d);
   for (const e of w.events) onEvent(e);
   checkSecrets(w, b);
   // opozorila (telegraf) za kladiva in magnete v bližini
@@ -1077,9 +1199,36 @@ function enterPlay() {
   last = performance.now();
 }
 
-function startTourney(diff, mirror) {
+/** Začni pokal (cups.json). mirror: zrcalni turnir (le pokali z mirror, npr. Klasični). */
+function startCup(id, diff, { mirror = false } = {}) {
+  const c = cupById(id);
+  if (!c || !R.cupDiffs(c).includes(diff)) return;
+  const week = c.weekly ? thisWeek() : null;
+  if (c.save) S.remove(uk('save:' + c.id));   // nov začetek zbriše shranjen napredek
   mode = {
-    kind: mirror ? 'mirror' : 'tourney', diff, mirror, levels: LEVELS, idx: 0, run: R.newRun(diff), phys: {}, timeMul: 1, xpLevels: 0,
+    kind: mirror ? 'mirror' : 'tourney', cup: c, diff, mirror, week, levels: cupLevelIds(c, week).map(lvl), idx: 0, run: R.newRun(diff),
+    phys: {}, timeMul: R.cupClock(c), xpLevels: 0, resumed: false,
+  };
+  enterPlay();
+  startLevel();
+}
+/** Za združljivost: Klasični turnir. */
+const startTourney = (diff, mirror) => startCup('klasika', diff, { mirror });
+
+/** Shrani napredek pokala (Maraton) po končani progi in se vrni v meni. */
+function saveCup() {
+  const c = mode.cup;
+  S.save(uk('save:' + c.id), { diff: mode.diff, idx: mode.idx + 1, run: mode.run, xpLevels: mode.xpLevels, t: Date.now() });
+  ui.toast('Napredek shranjen — nadaljuješ v meniju Turnirji. Nadaljevan maraton ne šteje za lestvico.', { icon: '💾', duration: 4000 });
+  showMenu('main');
+}
+function resumeCup(c) {
+  const sv = cupSave(c);
+  if (!sv) return;
+  S.remove(uk('save:' + c.id));
+  mode = {
+    kind: 'tourney', cup: c, diff: sv.diff, mirror: false, week: null, levels: cupLevelIds(c).map(lvl), idx: sv.idx, run: sv.run,
+    phys: {}, timeMul: R.cupClock(c), xpLevels: sv.xpLevels || 0, resumed: true,
   };
   enterPlay();
   startLevel();
@@ -1148,7 +1297,7 @@ async function startLevel() {
   // oznaka proge
   const n = mode.idx + 1, total = mode.levels.length;
   $('#hudLevel').textContent = mode.custom ? '✏️ ' + base.name : mode.kind === 'trial' ? `${ORDER.indexOf(base.id) + 1}. ${base.name}` : `${n}/${total} · ${base.name}`;
-  const modeTxt = { tourney: `Turnir · ${R.DIFFS[mode.diff]?.name}`, mirror: `Zrcalo · ${R.DIFFS[mode.diff]?.name}`, daily: `Dnevni · ${mode.mod?.name}`, trial: mode.custom?.community ? 'Proga skupnosti' : mode.custom ? 'Moja proga · brez lestvice' : mode.mirror ? 'Na čas · zrcaljeno' : 'Na čas' }[mode.kind];
+  const modeTxt = { tourney: `${mode.cup?.icon || ''} ${mode.cup?.id === 'klasika' ? 'Turnir' : mode.cup?.name || 'Turnir'} · ${R.DIFFS[mode.diff]?.name}${mode.resumed ? ' · prekinjeno' : ''}`, mirror: `Zrcalo · ${R.DIFFS[mode.diff]?.name}`, daily: `Dnevni · ${mode.mod?.name}`, trial: mode.custom?.community ? 'Proga skupnosti' : mode.custom ? 'Moja proga · brez lestvice' : mode.mirror ? 'Na čas · zrcaljeno' : 'Na čas' }[mode.kind];
   $('#hudMode').textContent = modeTxt; $('#hudMode').classList.remove('mg-hidden');
   let add = 0;
   if (mode.kind !== 'trial') {
@@ -1252,9 +1401,11 @@ async function levelDone() {
   // lastna proga: brez dosežkov, dogodkov, uradne lestvice in ghostov na strežniku
   if (mode.custom) return customDone(time, stars, falls);
   hub.reportEvent('krogla:proga', 1);
+  if (R.lenOf(base) === 'dolga') hub.reportEvent('krogla:dolga', 1);
   if (base.id === ORDER[0]) unlock('prva-proga');
   if (stars >= 5) unlock('vse-zvezdice');
-  if (ORDER.indexOf(base.id) >= 5 && falls === 0) unlock('brez-padca');
+  // »progo 6 ali kasnejšo«: klasične 06–12 ali nove proge s težavnostjo ★3 ali več
+  if ((R.isClassic(base.id) ? ORDER.indexOf(base.id) >= 5 : R.diffOf(base) >= 3) && falls === 0) unlock('brez-padca');
   if (mode.kind === 'trial') return trialDone(time, stars, falls);
 
   const run = mode.run;
@@ -1265,7 +1416,7 @@ async function levelDone() {
     xp = R.tourneyLevelXp(mode.xpLevels || 0);
     mode.xpLevels = (mode.xpLevels || 0) + 1;
     if (xp) hub.awardXp(xp, 'krogla: proga');
-    const sk = R.setCompleted(mode.levels, mode.idx);
+    const sk = mode.cup?.id === 'klasika' ? R.setCompleted(mode.levels, mode.idx) : 0;
     if (sk) {
       hub.reportEvent('krogla:sklop', sk);
       if (sk === 1) unlock('sklop-1');
@@ -1273,6 +1424,8 @@ async function levelDone() {
     }
   }
   const lastLevel = mode.idx >= mode.levels.length - 1;
+  const nextL = !lastLevel ? mode.levels[mode.idx + 1] : null;
+  const canSave = !!mode.cup?.save && !lastLevel && mode.kind === 'tourney';
   const goNext = () => {
     if (!play || play.base !== base) return;
     if (lastLevel) endRun(true);
@@ -1290,8 +1443,11 @@ async function levelDone() {
       <div><span>Točke</span><b>+${R.fmtPts(pts)}</b></div>
     </div>
     <p class="kr-note" style="margin:0">Skupaj ${R.fmtPts(run.points)} točk${xp ? ` · +${xp} XP` : ''}${falls ? ` · padci: ${falls}` : ' · brez padca'}</p>
-    <button class="mg-btn mg-btn--primary mg-btn--big" data-o="next">${lastLevel ? 'Konec turnirja' : 'Naslednja proga'} <span class="kr-kbd">(Enter)</span></button>
-  </div>`, v => { if (v === 'next') { play.next = null; goNext(); } });
+    ${nextL ? `<p class="kr-next" style="margin:0">Naslednja: <b id="nextName"></b> · ${R.LENS[R.lenOf(nextL)].name.toLowerCase()} · ${R.diffStars(R.diffOf(nextL))}</p>` : ''}
+    <button class="mg-btn mg-btn--primary mg-btn--big" data-o="next">${lastLevel ? (mode.cup?.id === 'klasika' || mode.kind !== 'tourney' ? 'Konec turnirja' : 'Konec pokala') : 'Naslednja proga'} <span class="kr-kbd">(Enter)</span></button>
+    ${canSave ? '<button class="mg-btn mg-btn--ghost" data-o="save">💾 Shrani in nadaljuj kasneje</button>' : ''}
+  </div>`, v => { if (v === 'next') { play.next = null; goNext(); } else if (v === 'save') { play.next = null; saveCup(); } });
+  if (nextL) $('#nextName').textContent = nextL.name;
   if (BOT) setTimeout(() => { if (play?.next === goNext) { play.next = null; goNext(); } }, 1500);
 }
 
@@ -1310,18 +1466,38 @@ async function endRun(completed) {
   play.next = null;
   audio.stopMusic();
   const score = run.points;
-  const seed = kind === 'tourney' ? R.boardSeed.tourney(mode.diff) : kind === 'mirror' ? R.boardSeed.mirror(mode.diff) : mode.seed;
-  const counts = kind !== 'daily' || mode.official;
+  const cup = mode.cup || null;
+  const classic = !cup || cup.id === 'klasika';
+  const seed = kind === 'tourney' ? R.cupBoard(cup, mode.diff, mode.week) : kind === 'mirror' ? R.boardSeed.mirror(mode.diff) : mode.seed;
+  // dnevni: le uradni poskus · prekinjen (nadaljevan) maraton ne šteje za lestvico
+  const counts = (kind !== 'daily' || mode.official) && !mode.resumed;
   if (counts && score > 0) await hub.submitScore(score, { seed, meta: { levels: run.done.length, diff: mode.diff, completed, mod: mode.mod?.id || null } });
+  if (counts && completed && cup?.timeBoard) {
+    const ms = Math.round(run.results.reduce((a, r) => a + r.time, 0) * 1000);
+    hub.submitScore(ms, { seed: R.cupTimeBoard(cup, mode.diff), meta: { levels: run.done.length, diff: mode.diff } });
+  }
   let xp = (mode.xpLevels || 0) * 20;
-  if (completed && (kind === 'tourney' || kind === 'mirror')) { const r = await hub.awardXp(R.XP.TOURNEY, 'krogla: turnir'); xp += r.granted || 0; }
+  if (completed && classic && (kind === 'tourney' || kind === 'mirror')) { const r = await hub.awardXp(R.XP.TOURNEY, 'krogla: turnir'); xp += r.granted || 0; }
+  // enkratni bonus za prvi konec pokala (na Normalni/Noro, ob prvem dosežku pokala)
+  if (completed && !classic && kind === 'tourney' && cup.xp && cup.ach && !myAch.has(cup.ach) && R.countsForUnlock(mode.diff)) {
+    const r = await hub.awardXp(cup.xp, 'krogla: pokal ' + cup.id); xp += r.granted || 0;
+  }
   hub.reportGame({ won: false, players: 1, score, daily: kind === 'daily' });
   if (completed && (kind === 'tourney' || kind === 'mirror')) {
-    hub.reportEvent('krogla:turnir', 1);
-    if (kind === 'tourney' && R.countsForUnlock(mode.diff)) { await unlock('turnir'); S.save(uk('mirror'), true); }
-    if (kind === 'mirror') await unlock('zrcalo');
-    if (mode.diff === 'noro') await unlock('noro');
-    if (run.clock > 60) await unlock('rezerva');
+    hub.reportEvent('krogla:pokal', 1);
+    if (classic) {
+      hub.reportEvent('krogla:turnir', 1);
+      if (kind === 'tourney' && R.countsForUnlock(mode.diff)) { await unlock('turnir'); S.save(uk('mirror'), true); }
+      if (kind === 'mirror') await unlock('zrcalo');
+      if (mode.diff === 'noro') await unlock('noro');
+      if (run.clock > 60) await unlock('rezerva');
+    } else if (cup.ach && R.countsForUnlock(mode.diff)) await unlock(cup.ach);
+    if (cup?.weekly) {
+      const weeks = new Set(S.load(uk('weeks'), []));
+      weeks.add(mode.week); S.save(uk('weeks'), [...weeks]);
+      if (weeks.size >= 3) await unlock('tedenski');
+    }
+    if (CUPS.cups.filter(c => c.ach).every(c => myAch.has(c.ach))) await unlock('vsi-pokali');
   }
   let top = [];
   try { top = counts ? await hub.getLeaderboard({ seed, limit: 50, order: 'desc' }) : []; } catch { /* */ }
@@ -1329,7 +1505,7 @@ async function endRun(completed) {
   const list = top.slice(0, 5).map(r => ({ id: r.user_id, nickname: r.nickname, avatar: r.avatar, equipped: r.equipped, scoreText: R.fmtPts(r.score) + ' t' }));
   if (!list.some(p => p.id === hub.userId) && hub.profile) list.push({ id: hub.userId, nickname: hub.profile.nickname, avatar: hub.profile.avatar, equipped: hub.profile.equipped, scoreText: R.fmtPts(score) + ' t' });
   const me = list.find(p => p.id === hub.userId); if (me) me.xp = xp;
-  const title = completed ? (kind === 'daily' ? 'Dnevni izziv opravljen!' : kind === 'mirror' ? 'Zrcalni turnir končan!' : 'Turnir končan!') : 'Čas je potekel';
+  const title = completed ? (kind === 'daily' ? 'Dnevni izziv opravljen!' : kind === 'mirror' ? 'Zrcalni turnir končan!' : classic ? 'Turnir končan!' : `Pokal končan: ${cup.name}`) : 'Čas je potekel';
   const extra = `<div class="kr-stats" style="margin-top:12px">
       <div><span>Točke</span><b>${R.fmtPts(score)}</b></div>
       <div><span>Proge</span><b>${run.done.length}/${mode.levels.length}</b></div>
@@ -1337,10 +1513,12 @@ async function endRun(completed) {
       <div><span>${counts ? 'Mesto' : 'Lestvica'}</span><b>${counts ? (meIdx >= 0 ? meIdx + 1 + '.' : '—') : 'trening'}</b></div>
     </div>
     ${completed ? `<p class="mg-center mg-small mg-muted">Preostala ura: ${R.fmtClock(run.clock)}</p>` : ''}
-    ${kind === 'daily' && !mode.official ? '<p class="mg-center mg-small mg-muted">To je bil trening — za lestvico šteje le prvi poskus dneva.</p>' : ''}`;
+    ${kind === 'daily' && !mode.official ? '<p class="mg-center mg-small mg-muted">To je bil trening — za lestvico šteje le prvi poskus dneva.</p>' : ''}
+    ${mode.resumed ? '<p class="mg-center mg-small mg-muted">Prekinjen (nadaljevan) maraton — rezultat ne šteje za lestvico.</p>' : ''}
+    ${cup?.weekly ? `<p class="mg-center mg-small mg-muted">Tedenski pokal ${esc(mode.week)} — za lestvico šteje najboljši poskus tedna.</p>` : ''}`;
   const v = await ui.results(list, { title, again: kind === 'daily' ? 'Trening' : 'Še enkrat', extraHtml: extra });
   await refreshAch();
-  if (v === 'again') { if (kind === 'daily') startDaily(); else startTourney(mode.diff, kind === 'mirror'); }
+  if (v === 'again') { if (kind === 'daily') startDaily(); else startCup(cup?.id || 'klasika', mode.diff, { mirror: kind === 'mirror' }); }
   else if (v !== 'hub') showMenu('main');
 }
 
@@ -1363,7 +1541,11 @@ async function trialDone(time, stars, falls) {
   if (medal === 'gold') {
     hub.reportEvent('krogla:gold', 1);
     if (prevMedal !== 'gold') { const r = await hub.awardXp(R.XP.GOLD, 'krogla: zlato'); xp = r.granted || 0; }
-    if (LEVELS.every(L => best[mkey(L.id, false)] != null && R.medalFor(L, best[mkey(L.id, false)] / 1000) === 'gold')) unlock('zlato-vse');
+    const goldAll = list => list.length && list.every(L => best[mkey(L.id, false)] != null && R.medalFor(L, best[mkey(L.id, false)] / 1000) === 'gold');
+    if (goldAll(LEVELS.filter(L => R.isClassic(L.id)))) unlock('zlato-vse');
+    if (goldAll(LEVELS.filter(L => parseInt(L.id, 10) >= 13 && parseInt(L.id, 10) <= 28))) unlock('zlato-nove');
+    if (play.cut && base.id.startsWith('18-')) unlock('razcep');
+    if (R.lenOf(base) === 'kratka') hub.reportEvent('krogla:sprint-gold', 1);
   }
   if (Date.now() - lastReportTrial > 60000) { lastReportTrial = Date.now(); hub.reportGame({ won: false, players: 1, score: ms }); }
   const idx = ORDER.indexOf(base.id);

@@ -103,6 +103,12 @@ export function validateLevel(L) {
     if ((en.t === 'bully' || en.t === 'vacuum' || en.t === 'magnet') && (!isNum(en.x) || !isNum(en.z))) e(`${en.t}: manjka x/z`);
   }
   if (L.theme && typeof L.theme !== 'object') e('theme mora biti objekt');
+  // neobvezna polja (prompt 35): prikazana težavnost, dolžina, oznake, alternativne poti, bližnjice
+  if (L.diff != null && !(Number.isInteger(L.diff) && L.diff >= 1 && L.diff <= 5)) e('diff mora biti celo število 1–5');
+  if (L.len != null && !['kratka', 'srednja', 'dolga'].includes(L.len)) e('len mora biti kratka, srednja ali dolga');
+  if (L.tags != null && !(Array.isArray(L.tags) && L.tags.every(t => typeof t === 'string' && t.length <= 30))) e('tags mora biti seznam kratkih besedil');
+  if (L.routes != null && !(typeof L.routes === 'object' && Object.values(L.routes).every(r => Array.isArray(r) && r.every(w => isNum(w.x) && isNum(w.z))))) e('routes: vsaka pot je seznam točk {x, z}');
+  for (const q of L.shortcuts || []) if (!isNum(q.x) || !isNum(q.z) || !isNum(q.w) || !isNum(q.d)) e('bližnjica: x, z, w, d');
   return err;
 }
 
@@ -133,10 +139,13 @@ export function mirrorLevel(L) {
   out.fans = (L.fans || []).map(f => ({ ...f, x: mx(f.x), dir: dir(f.dir) }));
   out.bumpers = (L.bumpers || []).map(b => ({ ...b, x: mx(b.x) }));
   out.bowls = (L.bowls || []).map(b => ({ ...b, x: mx(b.x) }));
-  out.hammers = (L.hammers || []).map(h => ({ ...h, x: mx(h.x), dir: dir(h.dir) }));
+  // pravokotniki (kladiva, vrata, kvadri, bližnjice) so podani z levim robom x in širino w
+  const mxr = o => mx(o.x) - (o.w || 0);
+  out.hammers = (L.hammers || []).map(h => ({ ...h, x: mxr(h), dir: dir(h.dir) }));
   out.switches = (L.switches || []).map(s => ({ ...s, x: mx(s.x) }));
-  out.doors = (L.doors || []).map(d => ({ ...d, x: mx(d.x) }));
-  out.blocks = (L.blocks || []).map(b => ({ ...b, x: mx(b.x) }));
+  out.doors = (L.doors || []).map(d => ({ ...d, x: mxr(d) }));
+  out.blocks = (L.blocks || []).map(b => ({ ...b, x: mxr(b) }));
+  if (L.shortcuts) out.shortcuts = L.shortcuts.map(r => ({ ...r, x: mxr(r) }));
   out.enemies = (L.enemies || []).map(en => {
     const o = { ...en };
     if (en.path) o.path = en.path.map(pt);
@@ -144,7 +153,9 @@ export function mirrorLevel(L) {
     if (en.dir) o.dir = dir(en.dir);
     return o;
   });
-  if (L.route) out.route = L.route.map(w => ({ ...w, x: w.mover != null ? -w.x : mx(w.x) }));
+  const mroute = r => r.map(w => ({ ...w, x: w.mover != null ? -w.x : mx(w.x) }));
+  if (L.route) out.route = mroute(L.route);
+  if (L.routes) out.routes = Object.fromEntries(Object.entries(L.routes).map(([k, r]) => [k, mroute(r)]));
   if (isNum(L.camYaw)) out.camYaw = -L.camYaw;
   return out;
 }

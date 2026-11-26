@@ -26,6 +26,7 @@
     const schemaSql = await (await fetch('supabase/schema.sql', { cache: 'no-cache' })).text();
     const kIdx = await (await fetch('games/krogla/levels/index.json', { cache: 'no-cache' })).json();
     const kroglaLevels = await Promise.all(kIdx.levels.map(async f => (await fetch('games/krogla/levels/' + f, { cache: 'no-cache' })).json()));
+    const kroglaCups = await (await fetch('games/krogla/levels/cups.json', { cache: 'no-cache' })).json();
     const rIdx = await (await fetch('games/rusilec/arenas/index.json', { cache: 'no-cache' })).json();
     const rusilecArenas = await Promise.all(rIdx.arenas.map(async f => (await fetch('games/rusilec/arenas/' + f, { cache: 'no-cache' })).json()));
     const fIdx = await (await fetch('games/frnikole/tracks/index.json', { cache: 'no-cache' })).json();
@@ -45,7 +46,7 @@
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

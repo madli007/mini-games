@@ -63,7 +63,7 @@
   {
     "id": "krogla",
     "name": "Hrčkova krogla",
-    "description": "Kotališ hrčka v krogli po zračnih progah. Izogni se oviram in sovražnikom, preden poteče čas.",
+    "description": "Kotališ hrčka v krogli po 28 zračnih progah — od kratkih sprintov do dvominutnega maratona. Sedem turnirjev, tedenski pokal in dnevni izziv.",
     "icon": "🐹",
     "path": "games/krogla/",
     "players": { "min": 1, "max": 1 },
@@ -75,7 +75,10 @@
       { "id": "proga-3", "tier": "e", "text": "Končaj 3 proge v Hrčkovi krogli", "event": "krogla:proga", "target": 3 },
       { "id": "gold", "tier": "m", "text": "Osvoji zlato medaljo v Hrčkovi krogli", "event": "krogla:gold", "target": 1 },
       { "id": "sklop-2", "tier": "h", "text": "Končaj 2. sklop v Hrčkovi krogli", "event": "krogla:sklop", "target": 1, "cmp": "gte", "goal": 2 },
-      { "id": "turnir", "tier": "w", "text": "Končaj turnir v Hrčkovi krogli", "event": "krogla:turnir", "target": 1 }
+      { "id": "turnir", "tier": "w", "text": "Končaj turnir v Hrčkovi krogli", "event": "krogla:turnir", "target": 1 },
+      { "id": "pokal", "tier": "w", "text": "Končaj pokal v Hrčkovi krogli", "event": "krogla:pokal", "target": 1 },
+      { "id": "dolga", "tier": "m", "text": "Končaj dolgo progo v Hrčkovi krogli", "event": "krogla:dolga", "target": 1 },
+      { "id": "sprint-gold", "tier": "h", "text": "Osvoji zlato na kratki progi v Hrčkovi krogli", "event": "krogla:sprint-gold", "target": 1 }
     ]
   },
   {

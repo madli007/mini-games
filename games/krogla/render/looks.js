@@ -103,6 +103,15 @@ export const LOOKS = {
     floor: 'metal', side: 'basalt', wall: 'rust', tintFloor: true, edge: 'hazard',
     decor: ['embers'],
   },
+  mine: {
+    name: 'Rudnik pod zemljo',
+    sky: { zenith: '#07050a', horizon: '#5a3418', ground: '#140c08', sun: [25, 20], sunColor: '#ffb067', clouds: 0, stars: 0.1, bokeh: 0.6, cloudSea: 0 },
+    light: { sun: ['#ffbe7a', 2.6], hemi: ['#c89a70', '#24160c', 0.75], env: 0.75 },
+    exposure: 1.15, fog: ['#1e130b', 0.022], bloom: [0.5, 0.5, 1.0],
+    grade: { tint: [1.05, 0.98, 0.9], sat: 0.95, vignette: 0.5 },
+    floor: 'wood', side: 'basalt', wall: 'stone', tintFloor: true, edge: 'hazard',
+    decor: ['motes', 'embers'],
+  },
 };
 
 const BY_NUM = { '01': 'garden', '02': 'garden', '03': 'kitchen', '04': 'kitchen', '05': 'crystal', '06': 'factory', '07': 'tower', '08': 'ice', '09': 'arena', '10': 'neon', '11': 'sky', '12': 'inferno' };

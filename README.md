@@ -8,8 +8,9 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 - Objavljeno: **https://madli007.github.io/mini-games/**
 - Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
   (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled), **Hrčkova krogla**
-  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv; nove proge
-  in več turnirjev čakajo v promptu 35), **Rušilec**
+  (3D, 28 prog — od ~10-sekundnih sprintov do dvominutnega maratona, težavnost ★–★★★★★ izmerjena z meritvami;
+  7 turnirjev/pokalov s prenosom časa in svojimi lestvicami — Klasični, Hrčkov, Sprint, Svetovna turneja, Maraton, Peklenski,
+  Tedenski; Na čas z ghosti in filtri po dolžini, zrcalni turnir, dnevni izziv), **Rušilec**
   (party arena Hrčkove krogle za 2–8 igralcev v realnem času: izrivanje čez rob, 9 aren, boti, ekipe, TV pogled),
   **Zaporedje**, **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila
@@ -58,7 +59,8 @@ Shema huba (`supabase/schema.sql`) je na projektu **že pognana**; pinball tabel
 4. *(Priporočeno)* *Authentication → Rate Limits*: omejitev anonimnih prijav na IP (privzeto 30/h) je za
    skupino prijateljev dovolj.
 5. **Hrčkova krogla (ghosti)**: `supabase/games/krogla.sql` (tabeli `krogla_levels`, `krogla_ghosts`, RPC `krogla_save_ghost`).
-   **Pognano 21. 11. 2026** (migracija `krogla_ghosts`). Po spremembi prog (`node tools/krogla-levels.mjs`) ga poženi znova.
+   **Pognano 21. 11. 2026** (migracija `krogla_ghosts`). Po spremembi prog (`node tools/krogla-levels.mjs`) ga poženi znova
+   (proge 13–28 iz prompta 35 so v `krogla_levels` — pognano 27. 11. 2026).
 6. **Čiščenje starih sob**: `pg_cron` je vklopljen in vsako uro pobriše sobe, starejše od 24 h
    (opravilo `mg_cleanup_rooms`). Ročno: `select private.cleanup_old_rooms();`. Stare sobe se brišejo
    tudi sproti ob ustvarjanju nove.

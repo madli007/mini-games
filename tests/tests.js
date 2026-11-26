@@ -33,6 +33,7 @@ import { skokiTests } from './skoki.js';
 import { ustaviUroTests } from './ustavi-uro.js';
 import { sport3Tests } from './sport3.js';
 import { skoki4Tests } from './skoki4.js';
+import { krogla2Tests } from './krogla2.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1594,6 +1595,7 @@ skokiTests(test, { eq, ok });
 ustaviUroTests(test, { eq, ok });
 /* ------------------------------------------------------- športni okvir in Smučarski skoki, 3. faza (tests/sport3.js, tests/skoki4.js) */
 sport3Tests(test, { eq, ok });
+krogla2Tests(test, { eq, ok });
 skoki4Tests(test, { eq, ok });
 
 /**

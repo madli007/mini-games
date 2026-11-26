@@ -270,6 +270,17 @@ export function magnetState(w, mg) {
   return { on: u < duty, warn: u > 1 - 0.12, u };
 }
 
+/**
+ * Ventilator v ritmu (neobvezna polja period, duty, phase); brez `period` piha ves čas.
+ * Ritem ni odvisen od dodatka »sovražniki ×2« (ventilator ni sovražnik).
+ */
+export function fanState(w, fn) {
+  if (!fn.period) return { on: true, warn: false, u: 0 };
+  const u = ((w.t / fn.period + (fn.phase || 0)) % 1 + 1) % 1;
+  const duty = fn.duty ?? 0.5;
+  return { on: u < duty, warn: u > 1 - 0.15, u };
+}
+
 /** Odprtost vrat 0 (zaprta) … 1 (odprta). */
 export function doorOpenness(w, id) {
   const t0 = w.doorOpen.get(id);
@@ -516,6 +527,7 @@ export function step(w, ix = 0, iz = 0) {
 function forces(w, b) {
   let fx = 0, fz = 0;
   for (const fn of w.L.fans || []) {
+    if (fn.period && !fanState(w, fn).on) continue;   // ventilator v ritmu (neobvezno: period, duty, phase)
     const dx = b.x - fn.x, dz = b.z - fn.z;
     const along = dx * fn.dir[0] + dz * fn.dir[1];
     const side = Math.abs(-dx * fn.dir[1] + dz * fn.dir[0]);

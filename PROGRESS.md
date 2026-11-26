@@ -1332,3 +1332,118 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
   je preverjen v urejevalniku in testih), objava med »Proge skupnosti« na Supabase (le offline adapter), Safari/iOS (modulni Worker).
 - Pri skrajnih naprednih nastavitvah (npr. vse ovire in sovražniki na maksimum) zmanjka prostora v mreži 120 × 160 — proga je
   krajša, `report` pa našteje, česa ni bilo mogoče postaviti.
+
+
+# Hrčkova krogla — nove proge in turnirji (prompt 35, 26. 11. 2026)
+
+Prompt: `prompts/35-krogla-proge-turnirji.md`. Stanje: **končano**.
+
+## Načrt
+
+- [x] 16 novih uradnih prog `13`–`28` v `tools/krogla-levels.mjs` (pomočnik `OT` z vzorci ovir, opozorilo, če se proga dotakne sama sebe)
+- [x] Nova polja `diff` (vse proge; klasičnim se je spremenila **le** vrstica `diff`), `len`, `tags`, `look`, `routes.alt`, `shortcuts`, `scoring`
+- [x] Razcepa na 18 (Botanični vrt) in 26 (Kristalna jama): varna pot za autopilota, bližnjica v `routes.alt` (test + izpis generatorja)
+- [x] Neobvezni mehaniki: ventilator v ritmu (`fans[].period/duty/phase`, `physics.fanState`, izris) in ostre medalje (`scoring.sharp`)
+- [x] Nova lokacija `mine` (Rudnik) v `render/looks.js`
+- [x] `levels/cups.json` (7 pokalov), validator `validateCups`, odklepi, lestvice `pokal:<id>:<težavnost>`, Klasični ostane `turnir:<težavnost>`
+- [x] Tedenski pokal (`isoWeek`, `weeklyPick` — veriga od 2026-W01), lestvica `teden:<leto>-W<nn>`
+- [x] `DAILY_POOL` (01–08 + 13, 14, 17, 18, 19, 20)
+- [x] `games/krogla/balance.js` + `node tools/krogla-levels.mjs --balance` (tabele spodaj), `--check` primerja z datotekami
+- [x] Meni: kartica »🏆 Turnirji«, izbira težavnosti, zrcalni turnir pri Klasičnem, Na čas s filtri in razvrščanjem, lestvice s pokali in tedni
+- [x] Maraton: »💾 Shrani in nadaljuj kasneje«, nadaljevanje z oznako »prekinjeno« (ne šteje za lestvico)
+- [x] 9 novih dosežkov, 3 nove naloge, opis v `games.json`; SQL blok zlatih časov
+- [x] Testi (`tests/krogla2.js`, 10 novih), preverjanje v brskalniku, dokumentacija
+
+## Proge in pokali (meritve)
+
+`node tools/krogla-levels.mjs --balance` (30 zašumljenih voženj na progo: smer ±13°, hitrost ±15 %, zakasnitev 50–120 ms, napaka
+pri izbiri trenutka ±0,35 s). Ocena = neuspeh pod uro × 2 + padci × 0,4 + gostota nevarnosti × 0,42 + dolžina; meje ★2–★5 so
+uglašene na klasičnih progah. Rezerva ure pokalov: autopilot brez šuma, v oklepaju brez pobranih ur.
+
+<!-- BEGIN KROGLA BALANCE (node tools/krogla-levels.mjs --balance) -->
+| Proga | Autopilot | Medalje 🥇/🥈/🥉 | Ura | Dolžina | Težavnost dekl. / izm. | Uspeh pod uro | Padci | Nevarnosti/10 s | Ocena |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 Ogrevanje | 17.2 s | 17 / 22 / 29 | 28 s | srednja | ★ / ★ | 100 % | 0.0 | 0.3 | 0.15 |
+| 02 Vrtnarija | 27.9 s | 28 / 36 / 47 | 41 s | srednja | ★★ / ★★ | 100 % | 0.0 | 2.8 | 1.32 |
+| 03 Skodelice | 18.8 s | 19 / 25 / 32 | 30 s | srednja | ★ / ★ | 100 % | 0.0 | 0.0 | 0.00 |
+| 04 Kuhinja | 45.5 s | 45 / 59 / 76 | 63 s | srednja | ★★ / ★★ | 100 % | 0.0 | 1.0 | 0.65 |
+| 05 Steklena pot | 30.2 s | 30 / 39 / 50 | 44 s | srednja | ★★★ / ★★★ | 100 % | 0.0 | 4.5 | 2.08 |
+| 06 Tovarna | 27.6 s | 27 / 36 / 46 | 41 s | srednja | ★★★ / ★★★ | 100 % | 0.2 | 2.9 | 1.47 |
+| 07 Stolp | 34.4 s | 34 / 45 / 57 | 50 s | srednja | ★★★ / ★★ | 100 % | 0.0 | 1.3 | 0.73 |
+| 08 Ledena dvorana | 22.3 s | 22 / 29 / 37 | 34 s | srednja | ★★★ / ★★★ | 100 % | 0.0 | 3.5 | 1.52 |
+| 09 Nasilneži | 17.8 s | 18 / 23 / 30 | 29 s | srednja | ★★★★ / ★★★★★ | 77 % | 1.8 | 7.6 | 4.34 |
+| 10 Neon | 24.1 s | 24 / 31 / 40 | 37 s | srednja | ★★★★ / ★★★★ | 100 % | 0.0 | 5.2 | 2.29 |
+| 11 Nebo | 20.2 s | 20 / 26 / 34 | 32 s | srednja | ★★★★ / ★★★★ | 97 % | 0.6 | 6.6 | 3.06 |
+| 12 Nemogoče | 25.4 s | 25 / 33 / 42 | 38 s | srednja | ★★★★★ / ★★★★★ | 83 % | 2.3 | 7.0 | 4.33 |
+| 13 Tobogan | 9.1 s | 9 / 10.3 / 11.9 | 18 s | kratka | ★ / ★ | 100 % | 0.0 | 0.1 | 0.06 |
+| 14 Odskočna deska | 12.1 s | 11.9 / 13.6 / 15.7 | 22 s | kratka | ★★★ / ★★★ | 100 % | 0.0 | 4.1 | 1.74 |
+| 15 Britev | 13.7 s | 13.4 / 15.4 / 17.8 | 24 s | kratka | ★★★★ / ★★★★ | 97 % | 0.0 | 5.3 | 2.30 |
+| 16 Šivankino uho | 15 s | 14.8 / 16.9 / 19.6 | 25 s | kratka | ★★★★★ / ★★★★ | 97 % | 0.2 | 5.5 | 2.46 |
+| 17 Pekarna | 27.5 s | 27 / 36 / 46 | 41 s | srednja | ★★ / ★★ | 100 % | 0.0 | 0.5 | 0.27 |
+| 18 Botanični vrt | 22.3 s | 22 / 29 / 37 | 34 s | srednja | ★★ / ★★ | 100 % | 0.0 | 1.3 | 0.59 |
+| 19 Drsališče | 37 s | 36 / 48 / 61 | 53 s | srednja | ★★★ / ★★★★ | 67 % | 1.1 | 3.0 | 2.69 |
+| 20 Rudnik | 42.9 s | 42 / 55 / 71 | 60 s | srednja | ★★★ / ★★★ | 100 % | 0.0 | 2.9 | 1.59 |
+| 21 Laboratorij | 36.2 s | 36 / 47 / 60 | 52 s | srednja | ★★★★ / ★★★★★ | 63 % | 1.7 | 4.7 | 3.67 |
+| 22 Panj | 43.8 s | 43 / 57 / 73 | 61 s | srednja | ★★★★ / ★★★ | 100 % | 0.0 | 2.7 | 1.54 |
+| 23 Ognjenik | 36.9 s | 36 / 48 / 61 | 53 s | srednja | ★★★★★ / ★★★★ | 100 % | 0.0 | 5.4 | 2.59 |
+| 24 Nedeljski sprehod | 59.6 s | 58 / 77 / 99 | 81 s | dolga | ★ / ★ | 100 % | 0.0 | 0.3 | 0.20 |
+| 25 Velika tura | 84.1 s | 82 / 108 / 139 | 112 s | dolga | ★★★ / ★★★ | 100 % | 0.3 | 2.5 | 1.90 |
+| 26 Kristalna jama | 60.8 s | 60 / 78 / 101 | 83 s | dolga | ★★★ / ★★★ | 87 % | 0.3 | 1.4 | 1.37 |
+| 27 Nebesna lestev | 99.6 s | 97 / 128 / 165 | 131 s | dolga | ★★★★ / ★★★ | 100 % | 0.2 | 2.8 | 2.09 |
+| 28 Hrčkov maraton | 128.9 s | 126 / 166 / 213 | 168 s | dolga | ★★★★★ / ★★★★★ | 87 % | 1.7 | 3.8 | 3.49 |
+
+Spearman (deklarirana težavnost ↔ izmerjena ocena): **0.89** · meje ocene za ★2–★5: 0.25 / 1.35 / 2.2 / 3.3
+
+| Pokal | Proge | Skupaj (autopilot) | Ura | Lahka | Normalna | Noro | Krivulja težavnosti |
+|---|---|---|---|---|---|---|---|
+| 🏆 Klasični turnir | 12 | 5:11 | ×1 | 55 % (52 %) | 38 % (33 %) | 19 % (11 %) | 1-2-1-2-3-3-3-3-4-4-4-5 |
+| 🌱 Hrčkov pokal | 5 | 2:16 | ×1,06 | 56 % (55 %) | 39 % (37 %) | — | 1-2-1-2-1 |
+| ⚡ Sprint | 6 | 1:27 | ×0,85 | 52 % (51 %) | 34 % (31 %) | 14 % (8 %) | 1-4-1-4-3-5 |
+| 🧭 Svetovna turneja | 8 | 4:19 | ×1 | 53 % (51 %) | 35 % (31 %) | 15 % (8 %) | 2-4-3-4-3-4-3-4 |
+| 🏃 Maraton | 4 | 5:04 | ×1,05 | 51 % (49 %) | 32 % (29 %) | 11 % (5 %) | 1-3-3-4 |
+| 🔥 Peklenski pokal | 6 | 5:06 | ×0,9 | — | 23 % (20 %) | ne konča (ne konča) | 4-5-3-5-4-5 |
+| 📅 Tedenski pokal (2026-W48) | 5 | 2:11 | ×1 | — | 39 % (34 %) | — | 1-1-3-4-4 |
+
+Tedenski pokal (52 tednov od 2026-W48): povprečna težavnost 2.6–3.4 (mediana 3.0), skupna dolžina 2:11–3:42 (mediana 2:53), ponovitve v zaporednih tednih: 0, proge iz bazena, ki se ne pojavijo: nobena.
+<!-- END KROGLA BALANCE -->
+
+## Dnevnik
+
+- **Proge.** Najprej vse po tabeli iz prompta, nato uglaševanje dolžin (16 je bila 26 s → 15 s: točke poti pri vratih so bile
+  v napačnem vrstnem redu, eno kladivo manj; 20 −6 s; 24 +1 krak; 28 −1 skupina kladiv). Spoznanja: (1) odbijači na ledu
+  (moč 7) vržejo autopilota s proge — na ledu moč 3,5; (2) klanec, ki se konča v zavoju na ozek most, vrže kroglo čez rob — vedno
+  vsaj 1 ploščica ravnine pred zavojem; (3) na 1 ploščico širokem mostu brez točke poti na sredini autopilot reže čez praznino.
+- **Balans.** Prva meritev (samo šum smeri/hitrosti) je bila preblaga — autopilot še vedno idealno čaka na okna. Dodana napaka pri
+  izbiri trenutka (±0,35 s) in uteži nevarnosti po smrtnosti; Spearman 0,69 → 0,89. Pri vseh 28 progah je izmerjena ocena ±1
+  od deklarirane. Nobene deklarirane težavnosti ni bilo treba spremeniti; največja odstopanja (Stolp ★3 → izm. ★2, Panj ★4 → ★3,
+  Šivankino uho in Ognjenik ★5 → ★4) so v meji — model ne zazna dobro težavnosti, ki izhaja iz kamere in ozkih poti z ograjami.
+- **Ura pokalov.** Hrčkov pokal ×1,15 → ×1,06 (sicer 43 % rezerve na Normalni) in brez Noro (za začetnike); Sprint ×0,9 → ×0,85;
+  Maraton ×1 → ×1,05 (Lahka pod 50 %). Klasični turnir ostane nespremenjen (Noro ima 19 % rezerve — izjema, zapisano v `--balance`).
+  Prvotni popravek ure na kratkih progah (`scoring.timeMul` 0,85) je opuščen, ker bi spremenil pričakovanja obstoječega testa formule
+  (`timeBonus` ±1) — namesto tega je ostrejša ura pokala Sprint. `timeMul` ostaja kot neobvezna možnost v `rules.js`.
+- **Pokali — vrstni red.** Peklenski pokal: Nemogoče (12) zamenjana z Odskočno desko (14) kot »oddih« med težkimi (sicer pravilo
+  »med težkima vsaj ena lažja« ni izpolnjivo); Hrčkov in Sprint prerazporejena po istem pravilu.
+- **Popravek obstoječe napake:** `mirrorLevel` je zrcalil kladiva, vrata in kvadre po levem robu brez širine (v zrcalnem turnirju so
+  bila kladiva na Tovarni 3 ploščice ob poti). Zdaj `x → W − x − w`; vse proge so zrcaljeno rešljive v istem času kot nezrcaljene.
+- **Dosežek »Trdna tla«** (»proga 6 ali kasnejša«) bi se po novem odklenil že na Toboganu (13. po vrsti) — zdaj velja za klasične
+  06–12 ali proge pokalov s ★3+.
+- **Dnevni izziv:** od 26. 11. 2026 bazen `DAILY_POOL` (prej prvih 8 prog) — izbor od tega dne naprej je drugačen kot bi bil prej.
+- **Preverjeno** (`?offline=1`, `?bot=1&fast=6` — nov razvojni parameter, simulacija N× hitrejša): svež igralec ima odprte le Klasični,
+  Hrčkov in Tedenski pokal; Hrčkov → odklene Sprint → Svetovna turneja → Maraton (prekinitev po 1. progi, nadaljevanje iz menija,
+  rezultat »trening«) → Klasični turnir (kot prej: +340 XP, sklop-1/2, turnir, rezerva) → Peklenski pokal → Tedenski pokal;
+  povzetki z »Naslednja: … · dolžina · ★«, točke, lestvice (`pokal:*`, `pokal:sprint:normalna:cas`, `turnir:normalna`, `teden:2026-W48`),
+  XP (5×20 + 60 itd.), dosežki do `vsi-pokali`. Na čas: filtri Vse/Kratke/Srednje/Dolge, razvrščanje, značke. Lestvice: izbirnik
+  pokala, tedna in skupnega časa. Urejevalnik ponudi kopije prog 01–28. Konzola brez napak (igra, urejevalnik, Rušilec, dashboard),
+  `tests.html` 242/242, telefon 375×812 (popravljeno: vrstice pokalov so silile vodoravno drsenje; mreža prog ima zdaj 2 stolpca) in namizje.
+
+## Ni bilo preverjeno
+
+- **Ročna vožnja** novih prog s tipkovnico ali na telefonu (človek): orodje brskalnika zna le kratke pritiske tipk; z
+  držanimi tipkami prek dogodkov sem prevozil začetek Tobogana (pobral zvezdico), a ne cele proge. Občutek težavnosti (posebej
+  15, 16, 22, 23, 28) je treba preveriti z igranjem.
+- Supabase: blok `BEGIN LEVELS` je pognan kot migracija `krogla_levels_13_28` (27. 11. 2026; v `krogla_levels` je 28 prog),
+  advisors (security + performance) brez novih opozoril. Ni preverjeno: shranjevanje ghosta nove proge in lestvice pokalov na pravem
+  Supabaseu (le offline adapter; lestvice so v obstoječi `game_scores`, novi seedi ≤ 64 znakov).
+- Tedenski pokal na pravem prehodu tedna (nedelja → ponedeljek po Ljubljani) in dosežek »Vsak teden« (3 tedni).
+- Dosežki »Bližnjica« (zlato na 18 po bližnjici) in »Zlata prihodnost« — logika je v igri, v brskalniku nista bila doseženi.
+- Okras novih lokacij (prompt 20 še ni narejen; nova lokacija `mine` ima le dekor `motes` in `embers`).

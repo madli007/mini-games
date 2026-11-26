@@ -17,15 +17,35 @@ Vhod je vedno relativen na kamero (gor = stran od kamere). Kamera se rahlo zasuk
 
 ## Načini
 
-- **Turnir** — vseh 12 prog zapored, ura s prenosom časa. Lahka ×1,4 časa / ×0,5 točk (nič ne odklene), Normalna ×1, Noro ×0,75 / ×1,5.
-  Točke: 1000 na progo + 20 na preostalo sekundo ob cilju + 100 na zvezdico. Lestvica `turnir:<težavnost>`.
-- **Na čas** — posamezna proga brez ure, medalje, ghosti (moj najboljši, razvijalčev = autopilot, ali klik na vrstico lestvice
-  za ghost drugega igralca). Proga se odklene, ko jo dosežeš v turnirju na Normalni/Noro. Lestvica `lvl:<id>` (`lvl-m:<id>` zrcaljeno), čas v ms.
-- **Zrcalni turnir** — po končanem turnirju (Normalna/Noro; dosežek `turnir`, velja na vseh napravah). Lestvica `zrcalo:<težavnost>`.
-- **Dnevni izziv** — `hub.rng(hub.dailySeed() + ':krogla')` izbere 3 proge iz prvih 8 in dodatek dneva
-  (`rules.js` → `DAILY_MODS`). Prvi začeti poskus dneva šteje za lestvico (`seed = hub.dailySeed()`), ostali so trening.
+- **🏆 Turnirji (pokali)** — proge zapored, ura s prenosom časa. Lahka ×1,4 časa / ×0,5 točk (nič ne odklene), Normalna ×1,
+  Noro ×0,75 / ×1,5. Točke (`levelPoints`): 1000 na progo + 20 na preostalo sekundo ob cilju + 100 na zvezdico, × težavnost.
+  Pokali so podatki v `levels/cups.json`; vsak ima svojo lestvico `pokal:<id>:<težavnost>` (točk med pokali ne primerjamo).
+  XP: 20 na progo (največ 12 na pokal) + enkraten bonus ob prvem koncu pokala na Normalni/Noro (`xp`); Klasični kot prej +100 ob vsakem koncu.
 
-Razvojni parameter `?bot=1`: proge vozi autopilot skozi pravo zanko igre (za preverjanje).
+  | Pokal | Proge | Skupaj (autopilot) | Ura | Odklep | Posebnost |
+  |---|---|---|---|---|---|
+  | 🏆 Klasični turnir | 01–12 | 5:11 | ×1 | takoj | nespremenjen; lestvica `turnir:<težavnost>`, zrcalni turnir, dosežki sklopov |
+  | 🌱 Hrčkov pokal | 13, 17, 01, 18, 24 | 2:16 | ×1,06 | takoj | za začetnike, le Lahka/Normalna, »priporočeno«, dokler ni končan noben pokal |
+  | ⚡ Sprint | 13, 15, 03, 09, 14, 16 | 1:27 | ×0,85 | Hrčkov pokal ali `sklop-1` | kratke proge; dodatna lestvica skupnega časa `pokal:sprint:<težavnost>:cas` |
+  | 🧭 Svetovna turneja | 17, 22, 19, 10, 06, 21, 20, 11 | 4:19 | ×1 | `sklop-2` ali Sprint | srednje proge iz novih in klasičnih lokacij |
+  | 🏃 Maraton | 24, 25, 26, 27 | 5:04 | ×1,05 | Svetovna turneja | »💾 Shrani in nadaljuj kasneje« med progami; nadaljevan = »prekinjeno«, ne šteje za lestvico |
+  | 🔥 Peklenski pokal | 15, 16, 14, 23, 27, 28 | 5:06 | ×0,9 | `turnir` in Svetovna turneja | le Normalna/Noro |
+  | 📅 Tedenski pokal | 5 prog tedna | ≈ 2–4 min | ×1 | takoj | glej spodaj; samo Normalna |
+
+  **Tedenski pokal:** isti za vse cel ISO teden (`rules.js` → `isoWeek`, `weeklyPick`; seme `krogla:teden:<leto>-W<nn>`).
+  Iz uradnih prog z `diff ≤ 4`: 1 kratka, 3 srednje, 1 dolga, povprečna težavnost 2,5–3,5, od lažje k težji; nobena proga ni dva
+  tedna zapored (izbor je veriga od tedna `WEEKLY.epoch` = 2026-W01, zato je za vse enak). Lestvica `teden:<leto>-W<nn>` — šteje
+  najboljši poskus tedna. Dosežek »Vsak teden« za 3 različne tedne (`krogla:u:<id>:weeks`).
+- **Na čas** — posamezna proga brez ure, medalje, ghosti (moj najboljši, razvijalčev = autopilot, ali klik na vrstico lestvice
+  za ghost drugega igralca). Proga se odklene, ko jo dosežeš v **kateremkoli** turnirju na Normalni/Noro; dosežek `turnir` odklene
+  vse klasične proge, končan pokal pa vse svoje proge. Filtri **Vse · Kratke · Srednje · Dolge** in razvrščanje po številki,
+  težavnosti ali dolžini (`krogla:u:<id>:trialView`). Lestvica `lvl:<id>` (`lvl-m:<id>` zrcaljeno), čas v ms.
+- **Zrcalni turnir** — pri Klasičnem turnirju, po njegovem koncu (Normalna/Noro; dosežek `turnir`). Lestvica `zrcalo:<težavnost>`.
+- **Dnevni izziv** — `hub.rng(hub.dailySeed() + ':krogla')` izbere 3 proge iz bazena `DAILY_POOL` (`rules.js`: klasične 01–08 in
+  nove z `diff ≤ 3`, ki niso dolge — od 26. 11. 2026; prej prvih 8 prog) in dodatek dneva (`DAILY_MODS`). Prvi začeti poskus
+  dneva šteje za lestvico (`seed = hub.dailySeed()`), ostali so trening.
+
+Razvojna parametra `?bot=1` (proge vozi autopilot skozi pravo zanko igre) in `?bot=1&fast=N` (simulacija N-krat hitrejša, do 8).
 
 ## Moduli
 
@@ -38,6 +58,8 @@ Razvojni parameter `?bot=1`: proge vozi autopilot skozi pravo zanko igre (za pre
 | `autopilot.js` | »voznik« po točkah poti (`route`) — test rešljivosti in razvijalčev ghost |
 | `render.js` + `render/` | Three.js `0.160.0` (CDN, importmap): `looks.js` (lokacije po progah), `textures.js` (proceduralne PBR teksture), `sky.js` (nebo + IBL/PMREM), `materials.js` (dither prosojnost, plapolanje), `terrain.js` (teren, vertex AO, robovi), `objects.js` (ovire in sovražniki), `ball.js` (steklo, hrček s shell krznom), `fx.js` (delci, sled), `decor.js` (okras), `post.js` (bloom, AO, SMAA/FXAA, barvna korekcija, tilt-shift) |
 | `input.js`, `audio.js` | vhod (tipke, miška, palica, nagib) · WebAudio učinki in glasba |
+| `balance.js` | merjenje težavnosti (zašumljen autopilot, gostota nevarnosti) in rezerve ure pokalov |
+| `levels/cups.json` | turnirji (pokali) — format v »Kako dodati turnir« |
 | `secrets.js` | skrite ključavnice (Neon, Nebo), ki odklenejo skrivni areni v Rušilcu (`../rusilec/`); zunaj fizike in JSON-a prog |
 | `game.js` | meni, načini, stanja (odštevanje, igra, pavza, povzetek, konec), hub |
 
@@ -80,9 +102,19 @@ ploščica (stolpec c, vrstica r) pokriva `x ∈ [c, c+1]`, `z ∈ [r, r+1]` (sr
     { "t": "magnet", "x", "z", "mode": "pull" | "push", "period", "duty", "phase", "range", "force" }
   ],
   "route": [{ "x", "z", "speed"?, "r"?, "stop"?, "wait"?, "until"?: [perioda, od, do], "mover"?: i }],   // autopilot
+  "routes": { "alt": [ … ] },            // neobvezno: druge poti (npr. bližnjica razcepa) — preverijo jih testi, igra jih ne uporablja
+  "shortcuts": [{ "x", "z", "w", "d" }], // neobvezno: pravokotnik bližnjice (dosežek »Bližnjica« na 18)
+  "look": "mine",                        // neobvezno: lokacija iz render/looks.js (proge 13+ jo imajo vedno)
+  "diff": 3,                             // prikazana težavnost 1–5 (vse uradne proge; ročna ocena, preverjena z --balance)
+  "len": "srednja",                      // kratka | srednja | dolga — izračuna generator iz dev.time (proge 13+; klasičnim se izračuna sproti)
+  "tags": ["led", "odbijači"],           // oznake za opise in filtre (proge 13+)
+  "scoring": { "sharp": true },          // neobvezno: ostre medalje na desetinko (kratke proge); "timeMul" popravi uro proge
   "dev": { "time": 17.2, "falls": 0 }                                  // vožnja autopilota (izpolni generator)
 }
 ```
+
+Dolžina (`rules.js` → `lenFromTime`): **kratka** < 17 s autopilota, **srednja** < 50 s, sicer **dolga**. Ventilator ima lahko
+neobvezna polja `period`, `duty`, `phase` (piha v ritmu; `physics.fanState`, pred sunkom tok utripa).
 
 Znaki ploščic: `' '` praznina · `.` tla · `#` zid · `^ v < >` klančina, ki se dvigne za 0,5 proti severu/jugu/zahodu/vzhodu
 (višina v `hmap` je nižji konec) · `i` led · `g` lepilo · `~` valovita tla · `x` padajoča ploščica · `N S E W` tekoči trak v to smer.
@@ -91,16 +123,49 @@ Vsi sovražniki so deterministični (poti in časovniki iz časa proge, nasilne�
 
 ## Kako dodati progo
 
-1. V `tools/krogla-levels.mjs` dodaj `def({ id: '13-ime', name, set, theme, desc }, () => { const T = new Track(); … return T; })`.
+1. V `tools/krogla-levels.mjs` dodaj `def({ id: '29-ime', name, set, theme, look, diff, tags, desc }, () => { const T = new OT(); … return T; })`.
+   `OT` je želvica z vzorci ovir (`hammers`, `moverSide`, `cart`, `lift`, `spinner`, `rampJump`, `springGap`, `bumpers`, `fans`,
+   `bowl`, `door`, `bully`, `saws`, `wasps`, `vacuum`, `magnets`, `fallBridge`, `fork` = razcep z bližnjico) in sproti opozori,
+   če se proga dotakne ali prekrije svoj starejši del. `safeWindow` izračuna okno `until` za krožne ose.
    »Želvica« (`editor/track.js`: `T.go(n, { w, ch, up, down, conv })`, `T.turn('E')`, `T.gap(n, dh)`, `T.mark('star' | 'clock' | 'cp' | 'goal')`,
    `T.pocket(...)`, `T.add('movers', {...})`, `T.wp({...})`) sproti zapiše tudi pot za autopilota.
 2. `node tools/krogla-levels.mjs --dump=13` izriše progo s potjo autopilota in mesti padcev; popravljaj, dokler ne pride do cilja.
 3. `node tools/krogla-levels.mjs` zapiše JSON-e, `index.json` in zlate čase v `supabase/games/krogla.sql` (blok `BEGIN LEVELS`).
    Medalje in `timeBonus` se izračunajo iz vožnje autopilota (zlato ≈ 0,97 ×, srebro 1,28 ×, bron 1,65 ×, ura 1,25 × + 6 s).
 4. `node tests/run-node.mjs` — validator in test rešljivosti (autopilot pod časom proge na Normalni) poženeta vse proge.
+   `node tools/krogla-levels.mjs --check` primerja generirane proge z datotekami (izpiše polja, ki se razlikujejo).
+   `node tools/krogla-levels.mjs --balance` izmeri težavnost in rezerve ure (spodaj).
 5. Na Supabase ponovno poženi `supabase/games/krogla.sql` (doda progo v `krogla_levels`, sicer RPC zavrne ghost).
 
 Proge lahko pišeš tudi ročno v JSON (brez generatorja) — `route` je potreben le za test rešljivosti.
+
+## Kako dodati turnir (pokal)
+
+1. Dodaj vnos v `levels/cups.json`:
+   ```jsonc
+   { "id": "moj", "name": "Moj pokal", "icon": "🎯", "desc": "…",
+     "levels": ["13-tobogan", "…"],          // id-ji prog v vrstnem redu (tedenski: "weekly": true brez levels)
+     "clock": 1,                             // množilnik ure celega pokala (0,5–2)
+     "diffs": ["normalna", "noro"],          // dovoljene težavnosti (privzeto vse)
+     "unlock": { "any": [{ "cup": "hrcek" }, { "ach": "sklop-1" }] },   // null | {cup} | {ach} | {any:[…]} | {all:[…]}
+     "ach": "pokal-moj", "xp": 80,           // dosežek ob koncu na Normalni/Noro (dodaj ga v rules.js ACH) in enkratni XP (≤ 150)
+     "board": "pokal:moj",                   // predpona lestvice (privzeto pokal:<id>) · "mirror": true = zrcalna različica
+     "timeBoard": false, "save": false }     // lestvica skupnega časa · shranjevanje napredka med progami
+   ```
+   `{ "cup": id }` pomeni »pokal končan« (njegov dosežek), zato mora imeti ciljni pokal `ach`.
+2. Pravila balansa: začni z lažjo progo, najtežja je zadnja ali predzadnja, med dvema najtežjima je vsaj ena lažja.
+3. `node tools/krogla-levels.mjs --balance` — uglasi `clock`, da ima autopilot na Normalni 20–40 % rezerve, na Lahki ≥ 50 %,
+   na Noro 0–15 % (ali brez pobranih ur ne konča). `node tests/run-node.mjs` preveri `cups.json` (`validateCups`: proge obstajajo,
+   odklepi kažejo na obstoječe pokale/dosežke, brez krogov) in ista pravila.
+
+## Merjenje balansa (`--balance`)
+
+`games/krogla/balance.js` (čista logika): za vsako progo 30 deterministično zašumljenih voženj autopilota (seme `krogla:balance:<id>:<k>`;
+napaka smeri ±13°, hitrosti ±15 % na 0,5 s, zakasnitev odziva 50–120 ms, okna `until` zamaknjena ±0,35 s) → delež voženj pod uro
+Normalne, povprečni padci in gostota nevarnosti na 10 s (`HAZ`: uteži po smrtnosti). Ocena `scoreOf` → težavnost 1–5 (`SCORE_CUTS`).
+Kriterij: izmerjena težavnost ±1 od `diff`, Spearman ≥ 0,7. Za pokale: skupni čas, rezerva ure na Lahki/Normalni/Noro (z urami in brez),
+krivulja težavnosti; za Tedenski pokal simulacija 52 tednov. Rezultat se izpiše in zapiše v `PROGRESS.md` (blok `BEGIN KROGLA BALANCE`).
+Generator naključnih prog lahko `diff`/`len` kasneje uporabi kot ciljne vrednosti (možnost, ni narejeno).
 
 ## Urejevalnik prog (`editor.html`)
 

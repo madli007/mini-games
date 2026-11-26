@@ -1,0 +1,45 @@
+{
+  "cups": [
+    {
+      "id": "klasika", "name": "Klasični turnir", "icon": "🏆",
+      "desc": "Vseh 12 klasičnih prog zapored, kot od nekdaj. Po koncu se odklene zrcalni turnir.",
+      "levels": ["01-ogrevanje", "02-vrtnarija", "03-skodelice", "04-kuhinja", "05-steklena-pot", "06-tovarna", "07-stolp", "08-ledena-dvorana", "09-nasilnezi", "10-neon", "11-nebo", "12-nemogoce"],
+      "board": "turnir", "mirror": true, "unlock": null, "ach": "turnir", "xp": 0
+    },
+    {
+      "id": "hrcek", "name": "Hrčkov pokal", "icon": "🌱",
+      "desc": "Za začetnike: lahke proge in malo več časa na uri. Priporočen prvi pokal.",
+      "levels": ["13-tobogan", "17-pekarna", "01-ogrevanje", "18-botanicni-vrt", "24-nedeljski-sprehod"],
+      "clock": 1.06, "diffs": ["lahka", "normalna"], "unlock": null, "ach": "pokal-hrcek", "xp": 60, "recommended": true
+    },
+    {
+      "id": "sprint", "name": "Sprint", "icon": "⚡",
+      "desc": "Same kratke proge in stroga ura — ena napaka šteje. Lestvica po točkah in po skupnem času.",
+      "levels": ["13-tobogan", "15-britev", "03-skodelice", "09-nasilnezi", "14-odskocna-deska", "16-sivankino-uho"],
+      "clock": 0.85, "timeBoard": true, "unlock": { "any": [{ "cup": "hrcek" }, { "ach": "sklop-1" }] }, "ach": "pokal-sprint", "xp": 80
+    },
+    {
+      "id": "turneja", "name": "Svetovna turneja", "icon": "🧭",
+      "desc": "Srednje proge iz novih in klasičnih lokacij — od pekarne do neona.",
+      "levels": ["17-pekarna", "22-panj", "19-drsalisce", "10-neon", "06-tovarna", "21-laboratorij", "20-rudnik", "11-nebo"],
+      "unlock": { "any": [{ "ach": "sklop-2" }, { "cup": "sprint" }] }, "ach": "pokal-turneja", "xp": 100
+    },
+    {
+      "id": "maraton", "name": "Maraton", "icon": "🏃",
+      "desc": "Štiri dolge proge. Napredek se shrani med progami — prekinjen maraton ne šteje za lestvico.",
+      "levels": ["24-nedeljski-sprehod", "25-velika-tura", "26-kristalna-jama", "27-nebesna-lestev"],
+      "clock": 1.05, "save": true, "unlock": { "cup": "turneja" }, "ach": "pokal-maraton", "xp": 120
+    },
+    {
+      "id": "pekel", "name": "Peklenski pokal", "icon": "🔥",
+      "desc": "Samo za mojstre: najtežje proge, krajša ura in finale na Hrčkovem maratonu.",
+      "levels": ["15-britev", "16-sivankino-uho", "14-odskocna-deska", "23-ognjenik", "27-nebesna-lestev", "28-hrckov-maraton"],
+      "clock": 0.9, "diffs": ["normalna", "noro"], "unlock": { "all": [{ "ach": "turnir" }, { "cup": "turneja" }] }, "ach": "pokal-pekel", "xp": 150
+    },
+    {
+      "id": "teden", "name": "Tedenski pokal", "icon": "📅",
+      "desc": "Pet prog, ki jih izbere teden — isti za vse igralce. Šteje najboljši poskus tedna.",
+      "weekly": true, "unlock": null, "xp": 0
+    }
+  ]
+}
