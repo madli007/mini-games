@@ -8,7 +8,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 - Objavljeno: **https://madli007.github.io/mini-games/**
 - Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
   (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled), **Hrčkova krogla**
-  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv), **Rušilec**
+  (3D, 12 prog v treh sklopih: turnir s prenosom časa, Na čas z ghosti, zrcalni turnir, dnevni izziv; nove proge
+  in več turnirjev čakajo v promptu 35), **Rušilec**
   (party arena Hrčkove krogle za 2–8 igralcev v realnem času: izrivanje čez rob, 9 aren, boti, ekipe, TV pogled),
   **Zaporedje**, **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila

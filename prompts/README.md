@@ -20,6 +20,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
 | [30-krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: generator naključnih prog | srednje |
+| [35-krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog (kratke/srednje/dolge, ★–★★★★★) in 7 turnirjev | veliko |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
 
@@ -61,9 +62,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 32 | [motorist](32-motorist.md) | Motorist: fizika (Planck.js), voznik z ragdollom, 2,5D, 10 prog, medalje, ghost | 1/3 | ⬜ | | 01 ✅ |
 | 33 | [motorist-urejevalnik](33-motorist-urejevalnik.md) | Motorist: urejevalnik, skupnostne proge, dnevna proga, sklopa 3–4 | 2/3 | ⬜ | | 32 |
 | 34 | [motorist-dirka](34-motorist-dirka.md) | Motorist: dirka do 10 igralcev v živo, sezona, predmeti v trgovini | 3/3 | ⬜ | | 32 (33 priporočeno) |
+| 35 | [krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog, turnirji (pokali), tedenski pokal, merjenje balansa | — | ⬜ | | 03 ✅ (30 neobvezno) |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 35.**
+**Naslednja prosta številka: 36.**
 
 ## Pravila (da se ne izgubimo)
 

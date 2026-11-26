@@ -145,7 +145,7 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 ### Spretnostne igre s fiziko
 
 15. ✅ **Hrčkova krogla (Hamsterball varianta)** ★★★
-    - **Stanje:** ✅ narejeno → `games/krogla/` (prompti 03, 05, 06) in Rušilec `games/rusilec/` (07); čakata 📝 `19-krogla-dirka`, `20-krogla-okras`
+    - **Stanje:** ✅ narejeno → `games/krogla/` (prompti 03, 05, 06) in Rušilec `games/rusilec/` (07); čakajo 📝 `19-krogla-dirka`, `20-krogla-okras`, `30-krogla-nakljucne-proge`, `35-krogla-proge-turnirji`
     - **Kako deluje original** (Hamsterball, Raptisoft, 2004): hrčka v prozorni krogli s fiziko kotališ skozi
       progo do cilja. **Življenj ni.** Imaš skupno uro: na začetku vsake proge se ji prišteje nekaj časa,
       preostanek pa se prenese v naslednjo progo, zato se hitrost na lahkih progah obrestuje na težkih.
@@ -432,6 +432,9 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 
 - 📝 **Dirka dveh:** online realtime na isti progi (original ima deljen zaslon), z ghosti ostalih.
   Prompt: `prompts/19-krogla-dirka.md` (čaka). Okolica prog: `prompts/20-krogla-okras.md` (čaka).
+- 📝 **Nove proge in več turnirjev:** 16 novih prog različnih dolžin (sprinti ~10 s do maratonov ~2 min) in težavnosti,
+  pokali (Hrčkov, Sprint, Svetovna turneja, Maraton, Peklenski, Tedenski) s svojimi lestvicami in odklepi, izmerjen balans.
+  Prompt: `prompts/35-krogla-proge-turnirji.md` (čaka).
 - ✅ **Skrite ključavnice** na progah, ki odklenejo skrivne arene v Rušilcu (narejeno s promptom 07, `games/krogla/secrets.js`).
 - ✅ **Skupnostne proge:** urejevalnik shrani progo v Supabase (`krogla_*` tabela), drugi jo igrajo in ocenijo,
   »proga tedna« gre na lestvico (narejeno, commit `c0011e0`).
