@@ -291,12 +291,12 @@
   {
     "id": "motorist",
     "name": "Motorist",
-    "description": "Fizikalni motocross po hribih. Dnevna proga, isti teren za vse.",
+    "description": "Fizikalni trial s strani: plin, zavora in nagib čez hlode, zaboje in stopnice. Čim hitreje in brez padca do cilja.",
     "icon": "🏍️",
     "path": "games/motorist/",
     "players": { "min": 1, "max": 1 },
     "mode": "single",
-    "tags": ["daily", "arkada"],
+    "tags": ["fizika", "arkada", "daily"],
     "status": "soon",
     "color": "#ff4fd8"
   },

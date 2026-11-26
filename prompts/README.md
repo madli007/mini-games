@@ -21,6 +21,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
 | [30-krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: generator naključnih prog | srednje |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
+| [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
 
 ## Vsi prompti
 
@@ -57,9 +58,12 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ✅ | `1b3a8ba` | 12 ✅ |
 | 30 | [krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: naključne proge (generator + nastavitve) | — | ⬜ | | 06 ✅ |
 | 31 | [skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: odriv in let (nastavljivo, slog DSJ), odriv kadarkoli | — | ⬜ | | 11 ✅, 12 ✅ |
+| 32 | [motorist](32-motorist.md) | Motorist: fizika (Planck.js), voznik z ragdollom, 2,5D, 10 prog, medalje, ghost | 1/3 | ⬜ | | 01 ✅ |
+| 33 | [motorist-urejevalnik](33-motorist-urejevalnik.md) | Motorist: urejevalnik, skupnostne proge, dnevna proga, sklopa 3–4 | 2/3 | ⬜ | | 32 |
+| 34 | [motorist-dirka](34-motorist-dirka.md) | Motorist: dirka do 10 igralcev v živo, sezona, predmeti v trgovini | 3/3 | ⬜ | | 32 (33 priporočeno) |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 32.**
+**Naslednja prosta številka: 35.**
 
 ## Pravila (da se ne izgubimo)
 

@@ -12,7 +12,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
   (party arena Hrčkove krogle za 2–8 igralcev v realnem času: izrivanje čez rob, 9 aren, boti, ekipe, TV pogled),
   **Zaporedje**, **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila
-  točkovanja, veter, trening z ghosti in rekord skakalnice) in napovedane igre.
+  točkovanja, veter, trening z ghosti in rekord skakalnice) in napovedane igre (npr. **Motorist**, fizikalni trial — prompti
+  32–34 v [`prompts/README.md`](prompts/README.md)).
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
 - Backend: Supabase (anonimna prijava, RLS, realtime). Brez njega vse deluje v **offline načinu**.
 
@@ -119,7 +120,8 @@ tests/  tests.html                        testi brez build koraka (+ simulacija 
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
 tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)
 tools/rusilec-arenas.mjs                  generator aren Rušilca (arenas/*.json + index.json)
-prompts/01-hub.md, 02-trgovina.md         prompta, s katerima sta nastala hub in trgovina
+prompts/README.md                         kazalo vseh promptov (stanje, vrstni red, naslednja prosta številka)
+prompts/NN-*.md                           prompti, s katerimi so nastale igre (01 hub, 02 trgovina …) in čakajoči
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
 CLAUDE.md                                 pravila repoja za AI agente
 PROGRESS.md                               dnevnik dela

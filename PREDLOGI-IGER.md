@@ -1,6 +1,6 @@
 # Predlogi iger za skupni hub (GitHub Pages + Supabase)
 
-## Pregled stanja (posodobljeno 23. 11. 2026)
+## Pregled stanja (posodobljeno 26. 11. 2026)
 
 **Oznake pri točkah:** ✅ narejeno · 🟡 delno narejeno · 📝 prompt napisan, čaka · ⬜ samo ideja.
 Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/README.md)**.
@@ -21,6 +21,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 41. Druga pinball miza (Božični pinball) + več igralcev | 📝 | prompti 22–25 |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
+| 6. Motorist (fizikalni trial) | 📝 | prompti 32–34 |
 | 18. Ustavi uro | ✅ | `games/ustavi-uro/` (prompt 28) |
 | Vse ostale točke | ⬜ | — |
 
@@ -66,7 +67,7 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 5. ⬜ **Topovi na terenu (Worms-like, do 10 igralcev)** ★★
    - Igralci so na vrsti po potezah, teren je uničljiv, nastaviš kot in moč strela, po vmesnih krogih kupuješ orožja.
    - Ker je potezna, je odlična za Supabase in brez težav prenese 10 igralcev.
-6. ⬜ **Motorist (fizikalni trial)** ★★★
+6. 📝 **Motorist (fizikalni trial)** ★★★ — prompti [`32-motorist`](prompts/32-motorist.md), [`33-motorist-urejevalnik`](prompts/33-motorist-urejevalnik.md), [`34-motorist-dirka`](prompts/34-motorist-dirka.md)
    - **Žanr:** motoristični trial s strani: plin, zavora in nagibanje telesa po progi z ovirami (skakalnice,
      hlodi, zaboji, gugalnice, stopnice, strmine). Ime, proge in videz so naši, ne kopija nobene obstoječe igre.
    - **Fizika:** motor sta **dve kolesi in šasija z vzmetenjem**, voznik premika težišče naprej in nazaj. Plin

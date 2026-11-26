@@ -1280,3 +1280,12 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
 - Preverjeno: testi 227/227, v brskalniku meni (zavihek Prave: 24 + letalnice), kartica Ruke (opis, rekord, mesto), skok bota na Ruki in Hinzenbachu, telefon 375×812, konzola brez napak.
 - **Supabase:** 14 vrstic v `skoki_hills` pognanih kot migracija `skoki_hills_sezona_2026_27` (v tabeli 36 skakalnic). Advisors: brez novih opozoril (le že znana: anonimni dostop za branje, leaked password protection, unused index).
 - **Poenoten `gateFactor`:** orodje pognano na vseh pravih skakalnicah, pri 12 starejših se je spremenil le `gateFactor` (−0,1 … −0,4 točke na mesto; uglaševanje fizike v promptu 31 je zmanjšalo metre na mesto). Profili, privzeta mesta, letalnici Planica in Oberstdorf ter novih 14 so nespremenjeni. Narejeno pred začetkom sezone pokala (1. 12.), da se odprtim postajam ne spremenijo mesta (izbira mesta glede na veter uporablja `gateFactor`). Testi 227/227, bot izpolni cilje povsod. Baza ni prizadeta (`skoki_hills` hrani le največje točke in daljavo).
+
+# Motorist — prompti (26. 11. 2026)
+- Napisani prompti za točko »6. Motorist (fizikalni trial)« iz `PREDLOGI-IGER.md` po predlagani razdelitvi:
+  `prompts/32-motorist.md` (fizika s Planck.js, voznik z ragdollom, 2,5D izris z deli rendererja Krogle, 10 prog v dveh
+  sklopih, napake, medalje, ghost, drsniki `?debug=1`), `prompts/33-motorist-urejevalnik.md` (urejevalnik, skupnostne
+  proge, proga tedna, dnevna proga, sklopa 3–4) in `prompts/34-motorist-dirka.md` (dirka do 10 igralcev v živo, sezona,
+  predmeti v trgovini). 32 in 33 na koncu posodobita naslednji prompt z dejanskimi spoznanji.
+- Posodobljeno: kazalo `prompts/README.md` (naslednja prosta številka 35), oznaka 📝 v `PREDLOGI-IGER.md`, opis in oznake
+  vnosa `motorist` v `games.json` (še vedno `soon`), korenski `README.md`. Igra še ni narejena.
