@@ -1,0 +1,102 @@
+{
+  "id": "lake-placid",
+  "name": "Lake Placid",
+  "size": "velika",
+  "group": "prave",
+  "k": 115,
+  "hs": 128,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 9.64,
+    "tail": 11.66
+  },
+  "gateFactor": 3.2,
+  "gates": {
+    "count": 43,
+    "default": 33,
+    "spacing": 0.66
+  },
+  "inrun": {
+    "gamma": 35.1,
+    "alpha": 11,
+    "r1": 90,
+    "t": 6.89,
+    "e2": 25.52
+  },
+  "landing": {
+    "s": 3.08,
+    "b0": 5.16,
+    "beta": 36.6,
+    "betaL": 31.6,
+    "pArc": 100,
+    "lArc": 128,
+    "r2": 98,
+    "outrunAngle": 0,
+    "outrunLength": 95
+  },
+  "real": {
+    "venue": "Lake Placid",
+    "country": "USA",
+    "certYear": 2022,
+    "source": "https://www.skisprungschanzen.com/photos/usa/lakeplacid/HS128_2022.pdf",
+    "record": {
+      "dist": 136,
+      "year": 2023
+    }
+  },
+  "theme": {
+    "id": "lake-placid-tema",
+    "label": "Zimski gozd ob jezeru",
+    "sky": {
+      "sun": [
+        170,
+        16
+      ],
+      "zenith": "#2f5ea6",
+      "horizon": "#dde6f0",
+      "ground": "#a8b4c2",
+      "sunColor": "#fff2dc",
+      "clouds": 0.35
+    },
+    "fog": {
+      "color": "#d2dce8",
+      "density": 0.002
+    },
+    "sunIntensity": 2.5,
+    "hemi": [
+      "#ccd8ee",
+      "#5a6656",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.01
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "jezero",
+    "trees": 1.6,
+    "crowd": 1,
+    "snowfall": 0.2,
+    "mountains": 0.9,
+    "boards": [
+      "MINI GAMES",
+      "Čez lužo",
+      "Rušilec",
+      "Gozd"
+    ]
+  },
+  "desc": "Edina čezoceanska postaja: skakalnica v gozdovih ob jezeru. Kratko doskočišče, HS pride hitro.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

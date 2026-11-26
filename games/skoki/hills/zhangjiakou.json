@@ -1,0 +1,99 @@
+{
+  "id": "zhangjiakou",
+  "name": "Zhangjiakou",
+  "size": "velika",
+  "group": "prave",
+  "k": 125,
+  "hs": 140,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.86,
+    "tail": 13.14
+  },
+  "gateFactor": 3.4,
+  "gates": {
+    "count": 42,
+    "default": 24,
+    "spacing": 0.59
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 6.98,
+    "e2": 30.25
+  },
+  "landing": {
+    "s": 3.12,
+    "b0": 7.68,
+    "beta": 37.1,
+    "betaL": 31.47,
+    "pArc": 114,
+    "lArc": 140,
+    "r2": 88,
+    "outrunAngle": 0,
+    "outrunLength": 85
+  },
+  "real": {
+    "venue": "Zhangjiakou",
+    "country": "CHN",
+    "certYear": 2021,
+    "source": "https://www.skisprungschanzen.com/photos/chn/zhangjiakou/HS140_2021.pdf",
+    "record": {
+      "dist": 142.5,
+      "year": 2022
+    }
+  },
+  "theme": {
+    "id": "zhangjiakou-tema",
+    "label": "Suh mraz med rjavimi griči",
+    "sky": {
+      "sun": [
+        165,
+        22
+      ],
+      "zenith": "#2a62c4",
+      "horizon": "#e8ecf2",
+      "ground": "#b8b6b0",
+      "sunColor": "#fff6e4",
+      "clouds": 0.1
+    },
+    "fog": {
+      "color": "#dcdcd8",
+      "density": 0.0016
+    },
+    "sunIntensity": 3,
+    "hemi": [
+      "#d6e2f6",
+      "#7a7266",
+      0.65
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.02,
+        1,
+        0.98
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 0.4,
+    "crowd": 0.8,
+    "snowfall": 0,
+    "mountains": 1.4,
+    "boards": [
+      "MINI GAMES",
+      "Olimpijski hrib",
+      "Rušilec",
+      "Suh mraz"
+    ]
+  },
+  "desc": "Olimpijska skakalnica med golimi griči. Jasno nebo, suh mraz in skoraj brez vetra."
+}

@@ -13,6 +13,7 @@
 //   landing.pArc   = P, landing.lArc = L (= HS), r2 = r2 (klotoida → najmanjši radij), outrunLength = a
 //   landing.b0     = IZPELJANO: začetni naklon grbine, prilagojen tako, da K-točka leži na višini h pod robom (certifikat h/n)
 //   gates.default, gateFactor = IZBRANO z botom (spretnost 0,7 pristane okoli K), metri na mesto × vrednost metra
+//   POZOR: nove skakalnice gradi z --only=<id>; polni zagon bi premaknil gateFactor starih (fizika je bila kasneje uglašena)
 import { readFile, writeFile } from 'node:fs/promises';
 import { buildHill, validateHill, meterValueFor, baseFor, windFactorsFor } from '../games/skoki/hill.js';
 import { balanceRow, meetsTarget } from '../games/skoki/balance.js';
@@ -71,11 +72,56 @@ const CERTS = [
   { id: 'oberstdorf-letalnica', name: 'Oberstdorf, letalnica', venue: 'Oberstdorf', country: 'GER', size: 'letalnica', year: 2023, file: 'ger/oberstdorf_flug/HS235_2023.pdf',
     e1: 118, es: 24, gates: 49, t: 8.5, gamma: 38.7, alpha: 11.2, r1: [225, 130], h: 103.1, n: 170.3, s: 3.40,
     P: 171, K: 200, L: 235, bP: 36.9, bK: 33.9, bL: 31.4, rL: 500, r2: 100, a: 88, out: 0, record: { dist: 242.5, year: 2022 } },
+  // --- sezona 2026/27: preostala prizorišča svetovnega pokala (moški in ženske) in svetovnega prvenstva (Falun 2027)
+  { id: 'lillehammer', name: 'Lillehammer', venue: 'Lillehammer', country: 'NOR', size: 'velika', year: 2022, file: 'nor/lillehammer_lysgaardsbakken/HS140_2022.pdf',
+    e1: 104.05, es: 24.7, gates: 32, t: 6.25, gamma: 34, alpha: 11.5, r1: 107, h: 60.93, n: 106.14, s: 3.35,
+    P: 108, K: 123, L: 140, bP: 37.2, bK: 34.3, bL: 31.5, rL: 334.5, r2: 105.5, a: 90, out: 0, record: { dist: 146.0, year: 2023 } },
+  { id: 'ruka', name: 'Ruka', venue: 'Ruka (Kuusamo)', country: 'FIN', size: 'velika', year: 2022, file: 'fin/kuusamo/HS142_2022.pdf',
+    e1: 98.83, es: 31.68, gates: 57, t: 6.75, gamma: 35, alpha: 10.8, r1: 103, h: 59.25, n: 103.05, s: 3.50,
+    P: 90, K: 120, L: 142, bP: 38, bK: 36.9, bL: 32.3, rL: null, steepToK: true, r2: 135, a: 80, out: 0, record: { dist: 153.5, year: 2023 } },
+  { id: 'wisla', name: 'Wisła', venue: 'Wisła', country: 'POL', size: 'velika', year: 2024, file: 'pol/wisla_malinka/HS134_2024_NEW.pdf',
+    e1: 93.85, es: 16.55, gates: 33, t: 6.71, gamma: 35, alpha: 11, r1: 105, h: 58.74, n: 103.77, s: 3.03,
+    P: 104, K: 120, L: 134, bP: 36.45, bK: 33.5, bL: 30.8, rL: 300, r2: 80, a: 60.3, out: 0, record: { dist: 144.5, year: 2024 } },
+  { id: 'titisee-neustadt', name: 'Titisee-Neustadt', venue: 'Titisee-Neustadt', country: 'GER', size: 'velika', year: 2025, file: 'ger/titiseeneustadt_hochfirst/HS142_2025.pdf',
+    e1: 102.36, es: 20.86, gates: 44, t: 6.7, gamma: 35, alpha: 11, r1: 105, h: 62.72, n: 107.40, s: 3.13,
+    P: 107.67, K: 125, L: 142, bP: 38, bK: 35, bL: 32, rL: 331, r2: 115, a: 85, out: 0, record: { dist: 148.0, year: 2016 } },
+  { id: 'sapporo', name: 'Sapporo', venue: 'Sapporo', country: 'JPN', size: 'velika', year: 2023, file: 'jpn/sapporo_okurayama/HS137_2023.pdf',
+    e1: 100.5, es: 25.5, gates: 52, t: 7.0, gamma: 35, alpha: 11, r1: 105, h: 60.88, n: 105.88, s: 3.30,
+    P: 107, K: 123, L: 137, bP: 37, bK: 34, bL: 31.28, rL: 300, r2: 110, a: 100, out: 0, record: { dist: 152.5, year: 2025 } },
+  { id: 'lake-placid', name: 'Lake Placid', venue: 'Lake Placid', country: 'USA', size: 'velika', year: 2022, file: 'usa/lakeplacid/HS128_2022.pdf',
+    e1: 98.07, es: 27.8, gates: 43, t: 6.89, gamma: 35.1, alpha: 11, r1: 90, h: 56.66, n: 99.70, s: 3.08,
+    P: 100, K: 115, L: 128, bP: 36.6, bK: 34.1, bL: 31.6, rL: 269.5, r2: 98, a: 95, out: 0, record: { dist: 136.0, year: 2023 } },
+  { id: 'oslo', name: 'Oslo', venue: 'Oslo', country: 'NOR', size: 'velika', year: 2022, file: 'nor/oslo_holmenkollen/HS134_2022.pdf',
+    e1: 95.65, es: 17.55, gates: 40, t: 6.6, gamma: 36, alpha: 11, r1: 108.8, h: 59.10, n: 103.70, s: 3.00,
+    P: 105.6, K: 120, L: 134, bP: 35.7, bK: 33.2, bL: 30.8, rL: 329.8, r2: 106, a: 75, out: 0, record: { dist: 146.0, year: 2025 } },
+  { id: 'zhangjiakou', name: 'Zhangjiakou', venue: 'Zhangjiakou', country: 'CHN', size: 'velika', year: 2021, file: 'chn/zhangjiakou/HS140_2021.pdf',
+    e1: 105.21, es: 24, gates: 42, t: 6.98, gamma: 35, alpha: 11, r1: 105, h: 62.80, n: 107.36, s: 3.12,
+    P: 114, K: 125, L: 140, bP: 37.1, bK: 34.1, bL: 31.47, rL: 310, r2: 88, a: 85, out: 0, record: { dist: 142.5, year: 2022 } },
+  { id: 'falun', name: 'Falun', venue: 'Falun', country: 'SWE', size: 'velika', year: 2025, file: 'swe/falun_lugnet/HS132_2025.pdf',
+    e1: 98.75, es: 25.65, gates: 50, t: 6.72, gamma: 35, alpha: 11, r1: 100, h: 59.17, n: 103.81, s: 3.00,
+    P: 104, K: 120, L: 132, bP: 36.2, bK: 33.2, bL: 31.5, rL: 300, r2: 90, a: 88, out: 0, record: { dist: 135.5, year: 2025 } },
+  { id: 'falun-srednja', name: 'Falun, srednja', venue: 'Falun', country: 'SWE', size: 'srednja', year: 2025, file: 'swe/falun_lugnet/HS95_2025.pdf',
+    e1: 87.33, es: 20.9, gates: 41, t: 6.37, gamma: 35, alpha: 10.5, r1: 90, h: 42.55, n: 78.80, s: 2.25,
+    P: 80.84, K: 90, L: 95, bP: 35, bK: 32.5, bL: 32, rL: 210, r2: 90, a: 83, out: 0, record: { dist: 99.5, year: 2025 } },
+  { id: 'hinzenbach', name: 'Hinzenbach', venue: 'Hinzenbach', country: 'AUT', size: 'srednja', year: 2026, file: 'aut/hinzenbach/HS90_2026.pdf',
+    e1: 98.30, es: 23.5, gates: 48, t: 6.75, gamma: 30, alpha: 10, r1: null, v0: 24.6, h: 38.79, n: 74.60, s: 2.65,
+    P: 75, K: 85, L: 90, bP: 34.8, bK: 32.2, bL: 31.3, rL: 212, r2: 87, a: 92, out: 0 },
+  { id: 'ljubno', name: 'Ljubno', venue: 'Ljubno ob Savinji', country: 'SLO', size: 'srednja', year: 2024, file: 'slo/ljubno/HS94_2024.pdf',
+    e1: 80, es: 17, gates: 28, t: 6.24, gamma: 35, alpha: 11.5, r1: null, v0: 24.0, h: 40.32, n: 74.72, s: 2.10,
+    P: 75, K: 85, L: 94, bP: 34.4, bK: 32.8, bL: 31.7, rL: 382, r2: 78, a: 92.5, out: 0, record: { dist: 95.0, year: 2024 } },
+  { id: 'zao', name: 'Zaō', venue: 'Zaō (Yamagata)', country: 'JPN', size: 'srednja', year: 2023, file: 'jpn/zao/HS102_2023.pdf',
+    e1: 92.2, es: 24.5, gates: 50, t: 6.3, gamma: 35, alpha: 11, r1: 90, h: 44.98, n: 83.41, s: 2.38,
+    P: 83.5, K: 95, L: 102, bP: 36, bK: 33, bL: 32, rL: 220, r2: 90, a: 81, out: 0, record: { dist: 103.5, year: 2011 } },
+  { id: 'villach', name: 'Villach', venue: 'Villach', country: 'AUT', size: 'srednja', year: 2024, file: 'aut/villach/HS98_2024.pdf',
+    e1: 79.5, es: 20, gates: 26, t: 5.9, gamma: 35.2, alpha: 11.6, r1: 84, h: 44.65, n: 78.36, s: 2.77,
+    P: 82, K: 90, L: 98, bP: 35.4, bK: 36, bL: 32.5, rL: null, steepToK: true, r2: 109, a: 94, out: 0, record: { dist: 103.5, year: 2008 } },
 ];
 
 /* ------------------------------------------------------------ izbrane nastavitve (iz iskanja: node tools/skoki-real-hills.mjs --search) */
 // g = privzeto zaletno mesto, lift = physics.liftScale, tw = physics.takeoffWindow, push = physics.pushScale
-const TUNE = {"planica-srednja":{g: 4, lift: 1.12, tw: 1, push: 1}, "planica-velika":{g: 5, lift: 1.12, tw: 1, push: 1}, oberstdorf: {g: 36, lift: 0.98, tw: 1, push: 1}, garmisch: {g: 34, lift: 1.1, tw: 1, push: 1}, innsbruck: {g: 5, lift: 1.22, tw: 1, push: 1}, bischofshofen: {g: 4, lift: 1.08, tw: 1, push: 1}, zakopane: {g: 11, lift: 1.14, tw: 1, push: 1}, willingen: {g: 19, lift: 1.1, tw: 1, push: 1}, lahti: {g: 19, lift: 1.06, tw: 1, push: 1}, engelberg: {g: 16, lift: 1.08, tw: 1, push: 1}, "planica-letalnica":{g: 17, lift: 1.14, tw: 1, push: 1}, kulm: {g: 32, lift: 1.1, tw: 1, push: 1}, vikersund: {g: 11, lift: 1.18, tw: 1, push: 1}, "oberstdorf-letalnica":{g: 47, lift: 1.12, tw: 1, push: 1}};
+const TUNE = {"planica-srednja":{g: 4, lift: 1.12, tw: 1, push: 1}, "planica-velika":{g: 5, lift: 1.12, tw: 1, push: 1}, oberstdorf: {g: 36, lift: 0.98, tw: 1, push: 1}, garmisch: {g: 34, lift: 1.1, tw: 1, push: 1}, innsbruck: {g: 5, lift: 1.22, tw: 1, push: 1}, bischofshofen: {g: 4, lift: 1.08, tw: 1, push: 1}, zakopane: {g: 11, lift: 1.14, tw: 1, push: 1}, willingen: {g: 19, lift: 1.1, tw: 1, push: 1}, lahti: {g: 19, lift: 1.06, tw: 1, push: 1}, engelberg: {g: 16, lift: 1.08, tw: 1, push: 1}, "planica-letalnica":{g: 17, lift: 1.14, tw: 1, push: 1}, kulm: {g: 32, lift: 1.1, tw: 1, push: 1}, vikersund: {g: 11, lift: 1.18, tw: 1, push: 1}, "oberstdorf-letalnica":{g: 47, lift: 1.12, tw: 1, push: 1},
+  lillehammer: {g: 26, lift: 0.98, tw: 1, push: 1}, ruka: {g: 38, lift: 1.1, tw: 1, push: 1}, wisla: {g: 32, lift: 1.04, tw: 1, push: 1}, "titisee-neustadt":{g: 31, lift: 0.98, tw: 1, push: 1}, sapporo: {g: 43, lift: 1, tw: 1, push: 1}, "lake-placid":{g: 33, lift: 0.98, tw: 1, push: 1}, oslo: {g: 35, lift: 1.02, tw: 1, push: 1},
+  zhangjiakou: {g: 24, lift: 1, tw: 1, push: 1}, falun: {g: 43, lift: 0.98, tw: 1, push: 1}, "falun-srednja":{g: 29, lift: 0.98, tw: 1, push: 1}, hinzenbach: {g: 28, lift: 0.98, tw: 1, push: 1}, ljubno: {g: 23, lift: 0.98, tw: 1, push: 1}, zao: {g: 34, lift: 0.98, tw: 1, push: 1}, villach: {g: 21, lift: 0.98, tw: 1, push: 1}};
 
 /* ------------------------------------------------------------ odklepi, teme, opisi */
 // vse prave skakalnice so od začetka odprte (prej verige odklepov; napredek zdaj kažejo dosežki in oznake na karticah)
@@ -97,6 +143,21 @@ const THEMES = {
   kulm: { label: 'Zimsko sonce nad gozdnatim pobočjem', sky: sky('#2d62c2', '#e2ecf8', '#b2bcc8', [130, 26], '#fff3dc', 0.3), fog: ['#d6e0ec', 0.0018], sun: 2.8, hemi: ['#d2e0f6', '#5c6a58', 0.68], tint: [1, 1, 1.02], env: 'gozd', trees: 1.5, crowd: 1.6, snow: 0.1, mountains: 1.3, boards: ['MINI GAMES', 'Letenje nad gozdom', 'Rušilec', 'Kulm'], desc: 'Letalnica, ki sledi naravnemu pobočju: doskočišče je bolj zavito, grbina dvigne let visoko nad sneg.' },
   vikersund: { label: 'Večer ob fjordu pod lučmi', sky: sky('#14214a', '#e48a5a', '#3e4560', [20, 2], '#ff9a60', 0.35), fog: ['#8c7d86', 0.0024], sun: 1.6, hemi: ['#7c8cc4', '#3c3a4a', 0.6], tint: [1.03, 0.98, 1], env: 'jezero', trees: 1.3, crowd: 1.6, snow: 0.15, mountains: 0.6, spotlights: 6, boards: ['MINI GAMES', 'Ob fjordu', 'Polet', 'Herodle'], desc: 'Letalnica nad jezerom, prva z reflektorji. Strm zalet, strmo doskočišče — najdaljši poleti sezone.' },
   'oberstdorf-letalnica': { label: 'Ozka dolina, strme stene', sky: sky('#2b5fbe', '#dbe8f6', '#a8b4c2', [150, 30], '#fff2da', 0.35), fog: ['#d2deea', 0.0019], sun: 2.7, hemi: ['#cfe0f8', '#66705e', 0.66], tint: [1, 1, 1.02], env: 'gore', trees: 1.3, crowd: 1.3, snow: 0.1, mountains: 1.8, boards: ['MINI GAMES', 'Med stenami', 'Polet', 'Rušilec'], desc: 'Letalnica v ozki stranski dolini. Najstrmejši zalet (38,7°) in kratek, navzgor nagnjen iztek.' },
+  // sezona 2026/27
+  lillehammer: { label: 'Prvi sneg nad jezerom, kratek dan', sky: sky('#22407e', '#f2c49a', '#7f8898', [195, 6], '#ffc98a', 0.3), fog: ['#c8b4a6', 0.0024], sun: 2.0, hemi: ['#b4c4e4', '#55605a', 0.7], tint: [1.03, 0.99, 0.98], env: 'jezero', trees: 1.4, crowd: 1.1, snow: 0.2, mountains: 0.5, town: 0.5, boards: ['MINI GAMES', 'Odprtje sezone', 'Herodle', 'Prvi sneg'], desc: 'Odprtje sezone nad mestom in jezerom. Položnejši zalet (34°), nizko novembrsko sonce, mraz.' },
+  ruka: { label: 'Polarni mrak na vrhu fjelda', sky: sky('#0c1838', '#5a6c9a', '#2a3350', [180, 3], '#c8d4ff', 0.5), fog: ['#4a5470', 0.0034], sun: 0.9, hemi: ['#6a7cb4', '#262c3e', 0.55], tint: [0.96, 0.99, 1.06], env: 'noc', trees: 1.3, crowd: 0.8, snow: 0.5, mountains: 0.3, spotlights: 6, stars: 0.4, boards: ['MINI GAMES', 'Na vrhu fjelda', 'Rušilec', 'Mraz!'], desc: 'Skakalnica na vrhu fjelda, kjer se dan komaj začne. Dolgo doskočišče do HS 142, veter z vseh strani.' },
+  wisla: { label: 'Gozdnati Beskidi, glasne tribune', sky: sky('#3a64a8', '#d8e2ee', '#a6b2c0', [160, 14], '#fff0d6', 0.5), fog: ['#ccd6e2', 0.0024], sun: 2.2, hemi: ['#c8d6ee', '#5e6a5a', 0.7], tint: [1, 1, 1.01], env: 'gozd', trees: 1.6, crowd: 1.8, snow: 0.2, mountains: 0.9, boards: ['MINI GAMES', 'Beskidi', 'Herodle', 'Hura!'], desc: 'Velika skakalnica v gozdnatih Beskidih. Kratek iztek, ki se dvigne v breg, in polne tribune.' },
+  'titisee-neustadt': { label: 'Temni gozd v megli', sky: sky('#4c5f7e', '#c4ccd6', '#8a94a0', [150, 12], '#eee8dc', 0.8), fog: ['#b0bac4', 0.0036], sun: 1.6, hemi: ['#aebcce', '#4c5646', 0.75], tint: [0.98, 1, 1.02], env: 'gozd', trees: 1.8, crowd: 1.2, snow: 0.35, mountains: 0.4, boards: ['MINI GAMES', 'Temni gozd', 'Rušilec', 'Megla'], desc: 'Velika skakalnica sredi temnega gozda. Strmo doskočišče (38° v P), megla rada leže na smreke.' },
+  sapporo: { label: 'Snežni hrib nad velemestom', sky: sky('#2e5aa8', '#e4ecf6', '#b4bfcc', [150, 18], '#fff4e0', 0.6), fog: ['#d8e0ea', 0.0022], sun: 2.4, hemi: ['#d0dcf2', '#646a72', 0.7], tint: [1, 1, 1.03], env: 'gore', trees: 1.1, crowd: 1.2, snow: 0.6, mountains: 1.0, town: 1, boards: ['MINI GAMES', 'Nad mestom', 'Herodle', 'Sneg!'], desc: 'Olimpijski hrib nad velikim mestom na severu. Suh, gost sneg in luči mesta pod iztekom.' },
+  'lake-placid': { label: 'Zimski gozd ob jezeru', sky: sky('#2f5ea6', '#dde6f0', '#a8b4c2', [170, 16], '#fff2dc', 0.35), fog: ['#d2dce8', 0.002], sun: 2.5, hemi: ['#ccd8ee', '#5a6656', 0.7], tint: [1, 1, 1.01], env: 'jezero', trees: 1.6, crowd: 1.0, snow: 0.2, mountains: 0.9, boards: ['MINI GAMES', 'Čez lužo', 'Rušilec', 'Gozd'], desc: 'Edina čezoceanska postaja: skakalnica v gozdovih ob jezeru. Kratko doskočišče, HS pride hitro.' },
+  oslo: { label: 'Mesto in fjord pod skakalnico', sky: sky('#28508e', '#e8d8c4', '#9aa2b0', [200, 8], '#ffd8a8', 0.4), fog: ['#c8c0b8', 0.0024], sun: 2.1, hemi: ['#bccae6', '#585e5a', 0.7], tint: [1.02, 1, 0.99], env: 'jezero', trees: 1.3, crowd: 2.0, snow: 0.25, mountains: 0.3, town: 1, boards: ['MINI GAMES', 'Nad fjordom', 'Herodle', 'Kralj hriba'], desc: 'Najstarejše skakalno prizorišče: zalet visoko nad mestom in fjordom. Strm zalet (36°), polna arena.' },
+  zhangjiakou: { label: 'Suh mraz med rjavimi griči', sky: sky('#2a62c4', '#e8ecf2', '#b8b6b0', [165, 22], '#fff6e4', 0.1), fog: ['#dcdcd8', 0.0016], sun: 3.0, hemi: ['#d6e2f6', '#7a7266', 0.65], tint: [1.02, 1, 0.98], env: 'gore', trees: 0.4, crowd: 0.8, snow: 0, mountains: 1.4, boards: ['MINI GAMES', 'Olimpijski hrib', 'Rušilec', 'Suh mraz'], desc: 'Olimpijska skakalnica med golimi griči. Jasno nebo, suh mraz in skoraj brez vetra.' },
+  falun: { label: 'Prvenstvo pod lučmi', sky: sky('#0a1230', '#243464', '#121a34', [190, 28], '#a8bcff', 0.2), fog: ['#1e2848', 0.0036], sun: 0.6, hemi: ['#4e5e9e', '#161a2c', 0.45], tint: [0.97, 0.98, 1.07], env: 'noc', trees: 1.3, crowd: 1.8, snow: 0.3, mountains: 0.2, spotlights: 8, phoneLights: 1, stars: 0.5, boards: ['MINI GAMES', 'Prvenstvo 2027', 'Herodle', 'Za kolajno'], desc: 'Prizorišče svetovnega prvenstva 2027. Velika skakalnica nad gozdovi Dalarne, večer pod reflektorji.' },
+  'falun-srednja': { label: 'Prvenstveno popoldne nad gozdovi', sky: sky('#3a66b0', '#e8dcc8', '#a8acb4', [200, 10], '#ffdcae', 0.3), fog: ['#d4ccc0', 0.0022], sun: 2.1, hemi: ['#c4d2ec', '#5a6254', 0.7], tint: [1.02, 1, 0.98], env: 'gozd', trees: 1.5, crowd: 1.5, snow: 0.15, mountains: 0.2, boards: ['MINI GAMES', 'Prvenstvo 2027', 'Rušilec', 'Srednja'], desc: 'Srednja skakalnica svetovnega prvenstva 2027. Nizko popoldansko sonce nad gozdovi.' },
+  hinzenbach: { label: 'Ravnina ob Donavi, megleno jutro', sky: sky('#5a7298', '#d4d8dc', '#9ca4ac', [150, 10], '#f4eee0', 0.7), fog: ['#c4cad0', 0.0034], sun: 1.7, hemi: ['#b8c4d4', '#5a6052', 0.75], tint: [1, 1, 1.01], env: 'gozd', trees: 1.2, crowd: 0.8, snow: 0.1, mountains: 0.15, boards: ['MINI GAMES', 'Ob reki', 'Herodle', 'Megla'], desc: 'Srednja skakalnica na gričku sredi ravnine. Najpoložnejši zalet sezone (30°) — hitrost se nabira počasi.' },
+  ljubno: { label: 'Domača dolina ob Savinji', sky: sky('#2e66c0', '#dceaf6', '#a8b8c6', [155, 20], '#fff2da', 0.35), fog: ['#d0deea', 0.002], sun: 2.6, hemi: ['#cde0f6', '#6a7864', 0.67], tint: [1, 1.01, 1], env: 'gore', trees: 1.5, crowd: 1.4, snow: 0.1, mountains: 1.5, boards: ['MINI GAMES', 'Ob Savinji', 'Herodle', 'Hopsasa!'], desc: 'Domača srednja skakalnica v zeleni dolini ob reki. Kratek zalet, glasna domača publika.' },
+  zao: { label: 'Ledene smreke pod vulkanom', sky: sky('#5a6c8a', '#e4e8ee', '#b6bcc6', [150, 12], '#f6f2ea', 0.75), fog: ['#d2d8e0', 0.003], sun: 1.9, hemi: ['#c4cee0', '#6a6e74', 0.72], tint: [0.99, 1, 1.03], env: 'gore', trees: 1.7, crowd: 0.9, snow: 0.7, mountains: 1.2, boards: ['MINI GAMES', 'Snežne pošasti', 'Rušilec', 'Led'], desc: 'Srednja skakalnica pod vulkanskim pogorjem, kjer ivje spremeni smreke v snežne kipe. Gost sneg.' },
+  villach: { label: 'Sončno pobočje nad mestom', sky: sky('#2c62bc', '#e6ecf2', '#b0bac6', [175, 16], '#fff2dc', 0.3), fog: ['#d6dfe8', 0.002], sun: 2.6, hemi: ['#d0def4', '#68705e', 0.68], tint: [1.01, 1, 1], env: 'gore', trees: 1.2, crowd: 1.0, snow: 0.05, mountains: 1.6, town: 0.6, boards: ['MINI GAMES', 'Čez Karavanke', 'Herodle', 'Sonce'], desc: 'Srednja skakalnica tik čez Karavanke. Strmo doskočišče (36° v K) in razgled na gore.' },
 };
 
 function themeOf(c) {
@@ -123,6 +184,15 @@ const LIFTS = { velika: range(0.98, 1.24, 0.02), srednja: range(0.98, 1.24, 0.02
 const TWS = { velika: [[1, 1]], letalnica: [[1, 1], [1, 1.1], [1, 1.2], [1.3, 1], [1.6, 1], [2, 1]] };
 TWS.srednja = TWS.velika;
 const LIFT0 = { velika: 1, srednja: 1, letalnica: 1.045 };
+/** Začetek loka doskočišča (beta, pArc). Privzeto βP v P. Certifikati brez krožnega loka rL (»/«), kjer doskočišče ostane
+ *  strmo do K (Ruka: βK 36,9° pri βP 38°; Villach: βK 36° > βP 35,4°): steepToK — strmina max(βP, βK) traja do točke,
+ *  od koder enakomerni padec do βL v L da v K naklon iz certifikata (IZPELJANO, največ K − 1). */
+function arcOf(c) {
+  if (!c.steepToK) return { beta: c.bP, pArc: c.P };
+  const beta = Math.max(c.bP, c.bK), f = (beta - c.bK) / (beta - c.bL);
+  return { beta, pArc: r2d(Math.min(c.K - 1, (c.K - f * c.L) / (1 - f))) };
+}
+
 function defFrom(c, b0, gate = 1, gateFactor = 7, lift = LIFT0[c.size], tw = 1, push = 1) {
   const r1 = r1Of(c);
   const trans = r1 * (c.gamma - c.alpha) * DEG;
@@ -133,7 +203,7 @@ function defFrom(c, b0, gate = 1, gateFactor = 7, lift = LIFT0[c.size], tw = 1, 
     k: c.K, hs: c.L, meterValue: meterValueFor(c.K), base: baseFor(c.K), windFactors: windFactorsFor(c.K),
     gateFactor, gates: { count: c.gates, default: gate, spacing: r2d(c.es / (c.gates - 1)) },
     inrun: { gamma: c.gamma, alpha: c.alpha, r1: r2d(r1), t: c.t, e2: r2d(lowGate - c.t - trans) },
-    landing: { s: c.s, b0: r2d(b0), beta: c.bP, betaL: c.bL, pArc: c.P, lArc: c.L, r2: c.r2, outrunAngle: c.out, outrunLength: Math.max(40, c.a) },
+    landing: { s: c.s, b0: r2d(b0), beta: arcOf(c).beta, betaL: c.bL, pArc: arcOf(c).pArc, lArc: c.L, r2: c.r2, outrunAngle: c.out, outrunLength: Math.max(40, c.a) },
     real: { venue: c.venue, country: c.country, certYear: c.year, source: SRC + c.file, ...(c.record ? { record: c.record } : {}) },
     theme: themeOf(c),
     desc: THEMES[c.id].desc,
@@ -154,7 +224,7 @@ function defFrom(c, b0, gate = 1, gateFactor = 7, lift = LIFT0[c.size], tw = 1, 
 /** b0 (začetni naklon grbine), da K-točka leži h pod robom (bisekcija; višja b0 = strmejša grbina = nižja K). */
 function fitB0(c) {
   const yK = b0 => buildHill(defFrom(c, b0)).landAt(c.K).y;
-  let lo = 0, hi = c.bP - 0.01;
+  let lo = 0, hi = arcOf(c).beta - 0.01;
   if (yK(lo) < -c.h) return { b0: 0, err: yK(0) + c.h };
   if (yK(hi) > -c.h) return { b0: hi, err: yK(hi) + c.h };
   for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (yK(m) > -c.h) lo = m; else hi = m; }

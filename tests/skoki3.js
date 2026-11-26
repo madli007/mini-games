@@ -17,6 +17,11 @@ const CERT_HN = {
   innsbruck: [59.85, 103.32], bischofshofen: [62.36, 107.61], zakopane: [62.37, 107.76], willingen: [65.73, 111.43],
   lahti: [56.60, 100.70], engelberg: [62.50, 107.50], 'planica-letalnica': [102.0, 170.45], kulm: [103.2, 170.91],
   vikersund: [102.24, 170.47], 'oberstdorf-letalnica': [103.1, 170.3],
+  // sezona 2026/27
+  lillehammer: [60.93, 106.14], ruka: [59.25, 103.05], wisla: [58.74, 103.77], 'titisee-neustadt': [62.72, 107.40],
+  sapporo: [60.88, 105.88], 'lake-placid': [56.66, 99.70], oslo: [59.10, 103.70], zhangjiakou: [62.80, 107.36],
+  falun: [59.17, 103.81], 'falun-srednja': [42.55, 78.80], hinzenbach: [38.79, 74.60], ljubno: [40.32, 74.72],
+  zao: [44.98, 83.41], villach: [44.65, 78.36],
 };
 
 /**

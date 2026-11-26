@@ -107,7 +107,21 @@ insert into public.skoki_hills (hill, max_points, max_dist) values
   ('planica-letalnica', 288, 265),
   ('kulm', 282, 260),
   ('vikersund', 288, 265),
-  ('oberstdorf-letalnica', 282, 260)
+  ('oberstdorf-letalnica', 282, 260),
+  ('lillehammer', 226, 165),
+  ('ruka', 235, 167),
+  ('wisla', 221, 159),
+  ('titisee-neustadt', 226, 167),
+  ('sapporo', 221, 162),
+  ('lake-placid', 219, 153),
+  ('oslo', 221, 159),
+  ('zhangjiakou', 222, 165),
+  ('falun', 217, 157),
+  ('falun-srednja', 210, 120),
+  ('hinzenbach', 210, 115),
+  ('ljubno', 218, 119),
+  ('zao', 214, 127),
+  ('villach', 216, 123)
 on conflict (hill) do update set max_points = excluded.max_points, max_dist = excluded.max_dist;
 -- END HILLS
 

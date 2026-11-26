@@ -1,0 +1,102 @@
+{
+  "id": "titisee-neustadt",
+  "name": "Titisee-Neustadt",
+  "size": "velika",
+  "group": "prave",
+  "k": 125,
+  "hs": 142,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.86,
+    "tail": 13.14
+  },
+  "gateFactor": 2.6,
+  "gates": {
+    "count": 44,
+    "default": 31,
+    "spacing": 0.49
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 6.7,
+    "e2": 30.82
+  },
+  "landing": {
+    "s": 3.13,
+    "b0": 3.98,
+    "beta": 38,
+    "betaL": 32,
+    "pArc": 107.67,
+    "lArc": 142,
+    "r2": 115,
+    "outrunAngle": 0,
+    "outrunLength": 85
+  },
+  "real": {
+    "venue": "Titisee-Neustadt",
+    "country": "GER",
+    "certYear": 2025,
+    "source": "https://www.skisprungschanzen.com/photos/ger/titiseeneustadt_hochfirst/HS142_2025.pdf",
+    "record": {
+      "dist": 148,
+      "year": 2016
+    }
+  },
+  "theme": {
+    "id": "titisee-neustadt-tema",
+    "label": "Temni gozd v megli",
+    "sky": {
+      "sun": [
+        150,
+        12
+      ],
+      "zenith": "#4c5f7e",
+      "horizon": "#c4ccd6",
+      "ground": "#8a94a0",
+      "sunColor": "#eee8dc",
+      "clouds": 0.8
+    },
+    "fog": {
+      "color": "#b0bac4",
+      "density": 0.0036
+    },
+    "sunIntensity": 1.6,
+    "hemi": [
+      "#aebcce",
+      "#4c5646",
+      0.75
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        0.98,
+        1,
+        1.02
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gozd",
+    "trees": 1.8,
+    "crowd": 1.2,
+    "snowfall": 0.35,
+    "mountains": 0.4,
+    "boards": [
+      "MINI GAMES",
+      "Temni gozd",
+      "Rušilec",
+      "Megla"
+    ]
+  },
+  "desc": "Velika skakalnica sredi temnega gozda. Strmo doskočišče (38° v P), megla rada leže na smreke.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

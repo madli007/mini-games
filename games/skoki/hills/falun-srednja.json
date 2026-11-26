@@ -1,0 +1,102 @@
+{
+  "id": "falun-srednja",
+  "name": "Falun, srednja",
+  "size": "srednja",
+  "group": "prave",
+  "k": 90,
+  "hs": 95,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 7.32,
+    "tail": 8.86
+  },
+  "gateFactor": 2.5,
+  "gates": {
+    "count": 41,
+    "default": 29,
+    "spacing": 0.52
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 10.5,
+    "r1": 90,
+    "t": 6.37,
+    "e2": 21.58
+  },
+  "landing": {
+    "s": 2.25,
+    "b0": 5.68,
+    "beta": 35,
+    "betaL": 32,
+    "pArc": 80.84,
+    "lArc": 95,
+    "r2": 90,
+    "outrunAngle": 0,
+    "outrunLength": 83
+  },
+  "real": {
+    "venue": "Falun",
+    "country": "SWE",
+    "certYear": 2025,
+    "source": "https://www.skisprungschanzen.com/photos/swe/falun_lugnet/HS95_2025.pdf",
+    "record": {
+      "dist": 99.5,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "falun-srednja-tema",
+    "label": "Prvenstveno popoldne nad gozdovi",
+    "sky": {
+      "sun": [
+        200,
+        10
+      ],
+      "zenith": "#3a66b0",
+      "horizon": "#e8dcc8",
+      "ground": "#a8acb4",
+      "sunColor": "#ffdcae",
+      "clouds": 0.3
+    },
+    "fog": {
+      "color": "#d4ccc0",
+      "density": 0.0022
+    },
+    "sunIntensity": 2.1,
+    "hemi": [
+      "#c4d2ec",
+      "#5a6254",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.02,
+        1,
+        0.98
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gozd",
+    "trees": 1.5,
+    "crowd": 1.5,
+    "snowfall": 0.15,
+    "mountains": 0.2,
+    "boards": [
+      "MINI GAMES",
+      "Prvenstvo 2027",
+      "Rušilec",
+      "Srednja"
+    ]
+  },
+  "desc": "Srednja skakalnica svetovnega prvenstva 2027. Nizko popoldansko sonce nad gozdovi.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

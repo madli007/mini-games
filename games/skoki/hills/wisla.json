@@ -1,0 +1,102 @@
+{
+  "id": "wisla",
+  "name": "Wisła",
+  "size": "velika",
+  "group": "prave",
+  "k": 120,
+  "hs": 134,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.25,
+    "tail": 12.4
+  },
+  "gateFactor": 2.8,
+  "gates": {
+    "count": 33,
+    "default": 32,
+    "spacing": 0.52
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 6.71,
+    "e2": 26.61
+  },
+  "landing": {
+    "s": 3.03,
+    "b0": 5.14,
+    "beta": 36.45,
+    "betaL": 30.8,
+    "pArc": 104,
+    "lArc": 134,
+    "r2": 80,
+    "outrunAngle": 0,
+    "outrunLength": 60.3
+  },
+  "real": {
+    "venue": "Wisła",
+    "country": "POL",
+    "certYear": 2024,
+    "source": "https://www.skisprungschanzen.com/photos/pol/wisla_malinka/HS134_2024_NEW.pdf",
+    "record": {
+      "dist": 144.5,
+      "year": 2024
+    }
+  },
+  "theme": {
+    "id": "wisla-tema",
+    "label": "Gozdnati Beskidi, glasne tribune",
+    "sky": {
+      "sun": [
+        160,
+        14
+      ],
+      "zenith": "#3a64a8",
+      "horizon": "#d8e2ee",
+      "ground": "#a6b2c0",
+      "sunColor": "#fff0d6",
+      "clouds": 0.5
+    },
+    "fog": {
+      "color": "#ccd6e2",
+      "density": 0.0024
+    },
+    "sunIntensity": 2.2,
+    "hemi": [
+      "#c8d6ee",
+      "#5e6a5a",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.01
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gozd",
+    "trees": 1.6,
+    "crowd": 1.8,
+    "snowfall": 0.2,
+    "mountains": 0.9,
+    "boards": [
+      "MINI GAMES",
+      "Beskidi",
+      "Herodle",
+      "Hura!"
+    ]
+  },
+  "desc": "Velika skakalnica v gozdnatih Beskidih. Kratek iztek, ki se dvigne v breg, in polne tribune.",
+  "physics": {
+    "liftScale": 1.04
+  }
+}

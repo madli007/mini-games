@@ -1,0 +1,102 @@
+{
+  "id": "ljubno",
+  "name": "Ljubno",
+  "size": "srednja",
+  "group": "prave",
+  "k": 85,
+  "hs": 94,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 6.64,
+    "tail": 8.03
+  },
+  "gateFactor": 2.9,
+  "gates": {
+    "count": 28,
+    "default": 23,
+    "spacing": 0.63
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11.5,
+    "r1": 80.6,
+    "t": 6.24,
+    "e2": 23.7
+  },
+  "landing": {
+    "s": 2.1,
+    "b0": 7.03,
+    "beta": 34.4,
+    "betaL": 31.7,
+    "pArc": 75,
+    "lArc": 94,
+    "r2": 78,
+    "outrunAngle": 0,
+    "outrunLength": 92.5
+  },
+  "real": {
+    "venue": "Ljubno ob Savinji",
+    "country": "SLO",
+    "certYear": 2024,
+    "source": "https://www.skisprungschanzen.com/photos/slo/ljubno/HS94_2024.pdf",
+    "record": {
+      "dist": 95,
+      "year": 2024
+    }
+  },
+  "theme": {
+    "id": "ljubno-tema",
+    "label": "Domača dolina ob Savinji",
+    "sky": {
+      "sun": [
+        155,
+        20
+      ],
+      "zenith": "#2e66c0",
+      "horizon": "#dceaf6",
+      "ground": "#a8b8c6",
+      "sunColor": "#fff2da",
+      "clouds": 0.35
+    },
+    "fog": {
+      "color": "#d0deea",
+      "density": 0.002
+    },
+    "sunIntensity": 2.6,
+    "hemi": [
+      "#cde0f6",
+      "#6a7864",
+      0.67
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1.01,
+        1
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.5,
+    "crowd": 1.4,
+    "snowfall": 0.1,
+    "mountains": 1.5,
+    "boards": [
+      "MINI GAMES",
+      "Ob Savinji",
+      "Herodle",
+      "Hopsasa!"
+    ]
+  },
+  "desc": "Domača srednja skakalnica v zeleni dolini ob reki. Kratek zalet, glasna domača publika.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

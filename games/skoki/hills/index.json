@@ -5,8 +5,10 @@
   ],
   "hills": [
     "zajcek.json", "brezova.json", "bistra.json", "sipina.json", "reflektor.json", "orlova.json", "orlovo-gnezdo.json", "mirno-morje.json",
-    "planica-srednja.json", "planica-velika.json", "oberstdorf.json", "garmisch.json", "innsbruck.json", "bischofshofen.json",
+    "planica-srednja.json", "falun-srednja.json", "hinzenbach.json", "ljubno.json", "zao.json", "villach.json",
+    "planica-velika.json", "oberstdorf.json", "garmisch.json", "innsbruck.json", "bischofshofen.json",
     "zakopane.json", "willingen.json", "lahti.json", "engelberg.json",
+    "lillehammer.json", "ruka.json", "wisla.json", "titisee-neustadt.json", "sapporo.json", "lake-placid.json", "oslo.json", "zhangjiakou.json", "falun.json",
     "planica-letalnica.json", "kulm.json", "vikersund.json", "oberstdorf-letalnica.json"
   ]
 }

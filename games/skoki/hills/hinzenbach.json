@@ -1,0 +1,98 @@
+{
+  "id": "hinzenbach",
+  "name": "Hinzenbach",
+  "size": "srednja",
+  "group": "prave",
+  "k": 85,
+  "hs": 90,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 6.64,
+    "tail": 8.03
+  },
+  "gateFactor": 2,
+  "gates": {
+    "count": 48,
+    "default": 28,
+    "spacing": 0.5
+  },
+  "inrun": {
+    "gamma": 30,
+    "alpha": 10,
+    "r1": 84.7,
+    "t": 6.75,
+    "e2": 38.48
+  },
+  "landing": {
+    "s": 2.65,
+    "b0": 0.72,
+    "beta": 34.8,
+    "betaL": 31.3,
+    "pArc": 75,
+    "lArc": 90,
+    "r2": 87,
+    "outrunAngle": 0,
+    "outrunLength": 92
+  },
+  "real": {
+    "venue": "Hinzenbach",
+    "country": "AUT",
+    "certYear": 2026,
+    "source": "https://www.skisprungschanzen.com/photos/aut/hinzenbach/HS90_2026.pdf"
+  },
+  "theme": {
+    "id": "hinzenbach-tema",
+    "label": "Ravnina ob Donavi, megleno jutro",
+    "sky": {
+      "sun": [
+        150,
+        10
+      ],
+      "zenith": "#5a7298",
+      "horizon": "#d4d8dc",
+      "ground": "#9ca4ac",
+      "sunColor": "#f4eee0",
+      "clouds": 0.7
+    },
+    "fog": {
+      "color": "#c4cad0",
+      "density": 0.0034
+    },
+    "sunIntensity": 1.7,
+    "hemi": [
+      "#b8c4d4",
+      "#5a6052",
+      0.75
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.01
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gozd",
+    "trees": 1.2,
+    "crowd": 0.8,
+    "snowfall": 0.1,
+    "mountains": 0.15,
+    "boards": [
+      "MINI GAMES",
+      "Ob reki",
+      "Herodle",
+      "Megla"
+    ]
+  },
+  "desc": "Srednja skakalnica na gričku sredi ravnine. Najpoložnejši zalet sezone (30°) — hitrost se nabira počasi.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

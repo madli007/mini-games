@@ -240,7 +240,7 @@ Razvojni parametri: `?tv=1`, `?bots=9` (hitra lokalna tekma: ti + 9 botov), `?fa
 
 ## Prave skakalnice (`prompts/29-skoki-prave-skakalnice.md`)
 
-Druga skupina v meniju (`hills/index.json` → `groups`, `"group": "prave"`): 14 skakalnic s pravimi imeni krajev in profili,
+Druga skupina v meniju (`hills/index.json` → `groups`, `"group": "prave"`): 28 skakalnic s pravimi imeni krajev in profili,
 prepisanimi iz **FIS-ovih certifikatov skakalnic** (javni PDF-ji, objavljeni na skisprungschanzen.com; povezava je v
 `real.source` vsake skakalnice). Imena so le imena krajev (brez imen objektov, sponzorjev, tekmovanj in skakalcev); teme so
 navdihnjene s krajem in narisane po naše (nova možnost teme `town`: hiše za iztekom v Innsbrucku in Zakopanah), panoji imajo
@@ -263,6 +263,33 @@ je naveden, sicer najdaljši veljavni skok na tekmi).
 | Kulm | K200 / HS235 | 2025 | 245,5 m (2026) | 32/45 | 1,1 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/aut/badmitterndorf_tauplitz/HS235_2025.pdf) |
 | Vikersund | K200 / HS240 | 2022 | 253,5 m (2017) | 11/42 | 1,18 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/nor/vikersund_skiflyging/HS240_2022.pdf) |
 | Oberstdorf, letalnica | K200 / HS235 | 2023 | 242,5 m (2022) | 47/49 | 1,12 | 1 | 1 | 〃 | [PDF](https://www.skisprungschanzen.com/photos/ger/oberstdorf_flug/HS235_2023.pdf) |
+| Lillehammer | K123 / HS140 | 2022 | 146,0 m (2023) | 26/32 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/nor/lillehammer_lysgaardsbakken/HS140_2022.pdf) |
+| Ruka | K120 / HS142 | 2022 | 153,5 m (2023) | 38/57 | 1,1 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/fin/kuusamo/HS142_2022.pdf) |
+| Wisła | K120 / HS134 | 2024 | 144,5 m (2024) | 32/33 | 1,04 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/pol/wisla_malinka/HS134_2024_NEW.pdf) |
+| Titisee-Neustadt | K125 / HS142 | 2025 | 148,0 m (2016) | 31/44 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/ger/titiseeneustadt_hochfirst/HS142_2025.pdf) |
+| Sapporo | K123 / HS137 | 2023 | 152,5 m (2025) | 43/52 | 1 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/jpn/sapporo_okurayama/HS137_2023.pdf) |
+| Lake Placid | K115 / HS128 | 2022 | 136,0 m (2023) | 33/43 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/usa/lakeplacid/HS128_2022.pdf) |
+| Oslo | K120 / HS134 | 2022 | 146,0 m (2025) | 35/40 | 1,02 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/nor/oslo_holmenkollen/HS134_2022.pdf) |
+| Zhangjiakou | K125 / HS140 | 2021 | 142,5 m (2022) | 24/42 | 1 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/chn/zhangjiakou/HS140_2021.pdf) |
+| Falun | K120 / HS132 | 2025 | 135,5 m (2025) | 43/50 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/swe/falun_lugnet/HS132_2025.pdf) |
+| Falun, srednja | K90 / HS95 | 2025 | 99,5 m (2025) | 29/41 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/swe/falun_lugnet/HS95_2025.pdf) |
+| Hinzenbach | K85 / HS90 | 2026 | — (sporen) | 28/48 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/aut/hinzenbach/HS90_2026.pdf) |
+| Ljubno | K85 / HS94 | 2024 | 95,0 m (2024) | 23/28 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/slo/ljubno/HS94_2024.pdf) |
+| Zaō | K95 / HS102 | 2023 | 103,5 m (2011) | 34/50 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/jpn/zao/HS102_2023.pdf) |
+| Villach | K90 / HS98 | 2024 | 103,5 m (2008) | 21/26 | 0,98 | 1 | 1 | odprta | [PDF](https://www.skisprungschanzen.com/photos/aut/villach/HS98_2024.pdf) |
+
+**Sezona 2026/27** (zadnjih 14 vrstic): vsa preostala prizorišča svetovnega pokala 2026/27 (moški in ženske) in obe
+skakalnici svetovnega prvenstva v Falunu 2027, ki jih še ni bilo; skakalnice iz prejšnjih sezon niso dodane. Koledar po
+Wikipediji (»2026–27 FIS Ski Jumping World Cup«, 22. 11. 2026). Kulm in Oberstdorf, letalnica, letos nista v koledarju, a ostaneta.
+Vse so odprte. Pokal (`cup-config.js`) jih zaenkrat ne uporablja, ker bi sprememba `CUP_VENUES` premešala že objavljen koledar
+(`skoki_cup_events`). Rekord Hinzenbacha je izpuščen (najdaljši skok je na viru sporen). Pri Falunu in Wisłi je certifikat
+po prenovi, rekord je skok na novem profilu. **Ruka in Villach** (`steepToK` v orodju): certifikat nima loka rL (»/«),
+doskočišče pa ostane strmo do K (Ruka βK 36,9° pri βP 38°, Villach βK 36° > βP 35,4°). Zato je začetek loka `pArc` izpeljan
+tako, da enakomerni padec max(βP, βK) → βL da v K naklon iz certifikata (Ruka pArc 114,7 m namesto P 90 m, Villach 89 m namesto
+82 m). Brez tega je K v Ruki ležal 1,4 m prenizko. Certifikat Zhangjiakouja (2021) je bil veljaven do 30. 4. 2026; novejšega ni
+objavljenega. Lillehammer: iztek »90/100 m« → 90 m. Kubična parabola (Hinzenbach, Ljubno) → r1 = 0,14·v0².
+Ob ponovnem zagonu orodja brez `--only=<id>` se `gateFactor` starih 14 skakalnic premakne za 0,1–0,4 (fizika je od takrat
+uglašena, prompt 31), zato so stari JSON-i nespremenjeni; nove skakalnice gradi `--only=<id>`.
 
 JSON-e ustvari `node tools/skoki-real-hills.mjs` (certifikati so v orodju prepisani; `--check` le izpiše prileganje,
 `--search` znova poišče privzeto mesto in parametre fizike). V meniju ima kartica zastavo, K/HS, rekord skakalnice, »po profilu

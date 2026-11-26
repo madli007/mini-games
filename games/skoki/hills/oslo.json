@@ -1,0 +1,103 @@
+{
+  "id": "oslo",
+  "name": "Oslo",
+  "size": "velika",
+  "group": "prave",
+  "k": 120,
+  "hs": 134,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.25,
+    "tail": 12.4
+  },
+  "gateFactor": 2.3,
+  "gates": {
+    "count": 40,
+    "default": 35,
+    "spacing": 0.45
+  },
+  "inrun": {
+    "gamma": 36,
+    "alpha": 11,
+    "r1": 108.8,
+    "t": 6.6,
+    "e2": 24.03
+  },
+  "landing": {
+    "s": 3,
+    "b0": 8.02,
+    "beta": 35.7,
+    "betaL": 30.8,
+    "pArc": 105.6,
+    "lArc": 134,
+    "r2": 106,
+    "outrunAngle": 0,
+    "outrunLength": 75
+  },
+  "real": {
+    "venue": "Oslo",
+    "country": "NOR",
+    "certYear": 2022,
+    "source": "https://www.skisprungschanzen.com/photos/nor/oslo_holmenkollen/HS134_2022.pdf",
+    "record": {
+      "dist": 146,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "oslo-tema",
+    "label": "Mesto in fjord pod skakalnico",
+    "sky": {
+      "sun": [
+        200,
+        8
+      ],
+      "zenith": "#28508e",
+      "horizon": "#e8d8c4",
+      "ground": "#9aa2b0",
+      "sunColor": "#ffd8a8",
+      "clouds": 0.4
+    },
+    "fog": {
+      "color": "#c8c0b8",
+      "density": 0.0024
+    },
+    "sunIntensity": 2.1,
+    "hemi": [
+      "#bccae6",
+      "#585e5a",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.02,
+        1,
+        0.99
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "jezero",
+    "trees": 1.3,
+    "crowd": 2,
+    "snowfall": 0.25,
+    "mountains": 0.3,
+    "boards": [
+      "MINI GAMES",
+      "Nad fjordom",
+      "Herodle",
+      "Kralj hriba"
+    ],
+    "town": 1
+  },
+  "desc": "Najstarejše skakalno prizorišče: zalet visoko nad mestom in fjordom. Strm zalet (36°), polna arena.",
+  "physics": {
+    "liftScale": 1.02
+  }
+}

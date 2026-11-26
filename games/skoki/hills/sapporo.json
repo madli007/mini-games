@@ -1,0 +1,100 @@
+{
+  "id": "sapporo",
+  "name": "Sapporo",
+  "size": "velika",
+  "group": "prave",
+  "k": 123,
+  "hs": 137,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.62,
+    "tail": 12.85
+  },
+  "gateFactor": 2.5,
+  "gates": {
+    "count": 52,
+    "default": 43,
+    "spacing": 0.5
+  },
+  "inrun": {
+    "gamma": 35,
+    "alpha": 11,
+    "r1": 105,
+    "t": 7,
+    "e2": 24.02
+  },
+  "landing": {
+    "s": 3.3,
+    "b0": 4.75,
+    "beta": 37,
+    "betaL": 31.28,
+    "pArc": 107,
+    "lArc": 137,
+    "r2": 110,
+    "outrunAngle": 0,
+    "outrunLength": 100
+  },
+  "real": {
+    "venue": "Sapporo",
+    "country": "JPN",
+    "certYear": 2023,
+    "source": "https://www.skisprungschanzen.com/photos/jpn/sapporo_okurayama/HS137_2023.pdf",
+    "record": {
+      "dist": 152.5,
+      "year": 2025
+    }
+  },
+  "theme": {
+    "id": "sapporo-tema",
+    "label": "Snežni hrib nad velemestom",
+    "sky": {
+      "sun": [
+        150,
+        18
+      ],
+      "zenith": "#2e5aa8",
+      "horizon": "#e4ecf6",
+      "ground": "#b4bfcc",
+      "sunColor": "#fff4e0",
+      "clouds": 0.6
+    },
+    "fog": {
+      "color": "#d8e0ea",
+      "density": 0.0022
+    },
+    "sunIntensity": 2.4,
+    "hemi": [
+      "#d0dcf2",
+      "#646a72",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1,
+        1,
+        1.03
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.1,
+    "crowd": 1.2,
+    "snowfall": 0.6,
+    "mountains": 1,
+    "boards": [
+      "MINI GAMES",
+      "Nad mestom",
+      "Herodle",
+      "Sneg!"
+    ],
+    "town": 1
+  },
+  "desc": "Olimpijski hrib nad velikim mestom na severu. Suh, gost sneg in luči mesta pod iztekom."
+}

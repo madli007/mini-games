@@ -234,7 +234,7 @@ function showMenu() {
 const THEME_COLORS = { brezova: ['#3f7a5c', '#10261d'], bistra: ['#2f78d0', '#0d2140'], orlova: ['#a0524a', '#1c1838'], zajcek: ['#e58fb5', '#3a2040'], sipina: ['#d4a04f', '#3b2410'], reflektor: ['#3b4fa8', '#05081c'], 'orlovo-gnezdo': ['#4f8f6a', '#13283a'], 'mirno-morje': ['#6c6c78', '#050508'] };
 
 // prave skakalnice: koda države (real.country) → zastava iz jumpers.js; kraj v mestniku (»v Planici«)
-const COUNTRY_FLAG = { SLO: 'si', AUT: 'at', GER: 'de', POL: 'pl', FIN: 'fi', SUI: 'ch', NOR: 'no', ITA: 'it', CZE: 'cz', JPN: 'jp' };
+const COUNTRY_FLAG = { SLO: 'si', AUT: 'at', GER: 'de', POL: 'pl', FIN: 'fi', SUI: 'ch', NOR: 'no', ITA: 'it', CZE: 'cz', JPN: 'jp', SWE: 'se', USA: 'us', CHN: 'cn' };
 const LOCATIVE = { Planica: 'Planici', Zakopane: 'Zakopanah', 'Tauplitz / Bad Mitterndorf': 'Tauplitzu / Bad Mitterndorfu', Garmisch: 'Garmischu',
   'Garmisch-Partenkirchen': 'Garmisch-Partenkirchnu', Oberstdorf: 'Oberstdorfu', Innsbruck: 'Innsbrucku', Bischofshofen: 'Bischofshofnu',
   Willingen: 'Willingenu', Lahti: 'Lahtiju', Engelberg: 'Engelbergu', Vikersund: 'Vikersundu' };

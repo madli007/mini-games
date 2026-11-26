@@ -1,0 +1,103 @@
+{
+  "id": "villach",
+  "name": "Villach",
+  "size": "srednja",
+  "group": "prave",
+  "k": 90,
+  "hs": 98,
+  "meterValue": 2,
+  "base": 60,
+  "windFactors": {
+    "head": 7.32,
+    "tail": 8.86
+  },
+  "gateFactor": 4.7,
+  "gates": {
+    "count": 26,
+    "default": 21,
+    "spacing": 0.8
+  },
+  "inrun": {
+    "gamma": 35.2,
+    "alpha": 11.6,
+    "r1": 84,
+    "t": 5.9,
+    "e2": 19
+  },
+  "landing": {
+    "s": 2.77,
+    "b0": 9.39,
+    "beta": 36,
+    "betaL": 32.5,
+    "pArc": 89,
+    "lArc": 98,
+    "r2": 109,
+    "outrunAngle": 0,
+    "outrunLength": 94
+  },
+  "real": {
+    "venue": "Villach",
+    "country": "AUT",
+    "certYear": 2024,
+    "source": "https://www.skisprungschanzen.com/photos/aut/villach/HS98_2024.pdf",
+    "record": {
+      "dist": 103.5,
+      "year": 2008
+    }
+  },
+  "theme": {
+    "id": "villach-tema",
+    "label": "Sončno pobočje nad mestom",
+    "sky": {
+      "sun": [
+        175,
+        16
+      ],
+      "zenith": "#2c62bc",
+      "horizon": "#e6ecf2",
+      "ground": "#b0bac6",
+      "sunColor": "#fff2dc",
+      "clouds": 0.3
+    },
+    "fog": {
+      "color": "#d6dfe8",
+      "density": 0.002
+    },
+    "sunIntensity": 2.6,
+    "hemi": [
+      "#d0def4",
+      "#68705e",
+      0.68
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.01,
+        1,
+        1
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "gore",
+    "trees": 1.2,
+    "crowd": 1,
+    "snowfall": 0.05,
+    "mountains": 1.6,
+    "boards": [
+      "MINI GAMES",
+      "Čez Karavanke",
+      "Herodle",
+      "Sonce"
+    ],
+    "town": 0.6
+  },
+  "desc": "Srednja skakalnica tik čez Karavanke. Strmo doskočišče (36° v K) in razgled na gore.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}

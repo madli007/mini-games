@@ -24,7 +24,7 @@ import { flagOf } from './jumpers.js';
 const $ = s => document.querySelector(s);
 const esc = ui.esc;
 const URLP = new URLSearchParams(location.search);
-const COUNTRY_FLAG = { SLO: 'si', AUT: 'at', GER: 'de', POL: 'pl', FIN: 'fi', SUI: 'ch', NOR: 'no', ITA: 'it', CZE: 'cz', JPN: 'jp' };
+const COUNTRY_FLAG = { SLO: 'si', AUT: 'at', GER: 'de', POL: 'pl', FIN: 'fi', SUI: 'ch', NOR: 'no', ITA: 'it', CZE: 'cz', JPN: 'jp', SWE: 'se', USA: 'us', CHN: 'cn' };
 
 let E = null;                 // motor skoka (game.js)
 const cache = new Map();      // season → { rows, at }

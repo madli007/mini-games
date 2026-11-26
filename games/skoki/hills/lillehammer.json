@@ -1,0 +1,103 @@
+{
+  "id": "lillehammer",
+  "name": "Lillehammer",
+  "size": "velika",
+  "group": "prave",
+  "k": 123,
+  "hs": 140,
+  "meterValue": 1.8,
+  "base": 60,
+  "windFactors": {
+    "head": 10.62,
+    "tail": 12.85
+  },
+  "gateFactor": 4,
+  "gates": {
+    "count": 32,
+    "default": 26,
+    "spacing": 0.8
+  },
+  "inrun": {
+    "gamma": 34,
+    "alpha": 11.5,
+    "r1": 107,
+    "t": 6.25,
+    "e2": 31.08
+  },
+  "landing": {
+    "s": 3.35,
+    "b0": 4.42,
+    "beta": 37.2,
+    "betaL": 31.5,
+    "pArc": 108,
+    "lArc": 140,
+    "r2": 105.5,
+    "outrunAngle": 0,
+    "outrunLength": 90
+  },
+  "real": {
+    "venue": "Lillehammer",
+    "country": "NOR",
+    "certYear": 2022,
+    "source": "https://www.skisprungschanzen.com/photos/nor/lillehammer_lysgaardsbakken/HS140_2022.pdf",
+    "record": {
+      "dist": 146,
+      "year": 2023
+    }
+  },
+  "theme": {
+    "id": "lillehammer-tema",
+    "label": "Prvi sneg nad jezerom, kratek dan",
+    "sky": {
+      "sun": [
+        195,
+        6
+      ],
+      "zenith": "#22407e",
+      "horizon": "#f2c49a",
+      "ground": "#7f8898",
+      "sunColor": "#ffc98a",
+      "clouds": 0.3
+    },
+    "fog": {
+      "color": "#c8b4a6",
+      "density": 0.0024
+    },
+    "sunIntensity": 2,
+    "hemi": [
+      "#b4c4e4",
+      "#55605a",
+      0.7
+    ],
+    "bloom": [
+      0.32,
+      0.52,
+      0.98
+    ],
+    "grade": {
+      "tint": [
+        1.03,
+        0.99,
+        0.98
+      ],
+      "sat": 1.1,
+      "vignette": 0.3
+    },
+    "env": "jezero",
+    "trees": 1.4,
+    "crowd": 1.1,
+    "snowfall": 0.2,
+    "mountains": 0.5,
+    "boards": [
+      "MINI GAMES",
+      "Odprtje sezone",
+      "Herodle",
+      "Prvi sneg"
+    ],
+    "town": 0.5
+  },
+  "desc": "Odprtje sezone nad mestom in jezerom. Položnejši zalet (34°), nizko novembrsko sonce, mraz.",
+  "physics": {
+    "liftScale": 0.98
+  }
+}
