@@ -19,7 +19,6 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [22-pinball-motor](22-pinball-motor.md) | Pinball motor (osnova za Božični pinball) | veliko |
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
-| [30-krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: generator naključnih prog | srednje |
 | [35-krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog (kratke/srednje/dolge, ★–★★★★★) in 7 turnirjev | veliko |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
@@ -58,12 +57,12 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 27 | [tarce](27-tarce.md) | Tarče (aim trainer) | — | ⬜ | | 01 ✅ |
 | 28 | [ustavi-uro](28-ustavi-uro.md) | Ustavi uro | — | ✅ | `43c338d` | 01 ✅ |
 | 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ✅ | `1b3a8ba` | 12 ✅ |
-| 30 | [krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: naključne proge (generator + nastavitve) | — | ⬜ | | 06 ✅ |
+| 30 | [krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: naključne proge (generator + nastavitve) | — | ✅ | `979824d` | 06 ✅ |
 | 31 | [skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: odriv in let (nastavljivo, slog DSJ), odriv kadarkoli | — | ⬜ | | 11 ✅, 12 ✅ |
 | 32 | [motorist](32-motorist.md) | Motorist: fizika (Planck.js), voznik z ragdollom, 2,5D, 10 prog, medalje, ghost | 1/3 | ⬜ | | 01 ✅ |
 | 33 | [motorist-urejevalnik](33-motorist-urejevalnik.md) | Motorist: urejevalnik, skupnostne proge, dnevna proga, sklopa 3–4 | 2/3 | ⬜ | | 32 |
 | 34 | [motorist-dirka](34-motorist-dirka.md) | Motorist: dirka do 10 igralcev v živo, sezona, predmeti v trgovini | 3/3 | ⬜ | | 32 (33 priporočeno) |
-| 35 | [krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog, turnirji (pokali), tedenski pokal, merjenje balansa | — | ⬜ | | 03 ✅ (30 neobvezno) |
+| 35 | [krogla-proge-turnirji](35-krogla-proge-turnirji.md) | Hrčkova krogla: 16 novih prog, turnirji (pokali), tedenski pokal, merjenje balansa | — | ⬜ | | 03 ✅ (30 ✅) |
 | 36 | [kresnik](36-kresnik.md) | Kresnik: motor platformerja, gibanje, svetlobna krogla, 1. svet (6 nivojev + šef), zemljevid, reže, medalje, ghost | 1/4 | ⬜ | | 01 ✅ |
 | 37 | [kresnik-svetova](37-kresnik-svetova.md) | Kresnik: Kraške jame in Planine, prijem in zamah, lebdenje, voda, veter, led, 2 šefa | 2/4 | ⬜ | | 36 |
 | 38 | [kresnik-finale](38-kresnik-finale.md) | Kresnik: Mlinska dolina, Barje, Morin grad in konec, šprint, speedrun in 100 %, trgovina | 3/4 | ⬜ | | 37 |

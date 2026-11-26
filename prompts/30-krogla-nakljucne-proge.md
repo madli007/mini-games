@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Hrčkova krogla — generator naključnih prog (preprosto + napredne nastavitve)
 
-> **Stanje:** ⬜ čaka — lahko takoj
+> **Stanje:** ✅ narejeno — commit `979824d` (26. 11. 2026); opcijska hitra naključna proga v meniju igre je narejena
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/30-krogla-nakljucne-proge.md in ga v celoti izvedi.«**

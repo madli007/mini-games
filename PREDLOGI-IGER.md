@@ -11,7 +11,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | Reakcija (demo) | ✅ | `games/reakcija/` |
 | Alu Pinball (kopija) | ✅ | `games/pinball/` |
 | 8. Potapljanje ladjic | ✅ | `games/ladjice/` |
-| 15. Hrčkova krogla (+ urejevalnik, proge skupnosti) | ✅ (📝 dirka, okolica) | `games/krogla/` |
+| 15. Hrčkova krogla (+ urejevalnik, proge skupnosti, naključne proge) | ✅ (📝 dirka, okolica) | `games/krogla/` |
 | Rušilec (party arena Krogle) | ✅ | `games/rusilec/` |
 | 19. Zaporedje | ✅ | `games/zaporedje/` |
 | Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj | `games/herodle/` |
@@ -146,7 +146,7 @@ Zahtevnost: ★ = lahko v enem promptu, ★★ = en prompt z multiplayerjem, ★
 ### Spretnostne igre s fiziko
 
 15. ✅ **Hrčkova krogla (Hamsterball varianta)** ★★★
-    - **Stanje:** ✅ narejeno → `games/krogla/` (prompti 03, 05, 06) in Rušilec `games/rusilec/` (07); čakajo 📝 `19-krogla-dirka`, `20-krogla-okras`, `30-krogla-nakljucne-proge`, `35-krogla-proge-turnirji`
+    - **Stanje:** ✅ narejeno → `games/krogla/` (prompti 03, 05, 06, 30 — generator naključnih prog) in Rušilec `games/rusilec/` (07); čakajo 📝 `19-krogla-dirka`, `20-krogla-okras`, `35-krogla-proge-turnirji`
     - **Kako deluje original** (Hamsterball, Raptisoft, 2004): hrčka v prozorni krogli s fiziko kotališ skozi
       progo do cilja. **Življenj ni.** Imaš skupno uro: na začetku vsake proge se ji prišteje nekaj časa,
       preostanek pa se prenese v naslednjo progo, zato se hitrost na lahkih progah obrestuje na težkih.
