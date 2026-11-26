@@ -395,7 +395,7 @@ async function replay(cal, ev, userId, round, ppl) {
   clearInterval(timer);
   await E.jump({
     hillId: ev.venue, gate: g.gate, refGate: X.refGate, wind: g.wind, mods: X.mods, theme: X.theme, teleOnly: X.teleOnly, judgeSeed: hashStr(`${userId}:${ev.season}:${ev.idx}:${round}`),
-    source: 'stream', stream: rcv, skin: skinFromEquipped(p?.equipped), label: `Replay · ${round}. serija`, whoHtml: p ? ui.who(p) : '???', holdMs: 2200,
+    source: 'stream', stream: rcv, skin: skinFromEquipped(p?.equipped), label: `Replay · ${round}. serija`, noRecord: true, whoHtml: p ? ui.who(p) : '???', holdMs: 2200,
   });
   open(ev.season, ev.idx);
 }

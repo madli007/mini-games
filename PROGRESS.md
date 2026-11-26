@@ -1253,3 +1253,5 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
   spletna soba (host + 2 bota, 2 tekmi, samodejen prehod na 2. tekmo, skupni rezultati), skrivanje polj, konzola brez napak.
 - Ni preverjeno: spletni pokal z več ljudmi v ločenih oknih (v testu je bil host v ozadnjem zavihku, kjer brskalnik
   upočasni animacijo — njegov skok je presegel 90 s in host ga je po pravilih označil DNF, seštevek je zato 0, kar je pravilno).
+
+- Popravek: boti in replayi ne sprožijo več proslave »REKORD SKAKALNICE!« in ne premaknejo zlate črte (oznaka `noRecord` v motorju skoka; prej le prikaz, v lestvico se boti niso nikoli zapisali — rekordi se shranjujejo le v načinu Rekord skakalnice).

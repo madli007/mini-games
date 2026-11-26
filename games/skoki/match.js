@@ -767,7 +767,7 @@ async function runWatch(A, p, speed) {
   const w = watch;
   const r = await E.jump({
     hillId: ST.hill, gate: A.gate, refGate: A.refGate, wind: A.wind, gateChange: A.gateChange, judgeSeed: A.judgeSeed, source: 'stream', stream: w.rcv, speed,
-    skin: skinOf(p.kind === 'bot' ? ST.bots[p.id] : playerOf(p.id)), label: `${roundLabel(ST.comp)} · gledaš`, whoHtml: whoHtml(p), recordLine: leadLine(A), recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 600,
+    skin: skinOf(p.kind === 'bot' ? ST.bots[p.id] : playerOf(p.id)), label: `${roundLabel(ST.comp)} · gledaš`, noRecord: p.kind === 'bot', whoHtml: whoHtml(p), recordLine: leadLine(A), recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 600,
   });
   if (watch !== w || r.status !== 'ok') return;
   // zamik replaya (meritev za PROGRESS.md): koliko je gledalec zaostajal za tokom
@@ -815,7 +815,7 @@ function replayOf(id) {
   const p = C.participant(comp, id);
   const rcv = filled('replay', m.changes, m.res.ticks);
   const skin = local ? skinOf(local.byId.get(id)) : skinOf(p.kind === 'bot' ? ST.bots[id] : playerOf(id));
-  E.jump({ hillId: local ? local.hill : ST.hill, gate: m.res.gate, refGate: m.refGate ?? m.res.gate, wind: m.wind || ST?.active?.wind || { mode: 'off', seed: 0 }, judgeSeed: 1, source: 'stream', stream: rcv, speed: 1.3, label: 'Replay', whoHtml: whoHtml(p), noSlowmo: true, holdMs: 400, skin });
+  E.jump({ hillId: local ? local.hill : ST.hill, gate: m.res.gate, refGate: m.refGate ?? m.res.gate, wind: m.wind || ST?.active?.wind || { mode: 'off', seed: 0 }, judgeSeed: 1, source: 'stream', stream: rcv, speed: 1.3, label: 'Replay', noRecord: true, whoHtml: whoHtml(p), noSlowmo: true, holdMs: 400, skin });
 }
 
 /* ---------------- serija tekem: Turneja 4 skakalnic ali Pokal (več tekem, izbrane skakalnice) */
@@ -1006,7 +1006,7 @@ async function runLocal(cfg, sel, hooks = null) {
       if (cfg.replay === 'skip') r = { status: 'ok', res: b.res, changes: b.changes };
       else {
         renderThird(L.comp, id, { def, gate, refGate, wind });
-        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, pb, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
+        r = await E.jump({ hillId: cfg.hill, gate, refGate, wind, gateChange, pb, judgeSeed, source: 'stream', stream: filled('b', b.changes, b.res.ticks), speed: cfg.replay === 'fast' ? 2 : 1, skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, noRecord: true, whoHtml: whoHtml(p), recordLine: lead, recordLabel: 'Za vodstvo', noSlowmo: true, holdMs: 500 });
         if (r.status === 'abort') return;
         r = { status: 'ok', res: b.res, changes: b.changes };   // uradno: izračun (enak replayu)
       }

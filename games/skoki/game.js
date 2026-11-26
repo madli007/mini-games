@@ -769,8 +769,8 @@ function onEvent(e) {
       audio.cheer(L.kind === 'fall' ? 0.3 : 0.4 + lvl);
       const pb = G.mode === 'record' && (localBest(H.id)?.dist || 0) < L.dist && L.kind !== 'fall' && L.kind !== 'touch' && (localBest(H.id) != null);
       comment(say(landingGroup({ type: L.kind, fallen: s.fallen, dist: L.dist, k: H.k, hs: H.hs, wind: L.windAvg, pb })));
-      // rekord skakalnice / svetovni rekord (veljaven le pristanek brez padca in dotika)
-      if (L.kind !== 'fall' && L.kind !== 'touch' && !H.physics?.noAir) {
+      // rekord skakalnice / svetovni rekord (veljaven le pristanek brez padca in dotika; boti in replayi ne postavljajo rekordov)
+      if (L.kind !== 'fall' && L.kind !== 'touch' && !H.physics?.noAir && !G.bot && !G.ext?.noRecord) {
         // naš rekord (lestvica) je glavni; prvi rekord skakalnice šteje od K naprej; pravi rekordi so dodatna omemba
         const wr = worldRecord(), hr = hillRecord(H), rwr = realWorldRecord(), rhr = realRec(H);
         const kind = wr && L.dist > wr.dist ? 'world' : (hr ? L.dist > hr.dist : L.dist >= H.k) ? 'hill' : null;
@@ -1519,7 +1519,7 @@ const engine = {
   async jump(o) {
     if (G.ext && !G.ext.done) engine.abort();
     // razvojno: ?bot=0.9 — namesto mene skače bot (tudi v pokalu, karieri in tekmi)
-    if (BOT_SKILL != null && o.source === 'me') o = { ...o, source: 'bot', bot: { skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 } };
+    if (BOT_SKILL != null && o.source === 'me') o = { ...o, source: 'bot', noRecord: true, bot: { skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 } };
     G.mode = 'ext'; G.record = null; G.fixed = null;
     await enterPlay(o.hillId, { skin: o.skin, theme: o.theme });
     return new Promise(resolve => { G.ext = { ...o, resolve, done: false }; G.paused = false; $('#overlay').classList.add('mg-hidden'); newJump(); });
