@@ -250,25 +250,24 @@ export function createJump({ hill, P, gate, wind, record = 0, mods = null }) {
     let type, teleQ = 0, timing = null, lateTele = 0;
     if (s.fallen) type = 'fall';
     else {
-      // brez klika: refleks tik pred tlemi → trd pristanek na obe nogi ('none')
-      // klik šele po refleksu: za telemark prepozno → trd pristanek (paramsVersion 5; prej padec — pozen klik je bil slabši od nobenega)
-      if (s.prep && s.prep.late) type = 'none';
-      else if (!s.prep || s.prep.type === 'reflex') type = 'none';
+      // paramsVersion 7: brez klika (le refleks tik pred tlemi) ali klik šele po refleksu (prepozno) = PADEC
+      if (!s.prep || s.prep.type === 'reflex') type = 'fall';
       else {
         timing = (s.tick - s.prep.tick) * STEP;
         if (s.prep.clicks >= 2) {
           teleQ = teleQuality(timing, L);
           type = 'tele';
         } else type = 'two';
-        // prepozen klik: telemarka ni več mogoče narediti → pristanek na obe nogi; le skrajno pozen (< lateTouch) = dotik z roko
-        if (timing < L.teleMin) { if (timing < (L.lateTouch ?? L.teleMin * 0.6)) lateTele = 1; else { type = 'two'; teleQ = 0; } }
+        // prepozen klik: telemarka ni več mogoče narediti → pristanek na obe nogi; skrajno pozen (< lateTouch) = padec
+        if (timing < L.teleMin) { if (timing < (L.lateTouch ?? L.teleMin * 0.6)) lateTele = 2; else { type = 'two'; teleQ = 0; } }
       }
       // letalnice (paramsVersion 6): za HS se doskočišče izravna, udarec hitro raste — večja toleranca, da je čist pristanek
       // mogoč do ~HS + 10 (rekordne daljave), dlje dotik, nato padec
       const fly = hill.def?.size === 'letalnica' ? (L.flyFactor ?? 1) : 1;
       const lim = (type === 'tele' ? L.hTele : type === 'two' ? L.hTwo : L.hNone) * fly;
       const ar = Math.abs(skiRel);
-      if (hEq > lim * L.touchMargin || ar > L.pitchTouch || lateTele === 2) type = 'fall';
+      if (type === 'fall') { /* brez priprave: padec ne glede na udarec */ }
+      else if (hEq > lim * L.touchMargin || ar > L.pitchTouch || lateTele === 2) type = 'fall';
       else if (hEq > lim || ar > L.pitchOk || lateTele === 1) type = 'touch';
     }
     const wind = s.windSamples.slice();

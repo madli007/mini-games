@@ -168,6 +168,19 @@ export function sport3Tests(test, { eq, ok }) {
     eq(st.rounds[1].order.length, 6, '5 zmagovalcev + 1 srečni poraženec');
     eq(new Set(st.rounds[1].order), new Set(['p10', 'p9', 'p8', 'p7', 'p6', 'p4']));
     eq(st.koResult.lucky, ['p4']);
+    // končna razvrstitev: izpadli v parih (p1, p2, p3, p5) so za vsemi, ki so napredovali — tudi p1 s 100 t pred p6 s 95 t
+    while (!st.finished) { const id = C.currentId(st); st = C.record(st, id, { score: 50 }); }
+    const fin = C.standings(st);
+    eq(fin.slice(0, 6).map(r => r.id).sort(), ['p10', 'p4', 'p6', 'p7', 'p8', 'p9'].sort(), 'najprej napredovali');
+    eq(fin.slice(6).map(r => r.id), ['p3', 'p2', 'p1', 'p5'], 'izpadli po točkah 1. serije');
+    eq(fin.map(r => r.rank), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    // s kvalifikacijami (trial): pari po razvrstitvi kvalifikacij, v kvalifikacijah najboljši nasev zadnji
+    let q = C.createCompetition({ seed: 'q', participants: parts.slice(0, 4), rounds: 2, ko: true, trial: true, order1: 'given' });
+    eq(q.rounds[0].order, ['p4', 'p3', 'p2', 'p1']);
+    const qs = { p1: 10, p2: 40, p3: 30, p4: 20 };
+    while (q.rounds.length === 1) { const id = C.currentId(q); q = C.record(q, id, { score: qs[id] }); }
+    eq(q.ko.pairs, [{ hi: 'p2', lo: 'p1' }, { hi: 'p3', lo: 'p4' }]);
+    eq(q.rounds[1].order, ['p4', 'p3', 'p1', 'p2']);
     // brez ko se nič ne spremeni (obstoječe tekme)
     const plain = C.createCompetition({ seed: 'ko', participants: parts, rounds: 2 });
     ok(!plain.ko && !plain.cfg.ko);

@@ -79,7 +79,10 @@ export function createCompetition(o) {
   // štartne številke po vrstnem redu 1. serije (pri KO po razvrstitvi oz. seedu)
   first.forEach((id, i) => { participants.find(p => p.id === id).bib = i + 1; });
   const st = { v: 1, seed, cfg, participants, rounds: [], round: 0, finished: false };
-  if (cfg.ko) { st.ko = koPairs(first); if (!cfg.trial) first = koOrder(st.ko); }
+  // KO s poskusno serijo = kvalifikacije (kot na turneji): pari nastanejo po razvrstitvi kvalifikacij, v kvalifikacijah
+  // najboljši nasev skoči zadnji. Brez poskusne: pari po nasevu (vrstnem redu udeležencev).
+  if (cfg.ko && cfg.trial) { st.ko = null; first = first.slice().reverse(); }
+  else if (cfg.ko) { st.ko = koPairs(first); first = koOrder(st.ko); }
   st.rounds.push({ kind: cfg.trial ? 'trial' : 'score', order: first, pos: 0, results: {} });
   return st;
 }
@@ -184,7 +187,11 @@ function advance(st) {
  */
 export function nextOrder(st) {
   const last = currentRound(st);
-  if (last.kind === 'trial') return st.cfg.ko && st.ko ? koOrder(st.ko) : last.order.slice();
+  if (last.kind === 'trial') {
+    if (!st.cfg.ko) return last.order.slice();
+    if (!st.ko) st.ko = koPairs(qualRanking(st, last));   // kvalifikacije → pari 1.–N., 2.–(N−1). …
+    return koOrder(st.ko);
+  }
   const ok = standings(st).filter(r => r.status === 'ok');
   // KO: po 1. točkovani seriji gredo naprej zmagovalci parov in srečni poraženci (obratno po razvrstitvi)
   if (st.cfg.ko && st.ko && st.rounds.filter(r => r.kind === 'score').length === 1) {
@@ -201,6 +208,22 @@ export function nextOrder(st) {
     cut = ok.filter(r => r.rank <= lim);   // izenačeni na meji gredo vsi
   }
   return cut.map(r => r.id).reverse();
+}
+
+/** Razvrstitev kvalifikacij (poskusne serije): po točkah, izenačeni po štartni številki; brez veljavnega skoka na konec. */
+export function qualRanking(st, R = st.rounds.find(r => r.kind === 'trial')) {
+  if (!R) return st.participants.map(p => p.id);
+  const bib = id => participant(st, id)?.bib ?? 0;
+  const val = id => (R.results[id]?.status === 'ok' ? R.results[id].score : -Infinity);
+  const sgn = st.cfg.higher ? -1 : 1;
+  return R.order.slice().sort((a, b) => { const x = val(a), y = val(b); if (x === y) return bib(a) - bib(b); if (x === -Infinity) return 1; if (y === -Infinity) return -1; return sgn * (x - y); });
+}
+
+/** KO: kdo je izpadel po 1. točkovani seriji (le, ko je 2. serija že v razvrstitvi). */
+function koOut(st, scored) {
+  if (!st.cfg.ko || !st.koResult || scored.length < 2) return null;
+  const inR2 = new Set(scored[1].order);
+  return new Set(st.participants.map(p => p.id).filter(id => !inR2.has(id)));
 }
 
 /* ------------------------------------------------------------ razvrstitev */
@@ -228,11 +251,15 @@ export function standings(st, { uptoRound = st.rounds.length - 1 } = {}) {
   });
   const sgn = st.cfg.higher ? -1 : 1;
   const ord = { ok: 0, pending: 1, dnf: 2, dsq: 3, dns: 4 };
-  rows.sort((a, b) => (ord[a.status] - ord[b.status]) || sgn * (a.total - b.total) || a.bib - b.bib);
+  // KO (turneja): kdor je izpadel v paru, je za vsemi, ki so napredovali v 2. serijo (31.–50. na turneji)
+  const out = koOut(st, scored);
+  for (const r of rows) if (out?.has(r.id) && r.status === 'ok') r.ko = 'out';
+  const tier = r => (r.ko === 'out' ? 1 : 0);
+  rows.sort((a, b) => (ord[a.status] - ord[b.status]) || tier(a) - tier(b) || sgn * (a.total - b.total) || a.bib - b.bib);
   let rank = 0, prev = null;
   rows.forEach((r, i) => {
     if (r.status !== 'ok') { r.rank = null; return; }
-    if (!prev || prev.total !== r.total) rank = i + 1;
+    if (!prev || prev.total !== r.total || tier(prev) !== tier(r)) rank = i + 1;
     r.rank = rank; prev = r;
   });
   return rows;

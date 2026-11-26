@@ -426,7 +426,7 @@ function renderRecords() {
       const list = HILLS.filter(h => (h.def.group || 'trening') === gr.id);
       return list.length ? `<tr class="grp"><td colspan="4">${esc(gr.name)}</td></tr>${list.map(row).join('')}` : '';
     }).join('')}</tbody></table>
-    <p class="sk-note">Klikni skakalnico za <b>top 10 skokov</b>. Rekord skakalnice in svetovni rekord sta naša — najdaljši skok brez padca v Rekordu skakalnice; »Moj« velja z vseh tvojih naprav, pravi rekordi so za primerjavo. Preskoči rekord in tribune bodo ponorele.</p>`;
+    <p class="sk-note">Klikni skakalnico za <b>top 10 skokov</b>. Rekord skakalnice in svetovni rekord sta naša — najdaljši skok brez padca v Rekordu skakalnice ali tvoj uraden skok na tekmi (vsak skok posebej); »Moj« velja z vseh tvojih naprav, pravi rekordi so za primerjavo. Preskoči rekord in tribune bodo ponorele.</p>`;
   // klik na vrstico: odpre/zapre top 10 skokov te skakalnice
   el.querySelectorAll('tr[data-hill]').forEach(tr => tr.onclick = () => {
     const id = tr.dataset.hill, was = G.recOpen === id;
@@ -470,7 +470,7 @@ function helpHtml() {
     <dt>1. Zalet</dt><dd>${IS_TOUCH ? 'Tapni' : 'Klikni'} za štart — skakalec se sam spusti v nizko držo.</dd>
     <dt>2. Odriv</dt><dd><b>${IS_TOUCH ? 'Dva prsta hkrati' : 'Levi + desni gumb hkrati'}</b> točno na koncu mize. ✨ = popoln odriv (±35 ms), dober do ±90 ms.</dd>
     <dt>3. Let</dt><dd>Skakalec se sam nagne v letalni položaj; ${IS_TOUCH ? 'z vlečenjem prsta gor/dol' : 'z miško gor/dol'} ga popravljaš. Bela črtica na merilniku desno naj bo v zelenem oknu — okno se med letom premika. Preveč naprej = padec na nos, preveč nazaj = zavora.</dd>
-    <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'En tap' : 'En gumb'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'dva prsta' : 'oba gumba'} = pristanek na obe nogi (varneje). Prepozno = padec.</dd>
+    <dt>4. Pristanek</dt><dd><b>${IS_TOUCH ? 'Dva prsta' : 'Oba gumba'}</b> tik pred tlemi = telemark (več točk), ${IS_TOUCH ? 'en tap' : 'en gumb'} = pristanek na obe nogi (varneje). Brez klika ali prepozno = padec.</dd>
     <dt>Tipke</dt><dd>Skok se upravlja samo z miško. <span class="mg-kbd">R</span> nov skok · <span class="mg-kbd">Enter</span> replay · <span class="mg-kbd">Esc</span>/<span class="mg-kbd">P</span> pavza</dd>
     <dt>Točke</dt><dd>60 točk na K-točki ± vrednost metra, slog 5 sodnikov (najvišja in najnižja se ne štejeta), kompenzacija vetra in zaletnega mesta.</dd></dl>`;
 }
@@ -665,6 +665,7 @@ function newJump() {
   $('#barSpeed').textContent = '—';
   $('#big').classList.add('mg-hidden');
   $('#comment').classList.add('mg-hidden');
+  hideFlash();
   $('#lean').classList.add('mg-hidden');
   $('#replayBar').classList.add('mg-hidden');
   if (G.record) $('#hudMode').textContent = `Rekord skakalnice · skok ${G.record.tries.length + 1}/3`;
@@ -777,8 +778,8 @@ function onEvent(e) {
         const real = rwr && L.dist > rwr.dist ? { world: true, dist: rwr.dist } : rhr && L.dist > rhr.dist ? { world: false, dist: rhr.dist } : null;
         if (kind) {
           G.flags.recBreak = { kind, prev: kind === 'world' ? wr : hr, real };
-          // v tabelo gre le »Rekord skakalnice« (lestvica); trening in tekma samo proslavita
-          if (G.mode === 'record') recs.hills[H.id] = { dist: L.dist, who: hub.profile, total: 0 };
+          // v tabelo gre »Rekord skakalnice« in uraden skok v tekmi (lestvica); trening samo proslavi
+          if (G.mode === 'record' || (G.ext?.official && !G.ext.mods && !G.ext.teleOnly)) recs.hills[H.id] = { dist: L.dist, who: hub.profile, total: 0 };
         }
       }
       if (!reducedMotion() && !G.stream && !G.ext?.noSlowmo && L.dist >= H.k && L.kind !== 'fall' && G.hist.length > TPS) {
@@ -802,7 +803,13 @@ function hint(text, go = false) {
   el.classList.toggle('go', go);
   el.textContent = text || '';
 }
-function flash(text) { const el = $('#flash'); el.classList.remove('mg-hidden'); el.textContent = text; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+let flashTimer = 0;
+function flash(text) {
+  const el = $('#flash'); el.classList.remove('mg-hidden'); el.textContent = text; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  // po animaciji skrij — sicer se animacija ponovi ob vsakem ponovnem prikazu pogleda (naslednji skakalec na štartu)
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.add('mg-hidden'), 1500);
+}
+function hideFlash() { clearTimeout(flashTimer); $('#flash').classList.add('mg-hidden'); }
 let commentTimer = 0;
 function comment(text) {
   if (!text) return;
@@ -984,6 +991,8 @@ async function finishJump() {
     const res = resultOf(s, Hd, P, { gate: G.gate, refGate: X.refGate, judgeSeed: X.judgeSeed, teleOnly: !!X.teleOnly });
     G.lastJump = { res, changes: G.stream ? G.stream.full() : G.rec.changes, wind: G.wind, gate: G.gate, hill: Hd.id, hist: G.hist, s: structuredClone(s) };
     if (X.mine) myJumpProgress(Hd, s, L, res, res.judges);
+    // uraden skok v tekmi (moj, brez posebnih pogojev): velja za lestvico »Rekord skakalnice«
+    if (X.official && !X.mods && !X.teleOnly) submitOfficial(Hd, res);
     if (!G.landShown) showBig();
     await sleep(X.holdMs ?? 900);
     extFinish({ res });
@@ -1015,6 +1024,9 @@ async function finishJump() {
   if (G.mode === 'daily') await dailyAfterJump(res, ghostData);
   else if (G.mode === 'record') {
     G.record.tries.push({ ...res, ghost: ghostData });
+    // vsak veljaven skok seje gre na lestvico (top 10 posameznih skokov), ne le najboljši od treh
+    if (G.record.prevBest === undefined) G.record.prevBest = await hub.getMyBest({ seed: BOARD_SEED(Hd.id) }).catch(() => null) ?? null;
+    if (!res.fall) submitOfficial(Hd, res);
     if (!res.fall && better(res, G.record.best)) { G.record.best = { ...res, ghost: ghostData }; G.record.bestIdx = G.record.tries.length - 1; }
     if (G.record.tries.length >= 3) await finishRecord();
   } else if (Date.now() - G.lastReport > 60000) {
@@ -1027,10 +1039,19 @@ async function finishJump() {
   if (G.bot && G.state === 'result') { await sleep(2500); if (G.state === 'result' && G.lastJump.res === res) newJump(); }
 }
 
+/** Uraden skok (Rekord skakalnice ali moj skok v tekmi) na lestvico skakalnice — vsak veljaven skok posebej. */
+function submitOfficial(Hd, res) {
+  if (res.fall) return;
+  const enc = encodeBoard(res.total, res.dist);
+  hub.submitScore(enc, { seed: BOARD_SEED(Hd.id), meta: { dist: res.dist, wind: res.wind, gate: res.gate, style: res.style, total: res.total } })
+    .then(() => board?.refresh?.()).catch(e => console.warn('submitScore:', e?.message));
+  const cur = recs.mine[Hd.id];
+  if (!cur || better(res, cur)) recs.mine[Hd.id] = { dist: res.dist, total: res.total };
+}
+
 async function finishRecord() {
   const Hd = hillOf(G.hillId).def;
   const best = G.record.best;
-  const seed = BOARD_SEED(Hd.id);
   if (!best) {   // vsi trije skoki s padcem: ni veljavnega rekorda
     hub.reportGame({ won: false, players: 1, score: 0, daily: false });
     G.lastReport = Date.now();
@@ -1038,9 +1059,8 @@ async function finishRecord() {
     G.record.done = { xp: 15, none: true };
     return;
   }
-  const prevBest = await hub.getMyBest({ seed });
+  const prevBest = G.record.prevBest ?? null;
   const enc = encodeBoard(best.total, best.dist);
-  await hub.submitScore(enc, { seed, meta: { dist: best.dist, wind: best.wind, gate: best.gate, style: best.style, total: best.total } });
   await hub.saveGhost({ level: Hd.id, timeMs: enc, data: best.ghost, order: 'desc' });
   hub.reportGame({ won: false, players: 1, score: Math.round(best.total), daily: false });
   G.lastReport = Date.now();

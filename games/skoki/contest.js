@@ -21,18 +21,21 @@ export const FORMATS = {
   trial2: { name: 'Poskusna + dve seriji', rounds: 2, trial: true },
   // Turneja 4 skakalnic: štiri tekme zapored (Oberstdorf → Garmisch → Innsbruck → Bischofshofen), KO pari v 1. seriji,
   // skupna razvrstitev = vsota točk vseh štirih (sport/ko.js). Skakalnica v nastavitvah se ne upošteva.
-  tour: { name: 'Turneja 4 skakalnic (4 tekme, KO pari)', rounds: 2, trial: false, tour: true },
+  // Pri vsaj 4 skakalcih ima vsaka tekma kvalifikacije (poskusna serija) → KO pari 1.–N. → 2. serija: zmagovalci parov in srečni poraženci.
+  tour: { name: 'Turneja 4 skakalnic (4 tekme, kvalifikacije, KO pari)', rounds: 2, trial: false, tour: true },
   // Pokal: več tekem zapored na izbranih skakalnicah (dve seriji vsaka), seštevek na koncu — točke pokala 100-80-60 … ali
-  // točke skokov (s.scoring). Brez čakanja: naslednja tekma se začne takoj (lokalno in v sobi).
-  series: { name: 'Pokal: več tekem (izbrane skakalnice, seštevek)', rounds: 2, trial: false, series: true },
+  // točke skokov (s.scoring). Vsaka tekma ima format s.perComp (ena serija / dve / poskusna + dve).
+  series: { name: 'Več skakalnic (pokal, seštevek)', rounds: 2, trial: false, series: true },
 };
 export const WIND_MODES = { same: 'Enak za vse', var: 'Spremenljiv (s kompenzacijo)', off: 'Brez vetra' };
 export const START_SEC = 10;     // po zeleni luči za štart
 export const JUMPER_SEC = 90;    // skupni čas na skakalca
 
 export const SERIES_MAX = 10;     // največ tekem v pokalu (več tekem)
+/** Format posamezne tekme v pokalu (več skakalnic). */
+export const PER_COMP = { one: 'Ena serija', two: 'Dve seriji', trial2: 'Poskusna + dve seriji' };
 export const SCORINGS = { cup: 'Točke pokala (100-80-60 …)', points: 'Točke skokov (vsota)' };
-export const DEFAULT_CONTEST = { hill: 'bistra', format: 'two', cut: 0, wind: 'same', jury: 'auto', gate: null, relaxed: false, bots: 0, botLevel: 'meseno', botSource: 'builtin', teams: 0 };
+export const DEFAULT_CONTEST = { hill: 'bistra', format: 'two', cut: 0, wind: 'same', jury: 'auto', gate: null, relaxed: false, bots: 0, botLevel: 'meseno', botSource: 'builtin', teams: 0, perComp: 'two' };
 
 /** Normaliziraj nastavitve iz lobbyja (tuj vnos). */
 export function contestSettings(o = {}, hillIds = []) {
@@ -51,6 +54,7 @@ export function contestSettings(o = {}, hillIds = []) {
   // pokal (več tekem): seznam skakalnic po vrsti (2–10, ista lahko večkrat) in način seštevka
   s.hills = Array.isArray(o.hills) ? o.hills.filter(id => typeof id === 'string' && hillIds.includes(id)).slice(0, SERIES_MAX) : [];
   s.scoring = o.scoring === 'points' ? 'points' : 'cup';
+  s.perComp = PER_COMP[o.perComp] ? o.perComp : 'two';
   return s;
 }
 

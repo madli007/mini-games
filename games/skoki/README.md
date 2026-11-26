@@ -65,7 +65,7 @@ spremeni skoke, ga povečaj (stari ghosti se potem ne predvajajo).
   preveč nazaj = velik upor (`α > backCrash` = padec nazaj).
 - **Pristanek** (`landing`): pritisk pred tlemi začne pripravo (manj vzgona, poravnava smuči s pobočjem s `prepRate`).
   Spust pred stikom = telemark (kakovost po času med pritiskom in stikom, ideal `teleIdeal`, okno `teleMin`–`teleMax`),
-  držanje čez stik = dve nogi. Brez pritiska skakalec tik pred tlemi refleksno pristane trdo (`none`); klik prepozno = padec.
+  držanje čez stik = dve nogi. Brez pritiska ali s klikom šele po refleksu tik pred tlemi = padec (paramsVersion 7).
   Padec/dotik iz ekvivalentne višine padca `hEq = vₙ²/2g` (meje `hTele`, `hTwo`, `hNone`, ×`touchMargin`) in kota smuči
   glede na pobočje (`pitchOk`, `pitchTouch`). Za HS se doskočišče izravna, zato `hEq` hitro raste.
 - **Daljava** = lok po profilu doskočišča od točke pod robom mize do stika, zaokroženo navzdol na 0,5 m.
@@ -477,7 +477,7 @@ Meni ima dva velika gumba **🌍 Svetovni pokal** in **🎯 Kariera**; nad njima
 - Samo **prave skakalnice** (devet velikih, srednja Planica); **finale vedno na letalnici** (~75 % Planica), ena letalnica sredi sezone.
   Pogoji postaje: brez, sneženje, noč pod reflektorji, sunkovit veter; veter −1,5 … +1,5 m/s; zalet postavi žirija po vetru (isti za vse).
 - **Turneja 4 skakalnic** v decembrski sezoni: štiri postaje pred finalom (Oberstdorf → Garmisch → Innsbruck → Bischofshofen), ločena
-  skupna razvrstitev = vsota točk skokov, kdor zamudi postajo, izpade. KO pari so v pokalu izklopljeni (< 50 skakalcev), so pa v formatu
+  skupna razvrstitev = vsota točk skokov, kdor zamudi postajo, izpade. KO pari so v pokalu izklopljeni (< 50 skakalcev), so pa v formatu (s kvalifikacijami pri ≥ 4 skakalcih)
   **»Turneja 4 skakalnic«** Lokalne in spletne Tekme (pari 1.–N., srečnih poražencev round(N/10), izenačenje v paru: oba naprej).
 - **Točke pokala** 100-80-60-50-45-40-36-32-29-26-24-22-20-18-16-15-14 … 1 (30. mesto); izenačeni enake točke; skupno = vsota,
   izenačenje: več zmag, nato več drugih mest. **Rumena majica 🟡** (vodilni) se vidi tudi v tekmah in treningu.

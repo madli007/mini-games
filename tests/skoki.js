@@ -183,12 +183,12 @@ export function skokiTests(test, { eq, ok }) {
     const run = o => PH.simulate({ hill, P: ctx.skokiParams, gate: def.gates.default, wind: { mode: 'off' }, input: scripted(o) }).s;
     const good = s => s.gamma / D.DEG + BOT.BOT_ALPHA;
     const none = run({ err: 0.01, pitch: good, lead: -1 });
-    ok(['none', 'fall', 'touch'].includes(none.landing.type), 'brez priprave na pristanek: ' + none.landing.type);
+    eq(none.landing.type, 'fall', 'brez klika za pristanek: padec');
     const late = run({ err: 0.01, pitch: good, lead: 0.11 });
-    // paramsVersion 5: pozen klik ni več slabši od nobenega — telemarka ni, pristanek na obe nogi; klik po refleksu = trd pristanek
+    // paramsVersion 7: pozen klik (pred refleksom) — telemarka ni, pristanek na obe nogi; klik po refleksu = padec
     eq(late.landing.type, 'two', 'prepozen klik: dve nogi');
     const later = run({ err: 0.01, pitch: good, lead: 0.04 });
-    eq(later.landing.type, 'none', 'klik po refleksu: trd pristanek');
+    eq(later.landing.type, 'fall', 'klik po refleksu: padec');
     const nose = run({ err: 0.01, pitch: s => s.gamma / D.DEG - 15 });
     eq(nose.fallen, 'nose', 'prevelik nagib naprej');
     eq(nose.landing.type, 'fall');

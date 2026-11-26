@@ -328,7 +328,7 @@ async function official(cal, ev, round) {
   let started = false;
   const r = await E.jump({
     hillId: ev.venue, gate: X.gate, refGate: X.refGate, wind: X.wind, mods: X.mods, theme: X.theme, teleOnly: X.teleOnly, judgeSeed,
-    source: 'me', mine: true, skin: E.mySkin(), label: `${evName(ev, X.def)} · ${round}. serija`, whoHtml: E.myWho(), holdMs: 1500,
+    source: 'me', mine: true, official: true, skin: E.mySkin(), label: `${evName(ev, X.def)} · ${round}. serija`, whoHtml: E.myWho(), holdMs: 1500,
     onStart: () => { if (!started) { started = true; S.save(usedKey(ev.season, ev.idx, round), true); } },
   });
   if (r.status !== 'ok') { if (started) ui.toast('Skok je bil prekinjen — poskus je porabljen.', { icon: '⚠️' }); return open(ev.season, ev.idx); }
