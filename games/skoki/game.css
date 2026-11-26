@@ -209,11 +209,16 @@ body.sk-dbg .sk-play { right: min(420px, 100vw); }
   background: var(--sk-glass); border: 1px solid var(--sk-line); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 14px; }
 .sk-mside__head { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--sk-line); position: sticky; top: 0; background: rgba(10, 18, 42, .85); }
 .sk-mside__list { list-style: none; margin: 0; padding: 4px 0; }
-.sk-mside__list li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) 2.6em 4.2em; gap: 6px; align-items: center; padding: 4px 10px; cursor: pointer; }
+.sk-mside__list li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) 2.6em auto 4.2em; gap: 6px; align-items: center; padding: 4px 10px; cursor: pointer; }
 .sk-mside__list li.me { background: rgba(79, 195, 247, .16); }
 .sk-mside__list li.act { box-shadow: inset 3px 0 0 var(--mg-yellow); background: rgba(255, 210, 63, .1); }
 .sk-mside__list .rk { color: var(--mg-dim); text-align: right; }
-.sk-mside__list .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sk-mside__list .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+/* dolga imena: krajša se ime (…), oznaka »bot« ostane cela */
+.sk-mside__list .nm .sk-whoflag { display: flex; min-width: 0; max-width: 100%; }
+.sk-mside__list .nm .sk-whoflag b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-mside__list .nm .mg-badge { flex-shrink: 0; font-size: .72em; padding: 1px 5px; }
+.sk-mside__list .ds { text-align: right; font-size: .82em; opacity: .75; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sk-mside__list .pt { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sk-mside__list .ar.up { color: var(--mg-green); }
 .sk-mside__list .ar.dn { color: var(--mg-red); }
@@ -336,7 +341,7 @@ body.sk-match #btnPause { display: none; }
 @media (max-width: 640px) { .sk-records .col-real { display: none; } .sk-records { font-size: 13px; } }
 
 /* =================================================================== veter v kotu (animiran vetrokaz) */
-.sk-windbox { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(62px, calc(env(safe-area-inset-top) + 56px)); width: 138px; pointer-events: none;
+.sk-windbox { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(62px, calc(env(safe-area-inset-top) + 56px)); width: auto; min-width: 138px; pointer-events: none;
   padding: 6px 8px 7px; border-radius: 14px; background: var(--sk-glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--sk-line);
   --wdur: 0s; --wsock: 75deg; --wa: .25; --wc: #cfe3ff; }
 .sk-windbox.head { --wc: #39ff88; border-color: rgba(57, 255, 136, .45); }
@@ -360,12 +365,12 @@ body.sk-match #btnPause { display: none; }
 .sk-windbox__sock em:nth-child(2) { background: #fff; width: 12px; height: 88%; margin-top: 2%; }
 .sk-windbox__sock em:nth-child(3) { width: 11px; height: 76%; margin-top: 4%; }
 @keyframes sk-flutter { from { transform: rotate(-3deg) scaleX(.97); } to { transform: rotate(3deg) scaleX(1.02); } }
-.sk-windbox__val { display: flex; align-items: baseline; gap: 4px; }
+.sk-windbox__val { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
 .sk-windbox__val b { font-family: var(--mg-font-title); font-size: 22px; color: var(--wc); }
 .sk-windbox__val small { color: var(--mg-dim); font-size: 12px; }
 .sk-windbox__arrow { display: inline-block; color: var(--wc); font-size: 18px; transition: transform .3s; }
 .sk-windbox.head .sk-windbox__arrow { transform: rotate(180deg); }
-@media (max-width: 640px) { .sk-windbox { width: 112px; top: max(56px, calc(env(safe-area-inset-top) + 50px)); padding: 4px 6px 5px; } .sk-windbox__sky { height: 36px; } .sk-windbox__val b { font-size: 18px; } }
+@media (max-width: 640px) { .sk-windbox { min-width: 112px; top: max(56px, calc(env(safe-area-inset-top) + 50px)); padding: 4px 6px 5px; } .sk-windbox__sky { height: 36px; } .sk-windbox__val b { font-size: 18px; } }
 @media (prefers-reduced-motion: reduce) { .sk-windbox__sky > i, .sk-windbox__sock { animation: none; } }
 .sk-records tr.open td { background: rgba(255, 194, 26, .08); }
 .sk-records tr.sk-top10row > td { padding: 0 0 10px; border-bottom: 1px solid var(--mg-line); }

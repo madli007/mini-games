@@ -143,8 +143,11 @@ function renderSide(st, changes = {}, activeId = null) {
     <ol class="sk-mside__list">${rows.map(r => {
       const p = C.participant(comp, r.id);
       const ch = changes[r.id] || 0;
+      // daljave: v poskusni seriji ta skok, sicer vse točkovane serije (npr. »98,0 / 101,5 m«)
+      const dl = (R.kind === 'trial' ? [R] : comp.rounds.filter(x => x.kind === 'score')).map(x => x.results[r.id]).filter(x => x?.status === 'ok' && x.data?.dist != null).map(x => fmt1(x.data.dist));
+      const ds = dl.length ? dl.join(' / ') + ' m' : '';
       const st2 = r.status === 'ok' ? fmt1(r.total) : r.status === 'pending' ? '—' : r.status.toUpperCase() + (r.status === 'dns' && p.meta?.left ? ' (odšel)' : '');
-      return `<li class="${r.id === hub.userId ? 'me' : ''} ${r.id === activeId ? 'act' : ''}" data-rid="${esc(r.id)}"><span class="rk">${r.rank ? r.rank + '.' : ''}</span><span class="nm">${whoHtml(p)}</span><span class="ar ${ch > 0 ? 'up' : ch < 0 ? 'dn' : ''}">${ch > 0 ? '↑' + ch : ch < 0 ? '↓' + -ch : ''}</span><span class="pt">${st2}</span></li>`;
+      return `<li class="${r.id === hub.userId ? 'me' : ''} ${r.id === activeId ? 'act' : ''}" data-rid="${esc(r.id)}"><span class="rk">${r.rank ? r.rank + '.' : ''}</span><span class="nm">${whoHtml(p)}</span><span class="ar ${ch > 0 ? 'up' : ch < 0 ? 'dn' : ''}">${ch > 0 ? '↑' + ch : ch < 0 ? '↓' + -ch : ''}</span><span class="ds">${ds}</span><span class="pt">${st2}</span></li>`;
     }).join('')}</ol>`;
   el.querySelectorAll('[data-rid]').forEach(li => li.onclick = () => replayOf(li.dataset.rid));
 }
