@@ -20,6 +20,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
 | [30-krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: generator naključnih prog | srednje |
+| [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 
 ## Vsi prompti
 
@@ -55,9 +56,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 28 | [ustavi-uro](28-ustavi-uro.md) | Ustavi uro | — | ✅ | `43c338d` | 01 ✅ |
 | 29 | [skoki-prave-skakalnice](29-skoki-prave-skakalnice.md) | Smučarski skoki: prave skakalnice | 2b | ✅ | `1b3a8ba` | 12 ✅ |
 | 30 | [krogla-nakljucne-proge](30-krogla-nakljucne-proge.md) | Hrčkova krogla: naključne proge (generator + nastavitve) | — | ⬜ | | 06 ✅ |
+| 31 | [skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: odriv in let (nastavljivo, slog DSJ), odriv kadarkoli | — | ⬜ | | 11 ✅, 12 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 31.**
+**Naslednja prosta številka: 32.**
 
 ## Pravila (da se ne izgubimo)
 
