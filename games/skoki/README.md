@@ -288,8 +288,8 @@ doskočišče pa ostane strmo do K (Ruka βK 36,9° pri βP 38°, Villach βK 36
 tako, da enakomerni padec max(βP, βK) → βL da v K naklon iz certifikata (Ruka pArc 114,7 m namesto P 90 m, Villach 89 m namesto
 82 m). Brez tega je K v Ruki ležal 1,4 m prenizko. Certifikat Zhangjiakouja (2021) je bil veljaven do 30. 4. 2026; novejšega ni
 objavljenega. Lillehammer: iztek »90/100 m« → 90 m. Kubična parabola (Hinzenbach, Ljubno) → r1 = 0,14·v0².
-Ob ponovnem zagonu orodja brez `--only=<id>` se `gateFactor` starih 14 skakalnic premakne za 0,1–0,4 (fizika je od takrat
-uglašena, prompt 31), zato so stari JSON-i nespremenjeni; nove skakalnice gradi `--only=<id>`.
+`gateFactor` vseh 28 pravih skakalnic je izračunan z isto (sedanjo) fiziko: 26. 11. 2026 je bil pri 12 starejših znova
+izračunan (premik 0,1–0,4 točke na mesto, npr. Vikersund 8,8 → 8,4), profili in privzeta mesta so ostali enaki.
 
 JSON-e ustvari `node tools/skoki-real-hills.mjs` (certifikati so v orodju prepisani; `--check` le izpiše prileganje,
 `--search` znova poišče privzeto mesto in parametre fizike). V meniju ima kartica zastavo, K/HS, rekord skakalnice, »po profilu

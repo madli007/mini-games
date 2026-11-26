@@ -13,7 +13,6 @@
 //   landing.pArc   = P, landing.lArc = L (= HS), r2 = r2 (klotoida → najmanjši radij), outrunLength = a
 //   landing.b0     = IZPELJANO: začetni naklon grbine, prilagojen tako, da K-točka leži na višini h pod robom (certifikat h/n)
 //   gates.default, gateFactor = IZBRANO z botom (spretnost 0,7 pristane okoli K), metri na mesto × vrednost metra
-//   POZOR: nove skakalnice gradi z --only=<id>; polni zagon bi premaknil gateFactor starih (fizika je bila kasneje uglašena)
 import { readFile, writeFile } from 'node:fs/promises';
 import { buildHill, validateHill, meterValueFor, baseFor, windFactorsFor } from '../games/skoki/hill.js';
 import { balanceRow, meetsTarget } from '../games/skoki/balance.js';

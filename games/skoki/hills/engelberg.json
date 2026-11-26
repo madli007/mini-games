@@ -11,7 +11,7 @@
     "head": 10.86,
     "tail": 13.14
   },
-  "gateFactor": 5.5,
+  "gateFactor": 5.4,
   "gates": {
     "count": 32,
     "default": 16,
