@@ -37,6 +37,9 @@ Nov modul `games/krogla/render/props.js` (kliče ga `buildDecor` ali `Renderer.l
 | `sky` | oblački na robu, peresa | baloni, zmaji, oddaljeni otoki z gradom |
 | `inferno` | žareči kamni | lava, bazaltni stebri |
 
+- **Vse lokacije iz `LOOKS`:** tabela zgoraj pokriva 10 obstoječih. Prompt 35 (nove uradne proge) lahko doda nove
+  lokacije (npr. rudnik, laboratorij). Preveri `render/looks.js` in vsaki lokaciji, ki je v tabeli ni, dodaj svoj nabor
+  okrasa v istem slogu. Neznana ali prihodnja lokacija dobi splošen nevtralen okras (kamni, trava/plošče), ne napake.
 - Postavljanje: deterministično iz id-ja proge (isti seed kot zdaj v `decor.js`), na ploščicah **zunaj** proge ali na
   robu (rob ploščice, ki meji na praznino), nikoli na poti `route` ali na ovirah. Okras na tleh proge le zelo nizek
   (≤ 0,15) in ne na sredini ploščice. Gostota po kakovosti (`q.decor`: Ultra 1 · Visoka 0,9 · Srednja 0,6 · Nizka 0,35).
@@ -59,7 +62,29 @@ Nov modul `games/krogla/render/props.js` (kliče ga `buildDecor` ali `Renderer.l
 - Nastavitev v meniju Krogle (Nastavitve): »Okolica proge: polna / zmanjšana / izklopljena« (shranjeno v `localStorage`
   prek `shared/storage.js`).
 
-### 5. Ostale igre, ki uporabljajo izris
+### 5. Lastne in naključne proge (po promptu 30)
+Okras mora delovati na **vsaki** veljavni progi, ne le na uradnih: proge iz urejevalnika, »Proge skupnosti« in
+proge generatorja (`editor/generate.js`, »🎲 Naključna proga« v urejevalniku, »🎲 Hitra naključna proga« v meniju igre).
+Razlike, na katere mora biti okras pripravljen:
+- **Velikost:** naključne proge imajo do 120 × 160 celic in 600+ ploščic (uradne ~20 × 55). Gostoto okrasa omeji
+  z zgornjo mejo števila instanc na progo (ne le na ploščico), da Nizka kakovost na telefonu ne pade pri dolgi
+  »Nemogoči« progi. Tudi nosilce omeji (npr. le pod vsako n-to robno ploščico) in jih združi v isti `InstancedMesh`.
+- **Prazen prostor ni vedno prazen:** generator postavlja objekte nad praznino ob poti — premične plošče, ki vozijo
+  vstran čez prepad (cel pravokotnik poti plošče), vrtiljake nad prepadom, sesalce in magnete 2–3 celice ob ozkem
+  mostu, ventilatorje tik ob robu (njihov curek čez pot), žage in ose na poteh, skoke čez prepad (skok z rampe leti
+  ~5 celic, vzmeti 4). Okras in nosilci **ne smejo** stati na teh površinah ali v loku skoka: zasedenost računaj iz
+  vseh objektov proge (`movers[].path` + `size`, `spinners[].r`, `enemies[]`, `fans[]`, `springs`, `bumpers`), ne le iz `route`.
+- **Zidovi `#`** so pri naključnih progah pogosti (nastavitev »Zidovi ob strani«), pa tudi žepi z zvezdicami (slepe
+  ulice 1 celico široko). Okras ob robu naj upošteva, da je rob lahko zid.
+- **Lokacija:** generator vedno zapiše `look` (`THEME_LOOK` v `generate.js`). Uradne proge 13+ iz prompta 35 bodo
+  imele `look` tudi izrecno. Okras naj se vedno izbere prek `lookFor(L)`, ne po številki id-ja.
+- **Seme okrasa:** id naključne proge je `50-nakljucna-<seme>`, lastne proge imajo pogosto enak id (npr. `20-moja-proga`).
+  Za seme okrasa zato uporabi `levelHash(L)` (`editor/model.js`) ali id + velikost, da dve različni lastni progi ne dobita
+  istega okrasa.
+- Urejevalnik: 3D predogled (`preview3d.js`) se osveži ob vsaki spremembi proge, zato mora biti gradnja okrasa hitra
+  (< ~30 ms za največjo progo) ali pa se mora ob urejanju posodabljati z zamikom.
+
+### 6. Ostale igre, ki uporabljajo izris
 - Rušilec (arene so manjše — okras okoli plošče, publika), Dirka frnikol (dolge proge — okras ob robu, a ne ovira
   pogleda na kup frnikol), urejevalnik (3D predogled lahko okras skrije s stikalom). Vse mora ostati brez napak.
 
@@ -87,8 +112,10 @@ kljukicami, dnevnik, meritve, »Ni bilo preverjeno«).
 ### Obvezna preverjanja (pred commitom)
 1. Strežnik prek `.claude/launch.json` (`mini-games`, port 8124); vse preizkusi v brskalniku (vidno okno — FPS meritve
    v skritem zavihku niso zanesljive).
-2. **Konzola brez napak** v Krogli (vseh 12 prog, `?lvl=N`, tudi zrcaljeno), v urejevalniku, v Rušilcu, v Dirki
-   frnikol in na dashboardu.
+2. **Konzola brez napak** v Krogli (**vse** uradne proge iz `levels/index.json`: zdaj 12, po promptu 35 28; `?lvl=N`, tudi zrcaljeno), v urejevalniku, v Rušilcu, v Dirki
+   frnikol in na dashboardu. Poleg tega preveri **naključne proge**: v urejevalniku ustvari po eno na Lahki in Nemogoči
+   (dolga, nato še z vsemi ovirami v naprednih nastavitvah) in jih odpri v igri (`?play=<osnutek>`, ali »🎲 Hitra
+   naključna proga«). Izmeri draw calle in FPS tudi na največji taki progi na Nizki kakovosti.
 3. `node tests/run-node.mjs` in `tests.html` uspešni (vsi testi nespremenjeni).
 4. Na vsaki lokaciji preveri, da okras **ne zakrije** poti, krogle, ovir in pobiralk (posnetki z vožnjo autopilota `?bot=1`).
 5. Izgled na **telefonu (375×812)** in **namizju** na Ultra, Srednji in Nizki kakovosti: posnemi zaslone, sam jih

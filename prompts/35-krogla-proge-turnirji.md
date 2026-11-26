@@ -172,7 +172,9 @@ Novo stikalo v generatorju (ali ločen `tools/krogla-balance.mjs`, ki uvaža ist
   (iz `games/krogla/editor/track.js` ali kjer je); če ni, jih piši v `tools/krogla-levels.mjs` kot zdaj — 30 bo želvico
   kasneje premaknil, njegov `--check` mora takrat vključevati tudi nove proge. Generator naključnih prog lahko kasneje
   uporabi `diff`/`len` iz tega prompta kot ciljne vrednosti (zapiši v README kot možnost, ne delaj tukaj).
-- **20 (okolica prog)**: nove lokacije in proge naj imajo `look`, da jih okras kasneje lahko opremi.
+- **20 (okolica prog)**: nove lokacije in proge naj imajo `look`, da jih okras kasneje lahko opremi. Če je prompt 20 že
+  narejen (obstaja `render/props.js`), novim lokacijam dodaj tudi okras v `props.js` v istem slogu in preveri, da ne zakrije
+  poti in ovir novih prog (`?bot=1`) ter da ostane v meji draw callov za Nizko kakovost.
 - **19 (dirka)** ima svoje široke proge; tega prompta ne meša z njimi.
 - **Rušilec** (`secrets.js`): skrite ključavnice na progah Neon in Nebo ostanejo, kjer so.
 
