@@ -686,7 +686,7 @@ async function hostFinish(st) {
       st.jury = createJury(hillDef(hill), { auto: st.cfg.jury === 'auto' });
       st.active = null; st.last = null; st.phase = 'show';
       st.msg = `${st.tour.name}: ${k + 1}/${st.tour.hills.length} — ${venueName(hillDef(hill))}. Vodi ${C.participant(st.comp, order[0])?.name || '?'}.`;
-      host.showUntil = Date.now() + 6000;
+      host.showUntil = Date.now() + 10000;   // vsi vidijo zaslon skupne razvrstitve
       await hostSave(st);
       return;
     }
@@ -726,6 +726,11 @@ function stopWatch() { if (E?.playing) E.abort(); watch = null; myJump = null; }
 function onState() {
   if (!ST || !room) return;
   if (ST.seed !== onState.seed) { onState.seed = ST.seed; shownLast = null; shownDone = false; }
+  // serija tekem: ob prehodu na naslednjo tekmo vsi vidijo skupno razvrstitev (host počaka ~10 s)
+  if (ST.tour?.comps?.length && ST.tour.comps.length === ST.tour.k && ST.phase === 'show' && onState.tourShown !== ST.seed) {
+    onState.tourShown = ST.seed;
+    seriesScreen(ST.comp, ST.tour, ST.tour.comps, { wait: false, ms: 9500 });
+  }
   lobbyView?.destroy(); lobbyView = null;
   const comp = ST.comp;
   const def = hillDef(ST.hill);
@@ -885,10 +890,51 @@ async function finishOnline() {
 }
 
 /** Razglasitev v slogu prenosa: oder za prve tri, zastave, fanfara, konfeti. */
+/**
+ * Vmesni zaslon serije (Pokal / Turneja): skupna razvrstitev po tekmah, gibanje mest in naslednja skakalnica.
+ * wait: true = počaka na »Naprej« (lokalno; vrne false ob »Prekini«), sicer se zapre po ms (spletna soba).
+ */
+function seriesScreen(comp, plan, comps, { wait = true, ms = 8000 } = {}) {
+  const tot = seriesStand(plan, comps);
+  const before = new Map(comps.length > 1 ? seriesStand(plan, comps.slice(0, -1)).map(t => [t.id, t.rank]) : []);
+  const k = comps.length, N = plan.hills.length;
+  const next = plan.hills[k];
+  const cup = plan.scoring === 'cup';
+  const val = v => (v == null ? '<span class="mg-muted">—</span>' : cup ? String(v) : fmt1(v));
+  const el = $('#minter');
+  el.innerHTML = `<div class="sk-sstand" role="dialog" aria-label="Skupna razvrstitev">
+    <div class="sk-sstand__head"><span class="sk-cup__lbl">${plan.icon || '🏆'} ${esc(plan.name)} · po ${k}. od ${N} tekem</span>
+      <h2 class="mg-title">Skupna razvrstitev</h2>
+      <span class="mg-small mg-muted">${cup ? 'Točke pokala 100-80-60 … po mestu' : 'Seštevek točk skokov'}${plan.kind === 'tour' ? ' · kdor zamudi tekmo, izpade' : ''}</span></div>
+    <div class="sk-sstand__wrap"><table class="mg-table sk-cuptable"><thead><tr><th>#</th><th>Skakalec</th>
+      ${plan.hills.slice(0, k).map((h, i) => `<th class="mg-num" title="${esc(hillDef(h)?.name || h)}">${i + 1}.</th>`).join('')}<th class="mg-num">Skupaj</th></tr></thead><tbody>
+      ${tot.map(t => { const mv = before.has(t.id) && t.rank ? before.get(t.id) - t.rank : 0; return `<tr class="${t.id === hub.userId || L_isMine(t.id) ? 'mg-me' : ''} ${t.rank === 1 ? 'lead' : ''}">
+        <td class="mg-rank">${t.rank ? t.rank + '.' : '—'} <span class="mv ${mv > 0 ? 'up' : mv < 0 ? 'dn' : ''}">${mv > 0 ? '↑' + mv : mv < 0 ? '↓' + -mv : ''}</span></td>
+        <td>${whoHtml(C.participant(comp, t.id))}</td>${t.parts.slice(0, k).map(v => `<td class="mg-num">${val(v)}</td>`).join('')}<td class="mg-num"><b>${cup ? t.total : fmt1(t.total)}</b></td></tr>`; }).join('')}
+    </tbody></table></div>
+    ${next ? `<p class="sk-sstand__next">Naslednja tekma ${k + 1}/${N}: <b>${esc(hillDef(next)?.real ? venueName(hillDef(next)) : hillDef(next)?.name || next)}</b> <span class="mg-muted">· ${hillDef(next)?.real ? esc(hillDef(next).name) + ' · ' : ''}K${hillDef(next)?.k} / HS${hillDef(next)?.hs}</span></p>` : ''}
+    ${wait ? `<div class="sk-sstand__btns"><button class="mg-btn mg-btn--primary mg-btn--big" data-s="go">Naprej ▶</button><button class="mg-btn mg-btn--ghost mg-btn--small" data-s="stop">Prekini</button></div>`
+      : `<div class="sk-sstand__btns"><button class="mg-btn mg-btn--ghost mg-btn--small" data-s="go">Zapri</button></div>`}</div>`;
+  el.classList.remove('mg-hidden');
+  return new Promise(res => {
+    let t = 0;
+    const close = v => { clearTimeout(t); el.classList.add('mg-hidden'); res(v); };
+    if (!wait) t = setTimeout(() => close(true), ms);
+    el.querySelectorAll('[data-s]').forEach(b => b.onclick = async e => {
+      e.stopPropagation();
+      if (b.dataset.s === 'stop' && !(await ui.confirm('Prekinem pokal?', { danger: true }))) return;
+      close(b.dataset.s === 'go');
+    });
+  });
+}
+/** V lokalni tekmi so »moji« vsi človeški skakalci na tej napravi. */
+const L_isMine = id => !!local?.byId?.get(id) && local.byId.get(id).type !== 'bot';
+
 async function podium(comp, rows) {
   const top = rows.filter(r => r.rank && r.rank <= 3).slice(0, 3);
   const el = $('#minter');
-  el.innerHTML = `<div class="sk-podium"><h2 class="mg-title">Razglasitev</h2><div class="sk-podium__cols">${[top[1], top[0], top[2]].map((r, i) => r ? `<div class="sk-podium__col p${[2, 1, 3][i]}"><div class="who">${whoHtml(C.participant(comp, r.id))}</div><div class="pts">${fmt1(r.total)} t</div><div class="blk">${r.rank}</div></div>` : '<div></div>').join('')}</div></div>`;
+  const pts = r => (r.unit === 'pts' ? `${r.total} točk` : `${fmt1(r.total)} t`);
+  el.innerHTML = `<div class="sk-podium"><h2 class="mg-title">Razglasitev</h2><div class="sk-podium__cols">${[top[1], top[0], top[2]].map((r, i) => r ? `<div class="sk-podium__col p${[2, 1, 3][i]}"><div class="who">${whoHtml(C.participant(comp, r.id))}</div><div class="pts">${pts(r)}</div><div class="blk">${r.rank}</div></div>` : '<div></div>').join('')}</div></div>`;
   el.classList.remove('mg-hidden');
   E.audio.fanfare(); E.audio.cheer(1); E.audio.bells(10);
   try { ui.winFx('confetti'); } catch { /* */ }
@@ -1094,10 +1140,9 @@ async function runTour(cfg, sel) {
         saveStats(JP.addCompetitionStats(myStats(), { hill, jumps: L.jumps, standings: rows }));
         last = L;
         if (k < N - 1) {
-          const lead = seriesStand(plan, comps)[0];
           await podium(L.comp, rows);
-          msg(`Po ${k + 1}. tekmi vodi ${C.participant(L.comp, lead.id)?.name || '?'} (${plan.scoring === 'cup' ? lead.total + ' točk' : fmt1(lead.total) + ' t'}).`, 4500);
-          await sleep(1500);
+          // vmesni zaslon: skupna razvrstitev po tej tekmi, počaka na »Naprej«
+          if (!(await seriesScreen(L.comp, plan, comps))) { aborted = true; showHud(false); local = null; E.showMenu(); return null; }
         }
         return rows;
       },
