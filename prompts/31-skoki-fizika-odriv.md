@@ -73,6 +73,10 @@ V pomoči igre (`helpHtml` v `game.js`) besedilo o oknih (±35 ms, ±90 ms) izra
 - Obstoječe »Izvozi« naj izvozi JSON, ki ga lahko uporabnik pošlje nazaj; v README zapiši, kako vrednosti preneseš v
   `physics-params.json`.
 - Shranjeni parametri v brskalniku (`skoki:params`) veljajo le za isto `paramsVersion` (kot zdaj).
+- **Nastavljivost je samo razvojno orodje:** drsniki, prednastavitve in parametri iz brskalnika delujejo le z
+  `?debug=1` (kot zdaj v `loadData`). Navadna igra, tekme, pokal, lestvice, ghosti in boti vedno uporabljajo fiksne
+  vrednosti iz `physics-params.json` — igralec v igri ne more ničesar nastavljati. Ko uporabnik uglasi vrednosti, se
+  vpišejo v `physics-params.json` (nova `paramsVersion`) in postanejo fiksne za vse.
 
 ## 5. Verzija fizike, fiksture, testi
 
