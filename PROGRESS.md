@@ -1278,4 +1278,4 @@ Stanje: **narejeno**, preverjeno offline; SQL pognan v Supabase in preizkušen z
 - Zastavice SWE/USA/CHN dodane v `COUNTRY_FLAG` (game.js, cup.js). Vrstice v `skoki_hills` (blok `BEGIN HILLS` v `supabase/games/skoki.sql`), h/n v `tests/skoki3.js`.
 - Pokal (`CUP_VENUES`) ostaja nespremenjen, ker bi se sicer premešal že objavljen koledar v `skoki_cup_events`.
 - Preverjeno: testi 227/227, v brskalniku meni (zavihek Prave: 24 + letalnice), kartica Ruke (opis, rekord, mesto), skok bota na Ruki in Hinzenbachu, telefon 375×812, konzola brez napak.
-- **Ni narejeno:** SQL blok še ni pognan na Supabase (nove skakalnice brez vrstice v `skoki_hills` ne morejo oddati rekorda na spletno lestvico).
+- **Supabase:** 14 vrstic v `skoki_hills` pognanih kot migracija `skoki_hills_sezona_2026_27` (v tabeli 36 skakalnic). Advisors: brez novih opozoril (le že znana: anonimni dostop za branje, leaked password protection, unused index).
