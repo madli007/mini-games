@@ -702,13 +702,14 @@ async function hostFinish(st) {
       const k = st.tour.k + 1, hill = st.tour.hills[k];
       const order = seriesOrder(st.tour, st.tour.comps);
       const parts = order.map(id => C.participant(st.comp, id)).filter(Boolean).map(p => ({ id: p.id, name: p.name, kind: p.kind, ...(p.team ? { team: p.team } : {}), ...(p.meta ? { meta: p.meta } : {}) }));
+      st.tour.lastComp = st.comp; st.tour.lastHill = st.hill;   // rezultat končane tekme (zaslon pri vseh pred skupnim stanjem)
       st.tour.k = k; st.hill = hill; st.seed = st.seed.split('#')[0] + '#' + k;
       const PF = FORMATS[st.tour.fmt] || FORMATS.two;
       st.comp = C.createCompetition({ seed: st.seed, participants: st.tour.ko ? parts : parts.slice().reverse(), rounds: PF.rounds, trial: PF.trial, ko: st.tour.ko, order1: 'given', cut: st.tour.ko ? 0 : st.cfg.cut });
       st.jury = createJury(hillDef(hill), { auto: st.cfg.jury === 'auto' });
       st.active = null; st.last = null; st.phase = 'show';
       st.msg = `${st.tour.name}: ${k + 1}/${st.tour.hills.length} — ${venueName(hillDef(hill))}. Vodi ${C.participant(st.comp, order[0])?.name || '?'}.`;
-      host.showUntil = Date.now() + 10000;   // vsi vidijo zaslon skupne razvrstitve
+      host.showUntil = Date.now() + 19000;   // vsi vidijo rezultat tekme (~8 s) in nato skupno razvrstitev (~9 s)
       await hostSave(st);
       return;
     }
@@ -751,7 +752,10 @@ function onState() {
   // serija tekem: ob prehodu na naslednjo tekmo vsi vidijo skupno razvrstitev (host počaka ~10 s)
   if (ST.tour?.comps?.length && ST.tour.comps.length === ST.tour.k && ST.phase === 'show' && onState.tourShown !== ST.seed) {
     onState.tourShown = ST.seed;
-    seriesScreen(ST.comp, ST.tour, ST.tour.comps, { wait: false, ms: 9500 });
+    const T = ST.tour, comp0 = ST.comp;
+    const showSeries = () => seriesScreen(comp0, T, T.comps, { wait: false, ms: 9000 });
+    if (T.lastComp) roundScreen(T.lastComp, T.lastComp.rounds.length - 1, { wait: false, ms: 8000, title: `Tekma ${T.k}/${T.hills.length}: ${esc(venueName(hillDef(T.lastHill)))}`, label: `${T.icon || '🏆'} ${esc(T.name)} · rezultat tekme` }).then(showSeries);
+    else showSeries();
   }
   // konec serije (ne tekme): po kartici zadnjega skoka vsi vidijo rezultate serije in kdo gre naprej
   const rk = ST.seed + ':' + ST.comp.round;
@@ -887,6 +891,7 @@ function tourRows(comp, comps, plan = { kind: 'tour' }) {
 async function finishOnline() {
   const comp = ST.comp;
   const rows = ST.tour ? tourRows(comp, ST.tour.comps, ST.tour) : C.standings(comp);
+  if (ST.tour) await roundScreen(comp, comp.rounds.length - 1, { wait: false, ms: 8000, title: `Tekma ${ST.tour.k + 1}/${ST.tour.hills.length}: ${esc(venueName(hillDef(ST.hill)))}`, label: `${ST.tour.icon || '🏆'} ${esc(ST.tour.name)} · rezultat tekme` });
   await podium(comp, rows);
   // poročilo hubu: vsak človek zase (enkrat)
   const me = rows.find(r => r.id === hub.userId);
@@ -923,7 +928,7 @@ async function finishOnline() {
  * Vmesni zaslon po končani seriji (poskusna / kvalifikacije / 1. serija …): razvrstitev, kdo gre naprej, pri KO pari.
  * wait: true = počaka na »Nadaljuj« (lokalno; vrne false ob »Prekini«), sicer se zapre po ms (spletna soba).
  */
-function roundScreen(comp, ri, { wait = true, ms = 10000 } = {}) {
+function roundScreen(comp, ri, { wait = true, ms = 10000, title: title0 = null, label = '📋 Rezultati', go = 'Nadaljuj ▶' } = {}) {
   const R = comp.rounds[ri];
   const trial = R.kind === 'trial';
   const nextR = comp.rounds[ri + 1];
@@ -932,11 +937,12 @@ function roundScreen(comp, ri, { wait = true, ms = 10000 } = {}) {
   const val = id => (R.results[id]?.status === 'ok' ? fmt1(R.results[id].score) : (R.results[id]?.status || '—').toUpperCase());
   const who = id => whoHtml(C.participant(comp, id));
   const mine = id => id === hub.userId || L_isMine(id);
+  const dist = (Rk, id) => (Rk.results[id]?.status === 'ok' && Rk.results[id].data?.dist != null ? fmtDist(Rk.results[id].data.dist) : '');
   let body = '';
   if (trial) {
     const rows = trialRows(comp, R);
-    body = `<table class="mg-table sk-cuptable"><thead><tr><th>#</th><th>Skakalec</th><th class="mg-num">Točke</th></tr></thead><tbody>
-      ${rows.map(r => `<tr class="${mine(r.id) ? 'mg-me' : ''}"><td class="mg-rank">${r.rank ? r.rank + '.' : '—'}</td><td>${who(r.id)}</td><td class="mg-num">${val(r.id)}</td></tr>`).join('')}</tbody></table>`;
+    body = `<table class="mg-table sk-cuptable"><thead><tr><th>#</th><th>Skakalec</th><th class="mg-num">Daljava</th><th class="mg-num">Točke</th></tr></thead><tbody>
+      ${rows.map(r => `<tr class="${mine(r.id) ? 'mg-me' : ''}"><td class="mg-rank">${r.rank ? r.rank + '.' : '—'}</td><td>${who(r.id)}</td><td class="mg-num">${dist(R, r.id)}</td><td class="mg-num">${val(r.id)}</td></tr>`).join('')}</tbody></table>`;
     if (comp.cfg.ko && comp.ko) {
       body += `<h3 class="mg-title">KO pari za 1. serijo</h3><ol class="sk-kopairs">${comp.ko.pairs.map(p => `<li>${who(p.hi)} <span class="mg-muted">proti</span> ${who(p.lo)}</li>`).join('')}${comp.ko.bye ? `<li>${who(comp.ko.bye)} <span class="mg-muted">brez para (naprej)</span></li>` : ''}</ol>`;
     }
@@ -948,22 +954,24 @@ function roundScreen(comp, ri, { wait = true, ms = 10000 } = {}) {
       const mark = (id, w) => (!adv.has(id) ? '✖️' : id === w ? '✅' : lucky.has(id) ? '🍀' : '✅');
       body = `<h3 class="mg-title">KO pari</h3><ol class="sk-kopairs">${comp.ko.pairs.map(p => {
         const w = sc(p.hi) >= sc(p.lo) ? p.hi : p.lo;
-        return `<li class="${mine(p.hi) || mine(p.lo) ? 'mg-me' : ''}">${mark(p.hi, w)} ${who(p.hi)} <b>${val(p.hi)}</b> <span class="mg-muted">:</span> <b>${val(p.lo)}</b> ${who(p.lo)} ${mark(p.lo, w)}</li>`;
+        return `<li class="${mine(p.hi) || mine(p.lo) ? 'mg-me' : ''}">${mark(p.hi, w)} ${who(p.hi)} <span class="mg-muted mg-small">${dist(R, p.hi)}</span> <b>${val(p.hi)}</b> <span class="mg-muted">:</span> <b>${val(p.lo)}</b> <span class="mg-muted mg-small">${dist(R, p.lo)}</span> ${who(p.lo)} ${mark(p.lo, w)}</li>`;
       }).join('')}</ol><p class="mg-small mg-muted">✅ zmagovalec para · 🍀 srečni poraženec · ✖️ izpadel</p>`;
     }
-    body += `<table class="mg-table sk-cuptable"><thead><tr><th>#</th><th>Skakalec</th><th class="mg-num">Točke</th><th></th></tr></thead><tbody>
+    const SR = comp.rounds.slice(0, ri + 1).filter(x => x.kind === 'score');
+    const cell = (Rk, id) => (!Rk.order.includes(id) ? '' : Rk.results[id]?.status === 'ok' ? `${dist(Rk, id)} <span class="mg-muted">· ${fmt1(Rk.results[id].score)}</span>` : (Rk.results[id]?.status || '').toUpperCase());
+    body += `<table class="mg-table sk-cuptable"><thead><tr><th>#</th><th>Skakalec</th>${SR.map((x, i) => `<th class="mg-num">${SR.length > 1 ? (i + 1) + '. serija' : 'Daljava · točke'}</th>`).join('')}<th class="mg-num">Skupaj</th><th></th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${mine(r.id) ? 'mg-me' : ''} ${r.rank === 1 ? 'lead' : ''} ${nextR && adv.has(r.id) ? 'promo' : ''}"><td class="mg-rank">${r.rank ? r.rank + '.' : '—'}</td><td>${who(r.id)}</td>
-        <td class="mg-num"><b>${r.status === 'ok' ? fmt1(r.total) : r.status.toUpperCase()}</b></td>
+        ${SR.map(x => `<td class="mg-num mg-small">${cell(x, r.id)}</td>`).join('')}<td class="mg-num"><b>${r.status === 'ok' ? fmt1(r.total) : r.status.toUpperCase()}</b></td>
         <td class="mg-small">${!nextR ? '' : adv.has(r.id) ? (lucky.has(r.id) ? '🍀 naprej' : '➜ naprej') : r.status === 'ok' ? '<span class="mg-muted">izpadel</span>' : ''}</td></tr>`).join('')}</tbody></table>`;
   }
   const nextTxt = nextR ? `Naslednja: <b>${roundLabel(comp, ri + 1)}</b> · ${nextR.order.length} skakalcev${trial ? (comp.cfg.ko ? ' v parih' : '') : ' · obratni vrstni red, vodilni skoči zadnji'}` : '';
-  const title = trial ? (comp.cfg.ko ? 'Po kvalifikacijah' : 'Po poskusni seriji') : `Po ${C.roundNumber(comp, ri)}. seriji`;
+  const title = title0 || (trial ? (comp.cfg.ko ? 'Po kvalifikacijah' : 'Po poskusni seriji') : `Po ${C.roundNumber(comp, ri)}. seriji`);
   const el = $('#minter');
   el.innerHTML = `<div class="sk-sstand" role="dialog" aria-label="Rezultati serije">
-    <div class="sk-sstand__head"><span class="sk-cup__lbl">📋 Rezultati</span><h2 class="mg-title">${title}</h2></div>
+    <div class="sk-sstand__head"><span class="sk-cup__lbl">${label}</span><h2 class="mg-title">${title}</h2></div>
     <div class="sk-sstand__wrap">${body}</div>
     ${nextTxt ? `<p class="sk-sstand__next">${nextTxt}</p>` : ''}
-    ${wait ? '<div class="sk-sstand__btns"><button class="mg-btn mg-btn--primary mg-btn--big" data-s="go">Nadaljuj ▶</button><button class="mg-btn mg-btn--ghost mg-btn--small" data-s="stop">Prekini</button></div>'
+    ${wait ? '<div class="sk-sstand__btns"><button class="mg-btn mg-btn--primary mg-btn--big" data-s="go">' + go + '</button><button class="mg-btn mg-btn--ghost mg-btn--small" data-s="stop">Prekini</button></div>'
       : '<div class="sk-sstand__btns"><button class="mg-btn mg-btn--ghost mg-btn--small" data-s="go">Zapri</button></div>'}</div>`;
   el.classList.remove('mg-hidden');
   return new Promise(res => {
@@ -1020,6 +1028,8 @@ function seriesScreen(comp, plan, comps, { wait = true, ms = 8000 } = {}) {
 const L_isMine = id => !!local?.byId?.get(id) && local.byId.get(id).type !== 'bot';
 
 async function podium(comp, rows) {
+  // razglasitev čez prazno sceno: brez kartice zadnjega skoka, traku in skakalca v čakanju
+  hideCard(); $('#mthird')?.classList.add('mg-hidden'); renderDeck(null); if (E.playing) E.abort();
   const top = rows.filter(r => r.rank && r.rank <= 3).slice(0, 3);
   const el = $('#minter');
   const pts = r => (r.unit === 'pts' ? `${r.total} točk` : `${fmt1(r.total)} t`);
@@ -1036,7 +1046,10 @@ function results(comp, rows, { xp = 0, again = 'Še enkrat', exit = 'V meni', pr
     const p = C.participant(comp, r.id);
     const pl = r.kind === 'human' && !p.meta?.local ? (room?.players.find(x => x.id === r.id) || ST?.people?.[r.id]) : null;
     const base = pl ? { ...pl } : { nickname: (p.meta?.flag ? JP.flagOf(p.meta.flag) + ' ' : '') + p.name, avatar: { emoji: r.kind === 'bot' ? '🤖' : '🎿', color: p.meta?.suit || '#4fc3f7' } };
-    return { ...base, id: r.id, scoreText: r.status === 'ok' ? (r.unit === 'pts' ? `${r.total} točk (${r.scores.map(x => x ?? 0).join(' + ')})` : `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})`) : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
+    // daljave po serijah (le pri rezultatih tekme; skupna razvrstitev serije tekem ima r.unit)
+    const dists = r.unit ? [] : comp.rounds.filter(R => R.kind === 'score' && R.results[r.id]?.status === 'ok' && R.results[r.id].data?.dist != null).map(R => fmtDist(R.results[r.id].data.dist));
+    const dTxt = dists.length ? ' · ' + dists.join(' / ') : '';
+    return { ...base, id: r.id, scoreText: r.status === 'ok' ? (r.unit === 'pts' ? `${r.total} točk (${r.scores.map(x => x ?? 0).join(' + ')})` : `${fmt1(r.total)} t (${r.scores.filter(x => x != null).map(fmt1).join(' + ')})${dTxt}`) : r.status.toUpperCase(), xp: r.id === hub.userId ? xp : 0 };
   });
   const teams = C.teamStandings(comp);
   const extra = `${prizes.length ? `<h3 class="mg-title">Posebne nagrade</h3><ul class="sk-prizes">${prizes.map(z => `<li>${z.icon} <b>${esc(z.title)}</b>: ${whoHtml(C.participant(comp, z.id))} <span class="mg-muted">${esc(z.text)}</span></li>`).join('')}</ul>` : ''}
@@ -1160,9 +1173,11 @@ async function runLocal(cfg, sel, hooks = null) {
     if (p.kind === 'bot') {
       const b = botJump(def, H.hill, { gate, refGate, wind, judgeSeed, bot: { skill: j.skill, style: j.style, seed: judgeSeed } });
       if (cfg.replay === 'skip') {
-        // brez replaya: skakalnica v ozadju (bot na zaletnem mestu), sicer bi ostal viden meni
-        E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'stream', stream: createReceiver({ jumpId: 'cakam' }), skin: skinOf(j), label: `${roundLabel(L.comp)} · bot`, whoHtml: whoHtml(p), noRecord: true });
-        await sleep(30);
+        // brez replaya: boti skočijo tiho v ozadju (brez kartic, ki bi blisknile) — rezultati so na lestvici in na zaslonu po
+        // seriji; skakalnica ostane v ozadju (enkrat), sicer bi ostal viden meni
+        $('#mthird').classList.add('mg-hidden');
+        if (!E.playing) E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'stream', stream: createReceiver({ jumpId: 'cakam' }), waitHint: false, skin: skinOf(j), label: `${roundLabel(L.comp)} · skačejo boti`, whoHtml: '🤖 Boti …', noRecord: true });
+        await sleep(hooks ? 0 : 30);
         if (local !== L) return;
         r = { status: 'ok', res: b.res, changes: b.changes };
       }
@@ -1175,9 +1190,9 @@ async function runLocal(cfg, sel, hooks = null) {
     } else {
       // vmesni zaslon: »Na vrsti: <ime>, pritisni za štart«
       // skakalnica v ozadju (skakalec čaka na zaletnem mestu), dokler igralec ne pritisne za štart
-      E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'stream', stream: createReceiver({ jumpId: 'cakam' }), skin: skinOf(j), label: roundLabel(L.comp), whoHtml: whoHtml(p) });
-      await sleep(60);
       renderThird(L.comp, id, { def, gate, refGate, wind });
+      E.jump({ hillId: cfg.hill, gate, refGate, wind, judgeSeed, source: 'stream', stream: createReceiver({ jumpId: 'cakam' }), waitHint: false, skin: skinOf(j), label: roundLabel(L.comp), whoHtml: whoHtml(p) });
+      await sleep(60);
       const go = await interstitial(p, j);
       if (local !== L) return;
       if (!go) { leaveLocal(); return; }
@@ -1195,8 +1210,9 @@ async function runLocal(cfg, sel, hooks = null) {
     L.jury = jr.jury;
     L.changes = C.rankChanges(before, C.standings(L.comp));
     renderSide(sideSt(), L.changes, null);
+    if (p.kind === 'bot' && cfg.replay === 'skip') { if (jr.msg) msg(jr.msg, 3000); continue; }   // tiho: brez kartice
     showCard(L.comp, id, r.res, { juryMsg: jr.msg });
-    await sleep(p.kind === 'bot' && cfg.replay === 'skip' ? (hooks ? 500 : 1200) : 3000);
+    await sleep(3000);
   }
   if (local !== L) return;
   const rows = C.standings(L.comp);
@@ -1255,11 +1271,11 @@ async function runTour(cfg, sel) {
         comps.push(compRows(L.comp));
         saveStats(JP.addCompetitionStats(myStats(), { hill, jumps: L.jumps, standings: rows }));
         last = L;
-        if (k < N - 1) {
-          await podium(L.comp, rows);
-          // vmesni zaslon: skupna razvrstitev po tej tekmi, počaka na »Naprej«
-          if (!(await seriesScreen(L.comp, plan, comps))) { aborted = true; showHud(false); local = null; E.showMenu(); return null; }
-        }
+        const stop = () => { aborted = true; showHud(false); local = null; E.showMenu(); return null; };
+        await podium(L.comp, rows);
+        // najprej rezultat te tekme (daljave in točke po serijah), nato skupna razvrstitev pokala
+        if (!(await roundScreen(L.comp, L.comp.rounds.length - 1, { title: `Tekma ${k + 1}/${N}: ${esc(venueName(hillDef(hill)))}`, label: `${plan.icon} ${esc(plan.name)} · rezultat tekme`, go: k < N - 1 ? (plan.kind === 'tour' ? 'Skupno stanje ▶' : 'Stanje v pokalu ▶') : 'Skupni rezultati ▶' }))) return stop();
+        if (k < N - 1 && !(await seriesScreen(L.comp, plan, comps))) return stop();
         return rows;
       },
     });

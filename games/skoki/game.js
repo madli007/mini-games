@@ -554,6 +554,9 @@ async function enterPlay(hillId, { skin = null, theme = null } = {}) {
   G.hillId = hillId;
   audio.menuMusic(false);
   audio.setLoops(true);
+  // ostanki prejšnjega skoka (daljava, komentar, kartica) takoj stran — sicer med nalaganjem naslednjega skakalca
+  // za trenutek blisne rezultat prejšnjega
+  $('#big').classList.add('mg-hidden'); $('#comment').classList.add('mg-hidden'); hideFlash(); hideResult();
   $('#menu').classList.add('mg-hidden');
   $('#loader').classList.remove('mg-hidden');
   $('#play').classList.remove('mg-hidden');
@@ -676,7 +679,7 @@ function newJump() {
   G.state = 'gate'; G.gateT = 0; G.view = gateSnapshot(H.hill, G.gate); G.view.snap = true;
   renderer.setCheer(0.1);
   showLight(!G.stream);
-  if (G.stream) hint('Čakam na skok …');
+  if (G.stream) hint(X?.waitHint === false ? '' : 'Čakam na skok …');   // waitHint: false = skakalnica le v ozadju (tekma)
   clock.reset();
   dbgHook?.onNewJump?.();
 }
@@ -1541,6 +1544,7 @@ const engine = {
     // razvojno: ?bot=0.9 — namesto mene skače bot (tudi v pokalu, karieri in tekmi)
     if (BOT_SKILL != null && o.source === 'me') o = { ...o, source: 'bot', noRecord: true, bot: { skill: BOT_SKILL, seed: (Math.random() * 1e9) >>> 0 } };
     G.mode = 'ext'; G.record = null; G.fixed = null;
+    if (o.whoHtml) $('#barWho').innerHTML = o.whoHtml;   // ime takoj (ne šele po nalaganju), da se ujema s trakom tekme
     await enterPlay(o.hillId, { skin: o.skin, theme: o.theme });
     return new Promise(resolve => { G.ext = { ...o, resolve, done: false }; G.paused = false; $('#overlay').classList.add('mg-hidden'); newJump(); });
   },
