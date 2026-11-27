@@ -13,13 +13,49 @@
 > Globoka pravila (načini, wizard, DMD animacije, glasba) so prompt 24. Po tem promptu mora biti miza že prijetna
 > za igranje: lahko streljaš vse strele, imaš skill shot, lock in multiball z jackpoti, bonus X, extra ball.
 
+## Stanje po promptu 22 (dejanska imena — preberi najprej)
+
+- **Motor:** `games/pinball/src/engine/` — `app.js` (`startApp(table, view, { gameId, debug })`), `game.js` (jedro + razred `Rules`),
+  `table.js` (`createTable()` z gradniki), `physics.js`, `bot.js`, `shots.js`, `debug.js`, `leaderboard.js`, `render/*`.
+  Alu miza: `games/pinball/src/tables/alu/`, testna miza z vsemi novimi elementi: `tables/test/` (`?miza=test`) — **dober vzorec**.
+  Opis vmesnika in elementov: `games/pinball/README.md` (»Kako dodati mizo«, »Elementi«, »Druga igra v hubu uvozi motor«).
+- **Modul mize** (`games/bozicni-pinball/table/index.js`): `export default { id: 'bozic', ime, CFG, PAL, buildTable, Rules, view: () => import('./view.js') }`.
+  `index.html` je kopija `games/pinball/index.html` (CSS `../pinball/src/style.css`), zagon:
+  `startApp(table, view, { gameId: 'bozicni-pinball', debug })` iz `../pinball/src/engine/app.js`. Lestvica: `seed = miza:bozic:f<PHYSICS_VERSION>`
+  (jedro to naredi samo iz `table.id`). Gumb na drugo mizo: `view.ui.links = [{ label: '🎄 Božična miza', href: '../bozicni-pinball/' }]`
+  (za Alu mizo dodaj v `tables/alu/view.js`).
+- **Pravila:** razred `extends Rules` s kljukami `onSwitch(name, data)` (vsa stikala; ime = ime senzorja / tarče / luknje), `onShot`,
+  `onRamp(ramp, why)`, `onBallStart/onBallEnd/onDrain/onLastBall`, `onFlipper(gumb)`, `tick`, `substep`, `ballTick`, `lamps(set, t)`,
+  `dmdIdle`, `summary`, `gameStats`, `isMulti`, `musicLevel`, `abort`. Combo okno in štetje strelov: `game.shot(id, x, y)`.
+- **Elementi v podatkih** (`T = createTable({ id: 'bozic' })`):
+  - rampe: `T.wireform({ id, layer, path, apex, width, look: 'wire' | 'ramp', exitFeed, incline })` — stene, ustje (lijak),
+    senzor »made«, pojemek na vzponu (večji `incline` = pogostejša zavrnitev); ročne stene + `T.ramp({ entry, fail, exit, bounds, lift })`.
+    **Pouk iz testne mize:** lasnica naj bo gladek lok (ostri kot žogico odbije nazaj), izhod žičnate rampe naj bo **v inlanu pod vrhom slinga**
+    (y ≈ 735, ne na vrhu slinga — sicer se žogica zagozdi v trikotnik slinga).
+  - zgornji flipper: `T.flipper({ id, side, button: 'R', px, py, len, rest, up })`; VUK: `T.vuk(id, x, y, { eject: { x, y, vx, vy } })` (podzemna pot);
+    saucer/scoop: `T.saucer(id, x, y, { capture, eject })`; vidni lock (vreča): `T.lock(id, [[x, y], …], { release })` + `game.lockBall / releaseLock`;
+    up-post: `T.post` + `game.setPost`; diverter: `T.diverter` + `game.setDiverter`; drop banka: `T.dropBank(id, [[ax, ay, bx, by], …], { labels })`;
+    standupi: `T.standupBank`; captive ball: `T.captive(id, ax, ay, bx, by)`; magnet: `T.magnet` + `game.magnet(id, 'grab'|'throw'|…)`;
+    spinner: `T.spinner`; rollover kanali: `T.laneGroup` + `game.rotateLanes`; strele: `T.shot(id, { switches, minor })`.
+  - **igrače** (jelka, sani, vlakec): `T.toy(id, { x, y, shape: { segs }, speed, spin })` + `game.moveToy(id, { x, y, angle })`, izris v `art.drawToys(g, e, game, env, time)`.
+- **Grafika:** `view.art` povozi privzeti izris (`drawFloor, drawMask, drawRaised, drawEmissive, drawRamp, drawRampEmissive, drawToys`);
+  privzeto motor sam nariše stene, rampe po poti (žica/plastika), luknje, magnete, stebričke, lock, captive.
+- **Orodja:** `?debug=1` (sloj, drsniki, H/N/G/V/J), `node tools/pinball-shots.mjs bozic` (mapa strelov), `node tools/pinball-bot.mjs bozic 100`.
+- **Fizika:** `PHYSICS_VERSION = 3` (f2 fiksni korak, f3 guma mirnega flipperja). Mapa strelov Alu mize je v `games/pinball/README.md`.
+
+### Iz prompta 22 ni bilo narejeno ali preverjeno
+- Zapis rezultata na **Supabase** lestvico pod uporabnikom ni bil preverjen v živo (glej `PROGRESS.md` → »Pinball motor« → »Ni bilo preverjeno«);
+  offline je preverjen, branje arhiva `scores` s Supabase deluje.
+- Ročno igranje (občutek z roko na tipkovnici) — preizkušeno le z botom in skripto v brskalniku (podokno je bilo skrito).
+- Match je le prikaz (deterministična številka ob koncu, brez nagrade).
+
 ---
 
 ## Igra
 
 - **Ime:** Božični pinball — *Trije dobri možje*
 - **id / mapa:** `bozicni-pinball` → `games/bozicni-pinball/` (nov vnos v `games.json`), miza v
-  `games/bozicni-pinball/table/`. Igra **uvaža motor** iz `../pinball/src/engine/` (ne kopiraj kode).
+  `games/bozicni-pinball/table/` (modul mize, glej zgoraj). Igra **uvaža motor** iz `../pinball/src/engine/` (ne kopiraj kode).
 - **Kratek opis (za kartico):** »Snežna decembrska miza: Miklavž, Božiček in Dedek Mraz. Rampe, dimnik, jelka,
   darilni multiball in ognjemet ob polnoči.«
 - **Način:** `single` · **Igralci:** 1 (več igralcev: prompt 25) · **Oznake:** `pinball`, `rekordi`, `praznično`

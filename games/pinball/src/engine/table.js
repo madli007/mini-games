@@ -166,6 +166,12 @@ export function createTable(opts = {}) {
     const wall = { layer, r: 2, e: 0.25, look, draw: false };
     T.poly(L, wall); T.poly(Rr, wall);
     const p0 = P[0], p1 = P[1], pe = P[P.length - 1], pp = P[P.length - 2];
+    // ustje (lijak) na igralni površini: žogica lahko pride do vhoda le znotraj kanala
+    if (o.lips !== false) {
+      const lip = { r: 3, e: 0.35, look: 'rampLip' };
+      T.seg(L[0][0], L[0][1], L[0][0] + (L[0][0] - p0[0]) * 0.9, L[0][1] + 40, lip);
+      T.seg(Rr[0][0], Rr[0][1], Rr[0][0] + (Rr[0][0] - p0[0]) * 0.9, Rr[0][1] + 40, lip);
+    }
     const xs = P.map(p => p[0]), ys = P.map(p => p[1]);
     // pojemek na vzponu: kapsule ob segmentih do vrha, smer nazaj proti vhodu
     const lift = [];
@@ -180,7 +186,7 @@ export function createTable(opts = {}) {
       id: o.id, layer, friction: o.friction ?? 0.35, label: o.label || '', look, path: P, width: w, apex,
       entry: { y: p0[1], x1: p0[0] - hw - 2, x2: p0[0] + hw + 2 },
       fail: { y: p0[1], x1: p0[0] - hw - 4, x2: p0[0] + hw + 4 },
-      exit: { y: pe[1], x1: pe[0] - hw - 6, x2: pe[0] + hw + 6, dir: down ? 'down' : 'up' },
+      exit: { y: pe[1], x1: pe[0] - hw - 2, x2: pe[0] + hw + 2, dir: down ? 'down' : 'up' },
       bounds: { x1: Math.min(...xs) - w - 30, x2: Math.max(...xs) + w + 30, y1: Math.min(...ys) - w - 30, y2: Math.max(...ys) + w + 30 },
       lift, feed: o.exitFeed || null, made: o.made || (o.id + 'Made'), color: o.color || null,
     });

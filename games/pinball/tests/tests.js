@@ -8,6 +8,7 @@ import { makeGame as mk, botGame as engineBot, seeded, FRAME } from '../src/engi
 import ALU from '../src/tables/alu/index.js';
 import { SCOOP } from '../src/tables/alu/table.js';
 import { goldenRun, compareGolden, GOLDEN_SEEDS } from './golden.js';
+import { elementsTest } from './elements.js';
 
 function makeGame(table = ALU) { return mk(table); }
 
@@ -328,6 +329,9 @@ export function runAll(log = console.log, { games = 12, golden = undefined, gold
   check('ball search sprosti zataknjeno žogico', sk.freed && sk.searched > 0, JSON.stringify(sk));
 
   for (const r of rulesTest()) check('pravila: ' + r.name, r.ok);
+
+  // novi elementi motorja na testni mizi (tables/test)
+  for (const r of elementsTest()) check('element: ' + r.name, r.ok, r.info);
 
   const seeds = [];
   for (let i = 0; i < games; i++) seeds.push(1000 + i * 17);

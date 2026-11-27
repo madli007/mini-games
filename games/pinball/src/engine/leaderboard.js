@@ -12,7 +12,7 @@ import { PHYSICS_VERSION } from './config.js';
 
 const SHARED = '../../../../shared/';
 let hub = null, ui = null, cfg = null, ready = null;
-let tableId = 'alu';
+let tableId = 'alu', gameId = 'pinball';
 let top = [];
 const listeners = [];
 
@@ -22,12 +22,12 @@ export function onChange(fn) { listeners.push(fn); }
 const changed = () => listeners.forEach(fn => { try { fn(); } catch (e) { /* ignoriraj */ } });
 
 /** naloži hub (enkrat); igra deluje tudi, če hub ni dosegljiv */
-export function init(id) {
-  tableId = id || 'alu';
+export function init(id, game = 'pinball') {
+  tableId = id || 'alu'; gameId = game;
   if (!ready) {
     ready = Promise.all([import(SHARED + 'hub.js'), import(SHARED + 'config.js')]).then(async ([m, c]) => {
       hub = m.hub; ui = m.ui; cfg = c;
-      await hub.init({ gameId: 'pinball', requireProfile: false });
+      await hub.init({ gameId, requireProfile: false });
     }).catch(e => { console.warn('pinball: hub ni na voljo', e); hub = null; });
   }
   return ready;
@@ -92,7 +92,7 @@ export async function report(d) {
   await whenReady();
   if (!hub || !hub.profile) return;
   try {
-    await hub.awardXp(Math.min(200, 20 + Math.floor((d.score || 0) / 1e6) * 5), 'pinball');
+    await hub.awardXp(Math.min(200, 20 + Math.floor((d.score || 0) / 1e6) * 5), gameId);
     await hub.reportGame({ players: 1, score: Math.round(d.score || 0) });
   } catch (e) { /* hub ni dosegljiv */ }
 }

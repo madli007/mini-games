@@ -53,14 +53,14 @@ export function sampleShot(table, flipperIdx, kind, pressMs, o = {}) {
     const f = T.flippers[flipperIdx];
     const st = startFor(T, f, kind);
     const hits = [];
-    let outlaneHit = '', speed = 0, captured = false;
+    let outlaneHit = '', speed = 0, captured = false, lastSpeed = 0;
     const minor = new Set(T.shots.filter(s => s.minor).map(s => s.id));
     const orig = g.rules.onSwitch.bind(g.rules);
     g.rules.onSwitch = (name, d) => {
       const sh = T.shotBySwitch[name];
       if (sh && !hits.includes(sh.id)) {
         hits.push(sh.id);
-        if (!minor.has(sh.id) && !speed) { const bb = d && d.b; speed = bb ? Math.round(Math.hypot(bb.vx, bb.vy)) : 0; }
+        if (!minor.has(sh.id) && !speed) speed = Math.round(lastSpeed);
       }
       if (name === 'outlane') outlaneHit = d && d.idx === 0 ? 'levo' : 'desno';
       return orig(name, d);
@@ -79,6 +79,7 @@ export function sampleShot(table, flipperIdx, kind, pressMs, o = {}) {
     while (t < maxT) {
       if (!pressed && t >= pressMs * MS) { g.setFlipper(f.button, true); pressed = true; }
       if (pressed && !released && t >= pressMs * MS + 0.35) { g.setFlipper(f.button, false); released = true; }
+      lastSpeed = Math.hypot(b.vx, b.vy);           // hitrost tik pred morebitnim zadetkom
       g.update(MS);
       t += MS;
       const live = g.balls.includes(b);

@@ -63,7 +63,25 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026). Nadaljevanj
   strele/min 9,9 → 10,3, multiballi 1,57 → 1,55, rampe 9,4 → 10,0, misije opravljene 0,47 → 0,46.
   (Bot ne lovi žogice namerno, zato je razlika majhna; za človeka je ulov z držanjem flipperja zdaj zanesljivejši.)
 
+- **Testna miza.** Bot je na prvi verziji igral 30 min brez konca: (1) žogica iz izstrelitve je po loku padla naravnost v levi outlane
+  (manjkala so vrata orbita kot na Alu mizi) → 99 % drainov v outlanu; (2) lasnica rampe s pravim kotom je žogico odbila nazaj → zdaj gladek lok;
+  (3) žogica je na robu vstopnega okna prešla na plast rampe **zunaj** kanala in pristala v trikotniku slinga. Popravki v motorju:
+  `T.wireform` doda ustje (lijak) na igralni površini, fizika pri rampah s potjo žogico, ki je dlje od osi kot kanal, vrne na površino
+  (Alu rampa nima poti → Alu fizika in zlati test nespremenjena), izhod rampe je v inlanu pod vrhom slinga. Zdaj se vseh 6–8 bot iger konča.
+- **Mapa strelov Alu mize** (f3, 1 ms): code review 39–50 ms z obeh flipperjev, desni orbit 21 ms, rampa le z desnega flipperja 3 ms (ozka),
+  livarna 1–2 ms (v igri jo žogica najde po odboju), desni cradle → B·U·G 28 ms. Tabela v `games/pinball/README.md`.
+- **UI dirka:** `open()` doda razred `show` v naslednjem frame-u; če se zaslon zapre prej (npr. Enter takoj), je temno ozadje ostalo
+  čez mizo. Zdaj se `show` doda le, če je zaslon še odprt.
+
 ## Ni bilo preverjeno
+- **Zapis na Supabase lestvico pod uporabnikom** v živo (brskalnik je imel le anonimno sejo brez profila; ustvarjanje profila in
+  zapis v produkcijsko lestvico sem pustil uporabniku). Offline zapis (`?offline=1`) je preverjen: `seed miza:alu:f1`, meta, rang,
+  zavihki; branje arhiva `scores` s Supabase deluje (10 vrstic z inicialkami).
+- **Ročno igranje** v vidnem podoknu: podokno brskalnika je bilo skrito (rAF ustavljen), zato sem igro, izris, DMD in UI poganjal
+  ročno iz skripte (multiball s 3 žogicami in jackpotom, Nizka/Ultra, telefon 375×812, testna miza z `?debug=1`, mapa strelov in bot v brskalniku).
+  Animacije prehodov (CSS) in občutek v realnem času niso preverjeni.
+- Zlati test v brskalniku se razlikuje od Node (Math.* v Chromu 156 ≠ Node 24) — zato je tam informativen.
+- Match je le prikaz (DMD + zaslon konca), brez nagrade (enoigralska igra brez kreditov).
 
 - **Magic link** (povezava profila z emailom, prijava na drugi napravi) — ni preizkušeno (potrebuje email in
   nastavljen Site URL / Redirect URLs).
@@ -1473,9 +1491,11 @@ Miza kot modul: `games/pinball/src/engine/` (motor) + `games/pinball/src/tables/
 - [x] Ločitev motor / Alu miza (jedro igre, pravila kot vtičnik, miza kot podatek, generičen izris) — zlati test zelen
 - [x] Lestvica po uporabniku prek huba (`miza:<id>:f<verzija>`), arhiv `scores` samo za branje, brez inicialk
 - [x] `?debug=1` (senzorji, drsniki, korak za korakom), merilec strelov (`tools/pinball-shots.mjs`, `?debug=shots`), bot kot modul (`tools/pinball-bot.mjs`)
-- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++): f2 fiksni korak ✓, f3 guma mirnega flipperja ✓
-- [ ] Novi elementi + testna miza `?miza=test`
-- [ ] README (struktura, nova miza, mapa strelov), prompt 23
+- [x] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++): f2 fiksni korak, f3 guma mirnega flipperja
+- [x] Novi elementi (rampe po poti/wireform z zavrnitvijo, zgornji flipper, VUK, saucer, vidni lock, up-post, diverter, standupi,
+      drop banke, captive ball, magnet, spinner, lane change, igrača) + testna miza `?miza=test` + 22 testov elementov
+- [x] Izbira mize `?miza=<id>`, motor uvozljiv iz druge igre (`startApp(table, view, { gameId })`, primer v README)
+- [x] README (struktura, nova miza, elementi, orodja, mapa strelov Alu mize), prompt 23 popravljen
 
 ## Dnevnik
 - **Zlati test pred refaktorjem.** Bot je dobil `trace` (ime dogodka | točke | frame). Prvi poskus po ločitvi je dal 438 razlik:

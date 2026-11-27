@@ -30,7 +30,7 @@ export class UI {
   open(html, name) {
     this.screen = name;
     this.ov.innerHTML = `<div class="card glass">${html}</div>`;
-    requestAnimationFrame(() => this.ov.classList.add('show'));
+    requestAnimationFrame(() => { if (this.screen === name) this.ov.classList.add('show'); });   // zaprt v istem frame-u → ne prikaži
     const prim = this.ov.querySelector('.btn.primary');
     if (prim && !matchMedia('(pointer:coarse)').matches) setTimeout(() => prim.focus({ preventScroll: true }), 60);
     this.ov.querySelectorAll('.btn, .seg button').forEach(b => b.addEventListener('click', () => this.app.audio.play('click')));
@@ -88,6 +88,7 @@ export class UI {
           <button class="btn" id="uSettings">NASTAVITVE</button>
         </div>
       </div>
+      ${(V.links || []).length ? `<div class="btn-row">${V.links.map(l => `<a class="btn" href="${esc(l.href)}">${esc(l.label)}</a>`).join('')}</div>` : ''}
       <div id="uTop">${this.topHtml()}</div>
       ${this.controlsHtml()}
       <div class="hint">${esc(V.hint)}</div>

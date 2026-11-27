@@ -33,6 +33,18 @@ function resolve(b, nx, ny, pen, e, svx = 0, svy = 0) {
 
 const inBox = (x, y, z) => x > z.x1 && x < z.x2 && y > z.y1 && y < z.y2;
 
+/** je žogica dlje od osi rampe, kot dopušča kanal? (samo rampe s path, npr. T.wireform) */
+function offPath(b, R) {
+  const P = R.path, lim = R.width / 2 + 6;
+  let best = Infinity;
+  for (let i = 0; i < P.length - 1; i++) {
+    closest(b.x, b.y, P[i][0], P[i][1], P[i + 1][0], P[i + 1][1]);
+    const d2 = (b.x - _cx) ** 2 + (b.y - _cy) ** 2;
+    if (d2 < best) best = d2;
+  }
+  return best > lim * lim;
+}
+
 /**
  * @param T miza (engine/table.js)
  * @param H obravnavalci dogodkov: seg(s,b,imp,cx,cy,nx,ny), bumper(c,b), sensor(s,b), layer(b,from,to,why,ramp), flip(f,b,imp),
@@ -207,7 +219,10 @@ export function createPhysics(T, H) {
       const R = ramps[b.ramp];
       if (!R) { b.layer = 0; return; }
       const F = R.fail, X = R.exit, B = R.bounds;
-      if (b.y >= F.y && py < F.y && b.x > F.x1 && b.x < F.x2) {
+      if (R.path && offPath(b, R)) {
+        // rampa po poti: žogica ne more biti izven kanala (npr. vstop na robu okna) → nazaj na površino
+        b.layer = 0; H.layer(b, R.layer, 0, 'fail', R);
+      } else if (b.y >= F.y && py < F.y && b.x > F.x1 && b.x < F.x2) {
         b.layer = 0; H.layer(b, R.layer, 0, 'fail', R);
       } else if ((X.dir === 'up' ? b.y <= X.y : b.y >= X.y) && b.x > X.x1 && b.x < X.x2) {
         b.layer = 0; H.layer(b, R.layer, 0, 'exit', R);

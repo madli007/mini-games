@@ -1,6 +1,7 @@
 /* =====================================================================
    APLIKACIJA — povezuje jedro, pravila mize, izris, DMD, zvok, UI in vnos.
-   startApp(table, view) zažene izbrano mizo v index.html (#view, #dmd …).
+   startApp(table, view, { gameId, debug }) zažene izbrano mizo v index.html (#view, #dmd …).
+   gameId: id igre v hubu (privzeto pinball); druga igra, ki uvozi motor, poda svojega.
    table = tables/<id>/index.js (logika), view = tables/<id>/view.js (grafika).
    ===================================================================== */
 import { W, H, QUALITY } from './config.js';
@@ -25,7 +26,7 @@ export function startApp(table, view = {}, opts = {}) {
   const renderer = new Renderer($('view'), T, game, bus, view);
   const dmd = new DMD($('dmd'), $('dmdGlow'), view.dmd || {}, PAL);
   const audio = new Audio(settings);
-  Board.init(table.id);
+  Board.init(table.id, opts.gameId || 'pinball');
 
   const isTouch = matchMedia('(pointer: coarse)').matches;
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });

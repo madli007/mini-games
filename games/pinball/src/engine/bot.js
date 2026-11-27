@@ -30,7 +30,7 @@ export function makeGame(table) {
  * @param trace (ime, točke, frame) za vsak dogodek (zlati test)
  * @param maxSec varovalo
  */
-export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 1800 } = {}) {
+export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 1800, inspect = null, onFrame = null } = {}) {
   const rnd = seeded(seed);
   const save = Math.random;
   Math.random = rnd;               // determinizem
@@ -39,7 +39,8 @@ export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 
   let frame = 0;
   // kje odteče žogica (za poročilo): sredina med flipperji ali outlane
   const drains = { center: 0, outlane: 0, other: 0 };
-  const fl = T.flippers.filter(f => f.layer === 0);
+  const low = Math.max(...T.flippers.map(f => f.py));
+  const fl = T.flippers.filter(f => f.layer === 0 && f.py >= low - 30);     // spodnja flipperja (brez zgornjih)
   const fx1 = Math.min(...fl.map(f => f.px)), fx2 = Math.max(...fl.map(f => f.px));
   bus.on('*', (d, n) => {
     ev[n] = (ev[n] || 0) + 1;
@@ -85,7 +86,9 @@ export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 
       g.update(FRAME);
       t += FRAME;
       frame++;
+      if (onFrame) onFrame(g, frame);
     }
+    if (inspect) inspect(g);
     const st = g.rules.gameStats();
     const shots = Object.values(g.shotCounts).reduce((a, x) => a + x, 0);
     return {
