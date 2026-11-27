@@ -6,7 +6,8 @@
 import { Bus } from '../src/bus.js';
 import { buildTable, insideTable, PLUNGER_Y, SCOOP } from '../src/table.js';
 import { Game } from '../src/rules.js';
-import { BR, MAXV, STEP } from '../src/config.js';
+import { BR, MAXV, STEP, PHYSICS_VERSION } from '../src/config.js';
+import { goldenRun, compareGolden, GOLDEN_SEEDS } from './golden.js';
 
 const FRAME = 1 / 60;
 
@@ -249,13 +250,14 @@ export function rulesTest() {
 }
 
 /* ---------------- bot: simulirane igre ---------------- */
-export function botGame(seed = 1, skill = 0.75) {
+export function botGame(seed = 1, skill = 0.75, trace = null) {
   const rnd = seeded(seed);
   const save = Math.random;
   Math.random = rnd;               // determinizem
   const { g, bus, T } = makeGame();
   const ev = {};
-  bus.on('*', (d, n) => { ev[n] = (ev[n] || 0) + 1; });
+  let frame = 0;
+  bus.on('*', (d, n) => { ev[n] = (ev[n] || 0) + 1; if (trace) trace(n, g.score, frame); });
   g.startGame();
   let t = 0;
   const hold = { L: 0, R: 0 };
@@ -293,10 +295,11 @@ export function botGame(seed = 1, skill = 0.75) {
     }
     g.update(FRAME);
     t += FRAME;
+    frame++;
   }
   Math.random = save;
   return {
-    seed, sec: Math.round(t), score: g.score, over: g.state === 'over',
+    seed, sec: Math.round(t), frames: frame, events: ev, score: g.score, over: g.state === 'over',
     modes: g.modesCompleted, wizards: g.wizards, multiballs: ev.multiball || 0, jackpots: ev.jackpot || 0,
     ramps: ev.rampMade || 0, orbits: ev.orbit || 0, scoops: ev.scoopEnter || 0, drains: ev.drain || 0,
     modeStarts: ev.modeStart || 0, extraBalls: ev.extraBall || 0, searches: ev.ballSearch || 0,
@@ -305,7 +308,7 @@ export function botGame(seed = 1, skill = 0.75) {
 }
 
 /* ---------------- vse skupaj ---------------- */
-export function runAll(log = console.log, { games = 12 } = {}) {
+export function runAll(log = console.log, { games = 12, golden = undefined } = {}) {
   const results = [];
   const check = (name, ok, info = '') => { results.push({ name, ok }); log((ok ? '✔ ' : '✘ ') + name + (info ? '  — ' + info : '')); };
 
@@ -332,9 +335,19 @@ export function runAll(log = console.log, { games = 12 } = {}) {
 
   for (const r of rulesTest()) check('pravila: ' + r.name, r.ok);
 
-  const gs = [];
-  for (let i = 0; i < games; i++) gs.push(botGame(1000 + i * 17));
-  for (const x of gs) log('bot ' + JSON.stringify(x));
+  const seeds = [];
+  for (let i = 0; i < games; i++) seeds.push(1000 + i * 17);
+  const gold = goldenRun((seed, tr) => botGame(seed, 0.75, tr), PHYSICS_VERSION, seeds);
+  const gs = gold.raw;
+  for (const x of gs) { const { events, ...rest } = x; log('bot ' + JSON.stringify(rest)); }
+  if (golden !== undefined) {
+    if (seeds.length < GOLDEN_SEEDS.length) log('zlati test preskočen (premalo iger)');
+    else {
+      const diffs = compareGolden({ physicsVersion: gold.physicsVersion, games: gold.games.slice(0, GOLDEN_SEEDS.length) }, golden);
+      for (const d of diffs.slice(0, 20)) log('   ' + d);
+      check('zlati test (fizika f' + PHYSICS_VERSION + ')', diffs.length === 0, diffs.length ? diffs.length + ' razlik' : '12 iger enako');
+    }
+  }
   const avg = k => gs.reduce((a, x) => a + x[k], 0) / gs.length;
   log(`povprečje: ${Math.round(avg('sec'))} s, ${Math.round(avg('score')).toLocaleString('sl-SI')} točk, misij ${avg('modes').toFixed(2)}, multiballov ${avg('multiballs').toFixed(2)}, ramp ${avg('ramps').toFixed(1)}`);
   check('vse igre se končajo', gs.every(x => x.over));

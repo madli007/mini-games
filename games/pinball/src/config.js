@@ -49,6 +49,9 @@ export const CFG = {
   spinZaKickback: 50,
 };
 
+// verzija fizike: poveča se ob vsaki namerni spremembi fizike (zlati test, lestvica po verziji)
+export const PHYSICS_VERSION = 1;
+
 // logične dimenzije mize in fizika (uglašeno — previdno!)
 export const W = 600, H = 1000;
 export const BR = 10;               // polmer žogice
