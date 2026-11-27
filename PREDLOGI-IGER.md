@@ -14,7 +14,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 15. Hrčkova krogla (+ urejevalnik, proge skupnosti, naključne proge) | ✅ (📝 dirka, okolica) | `games/krogla/` |
 | Rušilec (party arena Krogle) | ✅ | `games/rusilec/` |
 | 19. Zaporedje | ✅ | `games/zaporedje/` |
-| Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj | `games/herodle/` |
+| Herodle (izven tega seznama, `../herodle.md`) | 🟡 faza 1–2 ✅, 📝 dvoboj (15), novi MCU liki in težavnost tedna (41), Herodex + vadba + trgovina (42), način Skupine (43) | `games/herodle/` |
 | 40. Dirka frnikol | 🟡 1. del ✅, 📝 2.–4. del | `games/frnikole/` |
 | 36. Smučarski skoki | ✅ vse tri faze (tekma, dnevni izziv, letalnica, svetovni pokal, kariera, oprema v trgovini), prave skakalnice ✅ | `games/skoki/`, prompti 11, 12, 29, 13 |
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
@@ -631,7 +631,7 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
 Hub, Ladjice, Krogla, Rušilec, Zaporedje, Herodle (1–2) in Dirka frnikol (1. del) so narejeni. Naprej:
 
 1. **Prompti, ki že čakajo** (vrstni red in predpogoji v [`prompts/README.md`](prompts/README.md)): nadaljevanja
-   Frnikol, Herodle dvoboj, Krogla dirka in okolica, Minigolf, Skoki, Božični pinball.
+   Frnikol, Herodle (dvoboj, novi MCU liki, Herodex, Skupine), Krogla dirka in okolica, Minigolf, Skoki, Božični pinball.
 2. **Majhne igre ★** (16–34), ko je malo porabe: npr. Stolp, Tarče, Kača.
 3. **Party igre** (11–13) za večjo družbo: Kdo je izdajalec, Kviz.
 4. **Večje nove igre:** Rudar (57) → Alu obramba (58) → Topovi (59) → Bomba arena (7) → Plemena (1).

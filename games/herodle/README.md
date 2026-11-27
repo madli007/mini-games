@@ -7,6 +7,8 @@ Neuradna fan igra, ni povezana z Marvel ali DC (brez slik, logotipov, citatov).
 Faze: 1. podatki, Klasika (3 bazeni, težki način), bonus, statistika, deljenje, Supabase ·
 **2. (narejena)** `prompts/14-herodle-nacini.md` (Emoji, Kostum, Dosje, arhiv, popolni dan) ·
 3. `prompts/15-herodle-dvoboj.md` (dvoboj, TV).
+Nadgradnje (čakajo): `prompts/41-herodle-liki.md` (~75 novih MCU likov, pravilo `inMcu`, debi v MCU, težavnost tedna) ·
+`prompts/42-herodle-zbirka.md` (Herodex, vadba, statistika dneva, trgovina) · `prompts/43-herodle-skupine.md` (način Skupine).
 
 ## Zgradba
 
