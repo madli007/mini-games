@@ -18,7 +18,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 40. Dirka frnikol | 🟡 1. del ✅, 📝 2.–4. del | `games/frnikole/` |
 | 36. Smučarski skoki | ✅ vse tri faze (tekma, dnevni izziv, letalnica, svetovni pokal, kariera, oprema v trgovini), prave skakalnice ✅ | `games/skoki/`, prompti 11, 12, 29, 13 |
 | 37. Hrčkov minigolf | 📝 | prompt 10 |
-| 41. Druga pinball miza (Božični pinball) + več igralcev | 🟡 | prompt 22 ✅ (motor), 23–25 čakajo |
+| 41. Druga pinball miza (Božični pinball) + več igralcev | 🟡 | prompta 22 ✅ (motor) in 23 ✅ (miza), 24–25 čakata |
 | 3. Lane wars skozi dobe | 📝 | prompt 26 |
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
 | 6. Motorist (fizikalni trial) | 📝 | prompti 32–34 |
@@ -394,7 +394,7 @@ in urejevalnika prog iz `games/krogla/` ter 2D fizike, flipperjev in DMD-ja iz `
 **B) Na motorju pinballa**
 
 41. 🟡 **Druga miza in več igralcev v pinballu** ★★
-    - **Stanje:** 🟡 `22-pinball-motor` ✅ (`89d8a4c`: motor, miza kot modul, lestvica po uporabniku, debug, merilec strelov, fizika f3); čakajo `23-pinball-bozic-miza`, `24-pinball-bozic-pravila`, `25-pinball-vec-igralcev`
+    - **Stanje:** 🟡 `22-pinball-motor` ✅ (`89d8a4c`: motor, miza kot modul, lestvica po uporabniku, debug, merilec strelov, fizika f3); `23-pinball-bozic-miza` ✅ (`47e79b6`: igra `bozicni-pinball`, miza, pravila multiballa, grafika); čakata `24-pinball-bozic-pravila`, `25-pinball-vec-igralcev`
     - `table.js` naj postane podatkovna datoteka, da so mize JSON (kot proge v Krogli).
     - Druga miza z drugo temo, npr. **»Hrčkova tovarna«** (crossover: multiball s hrčki, krogla kot misija na DMD-ju).
     - **2–4 igralci izmenično** (igralec 1, 2, 3 … kot pri pravih avtomatih) prek room kode, drugi gledajo v živo.
