@@ -6,7 +6,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
 **kovanci, dnevne naloge in trgovina s kozmetiko** (`shop.html`) ter **register iger** (`games.json`).
 
 - Objavljeno: **https://madli007.github.io/mini-games/**
-- Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (kopija), **Potapljanje ladjic**
+- Igre: **Reakcija** (demo: dnevni izziv + dvoboj do 10 igralcev), **Alu Pinball** (motor + miza kot modul), **Božični pinball**
+  (»Trije dobri možje«: druga miza na istem motorju — rampe, dimnik, jelka, darilni multiball), **Potapljanje ladjic**
   (kapitani, mana, powerupi; solo proti AI, dnevni izziv, dvoboj, battle royale do 10, TV pogled), **Hrčkova krogla**
   (3D, 28 prog — od ~10-sekundnih sprintov do dvominutnega maratona, težavnost ★–★★★★★ izmerjena z meritvami;
   7 turnirjev/pokalov s prenosom časa in svojimi lestvicami — Klasični, Hrčkov, Sprint, Svetovna turneja, Maraton, Peklenski,
@@ -39,7 +40,8 @@ Odpri http://localhost:8124/. Uporabni parametri:
 **Multiplayer brez Supabasea:** odpri igro z `?offline=1` v dveh ali treh zavihkih. Vsak dodatni hkrati
 odprt zavihek dobi gostujoči profil, sporočila gredo prek `BroadcastChannel`.
 
-Testi: `node tests/run-node.mjs` ali http://localhost:8124/tests.html. Pinball: `node games/pinball/tests/run-node.mjs`.
+Testi: `node tests/run-node.mjs` ali http://localhost:8124/tests.html. Pinball (obe mizi): `node games/pinball/tests/run-node.mjs`.
+Merilec strelov in bot pinballa: `node tools/pinball-shots.mjs bozic`, `node tools/pinball-bot.mjs bozic 200` (ali `alu`).
 
 ## Nastavitev Supabase (korak za korakom)
 
@@ -70,7 +72,7 @@ Shema huba (`supabase/schema.sql`) je na projektu **že pognana**; pinball tabel
 2. Ponovi korake 1, 3 in 4 zgoraj.
 3. V `shared/config.js` vpiši `SUPABASE_URL` in `SUPABASE_ANON_KEY` (*Project Settings → API Keys →
    publishable*). **Nikoli ne vpiši `service_role` ključa.**
-4. Pinball ima svojo konfiguracijo v `games/pinball/src/config.js` (`lestvica.url`, `lestvica.kljuc`).
+4. Pinball (obe mizi) uporablja lestvico huba (`game_scores`, `seed = miza:<id>:f<verzija fizike>`); stara tabela `scores` je le arhiv za branje.
 5. Prazni vrednosti v `config.js` = vedno offline način.
 
 ## Varnost in »časten« način
@@ -117,13 +119,15 @@ games/ladjice/                            Potapljanje ladjic (logic.js, ai.js, c
 games/krogla/                             Hrčkova krogla (physics, level, rules, ghost, render, … · levels/*.json · README.md)
 games/rusilec/                            Rušilec (match, collide, net, bots, arena, view · arenas/*.json · README.md)
 games/ustavi-uro/                         Ustavi uro (logic.js, audio.js, game.js, game.css)
-games/pinball/                            kopija ALU PINBALL 2.0 (izvirnik v repoju pinball)
+games/pinball/                            pinball: motor (src/engine/) + Alu miza (src/tables/alu/) · README.md
+games/bozicni-pinball/                    Božični pinball: miza v table/, uvaža motor iz ../pinball/src/engine/ · README.md
 supabase/schema.sql                       shema huba (idempotentna)
 supabase/games/                           SQL posameznih iger (če ga potrebujejo)
 tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
 tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)
 tools/rusilec-arenas.mjs                  generator aren Rušilca (arenas/*.json + index.json)
+tools/pinball-shots.mjs, pinball-bot.mjs  merilec strelov in bot statistika pinball miz
 prompts/README.md                         kazalo vseh promptov (stanje, vrstni red, naslednja prosta številka)
 prompts/NN-*.md                           prompti, s katerimi so nastale igre (01 hub, 02 trgovina …) in čakajoči
 prompts/TEMPLATE-igra.md                  predloga prompta za novo igro
