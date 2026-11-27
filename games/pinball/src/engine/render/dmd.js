@@ -2,19 +2,9 @@
    DMD — barvni »dot matrix« zaslon 128 × 32 z animacijami
    Lastna bitna pisava 5×7 (s Č Š Ž), izris pik z masko in sijem.
    ===================================================================== */
-import { CFG, PAL, MODES } from '../config.js';
-import { fmt } from '../rules.js';
-import { logoBitmap } from '../logos.js';
+import { DEFAULT_PAL, fmt } from '../config.js';
 
-// zanimivosti za attract način
-const FACTS = [
-  ['IMPOL', 'OD 1825'],
-  ['ALUMINIJ', 'OD 1950'],
-  ['INDUSTRIJA METALNIH', 'POLIZDELKOV'],
-  ['ALCAD OD 1995', 'ALCLOUD'],
-  ['IZVOZ NA', '50 TRGOV'],
-  ['BISTRICA SEVOJNO', 'ŠIBENIK NEW YORK'],
-];
+let PAL = DEFAULT_PAL;
 
 export const DW = 128, DH = 32;
 
@@ -68,8 +58,14 @@ export function textWidth(s, scale = 1) {
 
 /* ---------------- DMD ---------------- */
 export class DMD {
-  constructor(canvas, glow) {
+  /**
+   * opts (iz tables/<id>/view.js → dmd): title { big, small, ver, sub }, bootLines, bonusTitle, facts,
+   * logo(w, h) → bitna slika ali null, logoText, attractExtra(dmd, t, per, game), footer [vrstica1, vrstica2]
+   */
+  constructor(canvas, glow, opts = {}, pal) {
     this.canvas = canvas; this.glow = glow;
+    this.o = opts;
+    if (pal) PAL = pal;
     this.ctx = canvas.getContext('2d');
     this.gctx = glow ? glow.getContext('2d') : null;
     this.low = document.createElement('canvas'); this.low.width = DW; this.low.height = DH;
@@ -196,11 +192,7 @@ export class DMD {
       const t = Math.ceil(m.t);
       this.text(t + 'S', DW - 2, 1, { color: t <= 5 && Math.floor(this.t * 4) % 2 ? [1, 0.2, 0.2] : mc, align: 'right' });
       this.text(fmt(this.dispScore), DW / 2, 10, { scale: 2, color: C, align: 'center' });
-      let info = '';
-      if (m.id === 'talina') info = 'BUMPERJI ' + m.prog + '/' + m.goal;
-      else if (m.id === 'valjarna') info = Math.min(m.goal, m.prog) + ' / ' + m.goal + ' M';
-      else if (m.id === 'hotfix') info = 'RAMPA = ' + fmt(m.value);
-      else if (m.id === 'sprint') info = 'NALOGE ' + m.prog + '/' + m.goal;
+      const info = m.info ?? (m.goal ? m.prog + ' / ' + m.goal : '');
       this.fit(info, 25, { color: mc, align: 'center' });
       const w = Math.round((DW - 4) * m.t / m.total);
       this.rect(2, 9, w, 1, mc, 0.8);
@@ -210,17 +202,18 @@ export class DMD {
     const big = textWidth(sc, 2) <= DW - 4;
     this.text(sc, DW / 2, big ? 7 : 10, { scale: big ? 2 : 1, color: C, align: 'center' });
     this.text('ŽOGA ' + s.ball + '/' + s.balls, 2, 25, { color: dim });
-    let right = '';
-    if (s.wizard) right = 'FINALE!';
-    else if (s.multiball) right = 'MULTIBALL';
-    else if (s.combo >= 2) right = 'COMBO ×' + s.combo;
-    else if (s.mult > 1) right = 'BONUS ×' + s.mult;
-    else if (s.lockLit) right = 'LOCK!';
-    if (right) this.text(right, DW - 2, 25, { color: s.wizard || s.multiball ? hex(PAL.gold) : cyan, align: 'right' });
+    const idle = game.rules && game.rules.dmdIdle(s);
+    let right = idle ? idle.text : '';
+    if (!idle) {
+      if (s.multiball) right = 'MULTIBALL';
+      else if (s.combo >= 2) right = 'COMBO ×' + s.combo;
+      else if (s.mult > 1) right = 'BONUS ×' + s.mult;
+    }
+    if (right) this.text(right, DW - 2, 25, { color: (idle ? idle.gold : s.multiball) ? hex(PAL.gold) : cyan, align: 'right' });
     if (s.ballSave > 0 && Math.floor(this.t * 3) % 2) this.text('SAVE', DW / 2, 25, { color: cyan, align: 'center' });
     if (s.tiltWarn && !s.tilted) this.text('POZOR', DW / 2, 0, { color: [1, 0.2, 0.2], align: 'center' });
     // waiting for plunger
-    if (game.ballWaiting && game.ballWaiting() && game.skillArmed) {
+    if (s.skillArmed) {
       if (Math.floor(this.t * 2) % 2) this.text('SKILL SHOT', DW / 2, 0, { color: [1, 1, 1], align: 'center' });
     }
   }
@@ -303,7 +296,7 @@ export class DMD {
         if (t > 1.0) {
           this.rect(64, 0, 64, DH, [0, 0, 0], 0);
           this.text(m.text, 96, 2, { color: c, align: 'center' });
-          if (m.sub) this.text(MODES[1].cilj + ' M', 96, 24, { color: [1, 1, 1], align: 'center' });
+          if (m.sub && m.goal) this.text(m.goal + ' M', 96, 24, { color: [1, 1, 1], align: 'center' });
         }
         break;
       }
@@ -327,8 +320,18 @@ export class DMD {
           this.px(x, 0, RB[ci]); this.px(x, DH - 1, RB[(ci + 3) % RB.length]);
         }
         this.spark(hex(PAL.gold), 3);
-        const s = this.title(t < 2 ? 'NAROČILO' : 'IZPOLNJENO', 4, RB[Math.floor(t * 6) % RB.length]);
+        const words = String(m.text).split(' '), half = Math.ceil(words.length / 2);
+        const s = this.title(words.length > 1 ? (t < 2 ? words.slice(0, half).join(' ') : words.slice(half).join(' ')) : m.text, 4, RB[Math.floor(t * 6) % RB.length]);
         this.fit(m.sub, 23, { color: [1, 1, 1], align: 'center' });
+        break;
+      }
+      case 'match': {
+        // match: vrtenje številk, nato rezultat
+        const spin = t < 1.6, n = spin ? Math.floor(t * 20) % 10 * 10 : m.num;
+        this.text('MATCH', 2, 2, { color: c });
+        this.text(String(n).padStart(2, '0'), DW - 30, 8, { scale: 2, color: [1, 1, 1], align: 'center' });
+        this.text(String(m.last).padStart(2, '0'), 30, 14, { color: [0.7, 0.7, 0.7], align: 'center' });
+        if (!spin) this.text(m.hit ? 'MATCH!' : '', DW / 2, 24, { color: hex(PAL.gold), align: 'center', alpha: Math.floor(t * 4) % 2 ? 1 : 0.4 });
         break;
       }
       case 'tilt': {
@@ -360,7 +363,7 @@ export class DMD {
       return;
     }
     const k = Math.min(1, b.t / 1.8);
-    this.text(CFG.imena.kadri + ': IZPLAČILO', DW / 2, 0, { color: hex(PAL.cyan), align: 'center' });
+    this.text(this.o.bonusTitle || 'BONUS', DW / 2, 0, { color: hex(PAL.cyan), align: 'center' });
     this.text(fmt(b.base * k) + ' × ' + b.mult, DW / 2, 10, { color: [1, 1, 1], align: 'center' });
     if (b.t > 1.9) this.text(fmt(b.bonus), DW / 2, 19, { scale: textWidth(fmt(b.bonus), 2) < DW ? 2 : 1, color: C, align: 'center' });
   }
@@ -374,13 +377,14 @@ export class DMD {
       case 0: {
         // logotip z lesketom
         const sweep = (t * 70) % 200 - 30;
-        this.text('ALU', 22, 3, { scale: 3, color: C });
-        this.text('PINBALL', 82, 5, { color: cy, align: 'center' });
-        this.text(CFG.verzija, 82, 16, { scale: 1, color: [1, 1, 1], align: 'center' });
+        const TT = Object.assign({ big: 'PIN', small: 'BALL', ver: '', sub: '' }, this.o.title || {});
+        this.text(TT.big, 22, 3, { scale: 3, color: C });
+        this.text(TT.small, 82, 5, { color: cy, align: 'center' });
+        this.text(TT.ver, 82, 16, { scale: 1, color: [1, 1, 1], align: 'center' });
         for (let y = 0; y < DH; y++) for (let x = 0; x < DW; x++) {
           if (Math.abs(x - sweep + y * 0.6) < 3) { const i = (y * DW + x) * 3; if (this.buf[i] + this.buf[i + 1] > 0.3) this.px(x, y, [1, 1, 1], 1); }
         }
-        this.text('IMPOL × ALCAD', 82, 25, { color: gr, align: 'center' });
+        this.text(TT.sub, 82, 25, { color: gr, align: 'center' });
         break;
       }
       case 1: {
@@ -392,13 +396,13 @@ export class DMD {
         for (let i = 0; i < 2; i++) {
           const n = off + i + 1, e = s[off + i];
           if (!e) continue;
-          this.text(n + '. ' + e.name, 2, 11 + i * 10, { color: n === 1 ? gold : cy });
+          this.text(n + '. ' + String(e.name).slice(0, 10), 2, 11 + i * 10, { color: n === 1 ? gold : cy });
           this.text(fmt(e.score), DW - 2, 11 + i * 10, { color: C, align: 'right' });
         }
         break;
       }
       case 2: {
-        const lines = ['$ ./alu-pinball --start', '> nalagam talino...', '> pritisni START'];
+        const lines = this.o.bootLines || ['$ ./pinball --start', '> nalagam mizo...', '> pritisni START'];
         let chars = Math.floor(t * 24), y = 1;
         for (const ln of lines) {
           const sh = ln.slice(0, Math.max(0, chars));
@@ -423,13 +427,14 @@ export class DMD {
         break;
       }
       case 5: {
-        this.drawMsg({ anim: 'roll', t: t, dur: per, text: CFG.imena.orbit, col: cy, sub: '' }, game);
+        if (this.o.attractExtra) this.o.attractExtra(this, t, per, game);
+        else this.text('NAJBOLJŠI ' + fmt(this.scores[0] ? this.scores[0].score : 0), DW / 2, 12, { color: gold, align: 'center' });
         break;
       }
       case 6: {
         // logotip Impol (če je naložen) z lesketom
-        const bw = 96, bh = 30, bmp = logoBitmap('impol', bw, bh);
-        if (!bmp) { this.text(CFG.firmaA, DW / 2, 9, { scale: 2, color: cy, align: 'center' }); break; }
+        const bw = 96, bh = 30, bmp = this.o.logo ? this.o.logo(bw, bh) : null;
+        if (!bmp) { this.text(this.o.logoText || 'PINBALL', DW / 2, 9, { scale: 2, color: cy, align: 'center' }); break; }
         const x0 = (DW - bw) >> 1, y0 = 1, sweep = (t * 60) % 170 - 30, blue = [0.3, 0.62, 1];
         for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
           const v = bmp[y * bw + x];
@@ -440,14 +445,16 @@ export class DMD {
         break;
       }
       case 7: {
+        const FACTS = this.o.facts && this.o.facts.length ? this.o.facts : [['PINBALL', 'MOTOR']];
         const f = FACTS[Math.floor(this.attractT / (per * pages)) % FACTS.length];
         this.fit(f[0], 4, { color: cy, align: 'center' });
         this.fit(f[1], 17, { color: C, align: 'center' });
         break;
       }
       default: {
-        this.text('NEURADNA IGRA', DW / 2, 4, { color: [0.9, 0.9, 0.9], align: 'center' });
-        this.text('ZA HEC', DW / 2, 15, { scale: 1, color: C, align: 'center' });
+        const ft = this.o.footer || ['NEURADNA IGRA', 'ZA HEC'];
+        this.text(ft[0], DW / 2, 4, { color: [0.9, 0.9, 0.9], align: 'center' });
+        this.text(ft[1], DW / 2, 15, { scale: 1, color: C, align: 'center' });
         this.text('♥', DW / 2, 24, { color: [1, 0.3, 0.4], align: 'center' });
       }
     }

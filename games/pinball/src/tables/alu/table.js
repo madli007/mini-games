@@ -1,8 +1,10 @@
 /* =====================================================================
-   MIZA — geometrija (logične koordinate 600 × 1000, y navzdol)
-   Plasti: 0 = igralna površina, 1 = rampa, 2 = obe plasti.
+   ALU MIZA — geometrija (logične koordinate 600 × 1000, y navzdol)
+   Plasti: 0 = igralna površina, 1 = rampa »stiskalnica«.
+   Vrstni red elementov je pomemben (vrstni red trkov v fiziki → zlati test).
    ===================================================================== */
-import { PAL } from './config.js';
+import { createTable } from '../../engine/table.js';
+import { PAL, CFG } from './config.js';
 
 export const PLUNGER_Y = 957;
 export const SCOOP = { x: 490, y: 470 };
@@ -17,34 +19,9 @@ export const RAMP = {
 };
 
 export function buildTable() {
-  const T = {
-    segs: [], bumpers: [], sensors: [], slings: [], drops: [], lamps: [], flippers: [],
-    posts: [], plunger: null,
-  };
-
-  const seg = (ax, ay, bx, by, o = {}) => {
-    const s = {
-      ax, ay, bx, by,
-      r: o.r ?? 2, e: o.e ?? 0.4, kind: o.kind || 'wall', layer: o.layer ?? 0,
-      active: true, flash: 0, cool: 0, data: o.data || null, oneWay: !!o.oneWay,
-      nx: 0, ny: 0, look: o.look || 'rail', draw: o.draw ?? true,
-    };
-    if (s.oneWay) {            // trdna stran je na strani normale (dy, -dx)
-      const dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy);
-      s.nx = dy / l; s.ny = -dx / l;
-    }
-    // AABB za hitro izločanje
-    s.minx = Math.min(ax, bx) - s.r; s.maxx = Math.max(ax, bx) + s.r;
-    s.miny = Math.min(ay, by) - s.r; s.maxy = Math.max(ay, by) + s.r;
-    T.segs.push(s);
-    return s;
-  };
-  const poly = (pts, o) => {
-    const out = [];
-    for (let i = 0; i < pts.length - 1; i++) out.push(seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], o));
-    return out;
-  };
-  T.seg = seg;
+  const T = createTable({ id: 'alu' });
+  const { seg, poly } = T;
+  const N = CFG.imena;
 
   /* ---------- zunanji rob ---------- */
   const arc = [];
@@ -59,7 +36,7 @@ export function buildTable() {
   /* ---------- izstrelitveni kanal ---------- */
   seg(545, 1040, 545, 335, { r: 3 });
   seg(545, 335, 580, 300, { oneWay: true, kind: 'gate', e: 0.25, look: 'gate' });
-  T.plunger = seg(545, PLUNGER_Y, 580, PLUNGER_Y, { kind: 'plunger', e: 0.05, r: 0, draw: false });
+  T.launcher({ x: 562.5, y: PLUNGER_Y, laneX: 546, laneY: 880, travel: 28, x1: 545, x2: 580 });
 
   /* ---------- levi orbit (valjarna) ---------- */
   seg(20, 338, 68, 375, { oneWay: true, kind: 'gate', e: 0.25, look: 'gate' });
@@ -71,19 +48,11 @@ export function buildTable() {
   }
 
   /* ---------- pop bumperji (peči »Al 13«) ---------- */
-  for (const [x, y] of [[235, 215], [335, 215], [285, 292]]) {
-    T.bumpers.push({ x, y, r: 26, flash: 0, cool: 0, pop: 0, i: T.bumpers.length });
-  }
+  for (const [x, y] of [[235, 215], [335, 215], [285, 292]]) T.bumper(x, y, { r: 26, label: 'Al', sub: '13' });
 
   /* ---------- slingshoti ---------- */
-  const mkSling = (A, B, C, side) => {
-    seg(A[0], A[1], B[0], B[1], { r: 3, e: 0.6, look: 'rubber' });
-    seg(B[0], B[1], C[0], C[1], { r: 3, e: 0.6, look: 'rubber' });
-    const kick = seg(A[0], A[1], C[0], C[1], { r: 3, e: 0.6, kind: 'sling', draw: false, data: { side } });
-    T.slings.push({ A, B, C, kick, side, flash: 0, bend: 0 });
-  };
-  mkSling([100, 705], [100, 790], [165, 828], 'L');
-  mkSling([465, 705], [465, 790], [400, 828], 'R');
+  T.sling([100, 705], [100, 790], [165, 828], 'L', { label: N.sling });
+  T.sling([465, 705], [465, 790], [400, 828], 'R', { label: N.sling });
 
   /* ---------- outlane / inlane vodila ---------- */
   // vrh vodila je nagnjen proti steni → ozek vhod v outlane, gumijast drog odbija nazaj
@@ -94,16 +63,10 @@ export function buildTable() {
   seg(515, 682, 515, 682, { r: 6, e: 0.75, look: 'rubberPost', kind: 'post' });
 
   /* ---------- B·U·G drop tarče ---------- */
-  for (let i = 0; i < 3; i++) {
-    const y0 = 560 + i * 45;
-    const s = seg(533, y0, 533, y0 + 36, { kind: 'drop', r: 5, e: 0.3, data: { idx: i }, draw: false });
-    s.sink = 0;               // 0 = gor, 1 = pogreznjena (animacija)
-    T.drops.push(s);
-  }
+  T.dropBank('bug', [0, 1, 2].map(i => [533, 560 + i * 45, 533, 560 + i * 45 + 36]), { labels: ['B', 'U', 'G'], color: PAL.code, name: 'B·U·G' });
 
   /* ---------- code review tarča (sredina) ---------- */
-  T.review = seg(264, 430, 300, 430, { kind: 'review', r: 5, e: 0.35, draw: false });
-  T.review.wobble = 0;
+  T.review = T.standup('review', 264, 430, 300, 430, { face: [0, 1], label: 'REVIEW', color: PAL.magenta });
 
   /* ---------- rampa (plast 1) ---------- */
   const R = RAMP, L1 = { layer: 1, r: 2, e: 0.25, look: 'ramp' };
@@ -128,36 +91,54 @@ export function buildTable() {
   // ustje rampe na igralni površini (lijak)
   seg(R.upL, R.entryY, 160, 585, { r: 3, e: 0.35, look: 'rampLip' });
   seg(R.upR, R.entryY, 222, 585, { r: 3, e: 0.35, look: 'rampLip' });
+  // prehodi plasti: vhod čez ustje navzgor, padec nazaj (prešibek strel), izhod na levi inlane
+  T.ramp({
+    id: 'ramp', layer: 1, label: N.ramp, made: 'rampMade', friction: 0.35,
+    entry: { y: R.entryY, x1: R.entryX1 - 2, x2: R.entryX2 + 2 },
+    fail: { y: R.entryY, x1: R.entryX1 - 4 },
+    exit: { y: R.exitY, x2: R.downR + 4, dir: 'down' },
+    bounds: { x2: R.upR + 30, y1: 250, y2: R.exitY + 30 },
+    lift: [{ x1: R.upL - 4, y1: R.turnY, ay: 520 }],      // vzpon: dodatna komponenta proti vhodu
+  });
 
   /* ---------- flipperji ---------- */
-  T.flippers.push(
-    { side: 'L', px: 195, py: 880, len: 74, rest: 0.52, up: -0.45, angle: 0.52, omega: 0, r1: 13, r2: 7, pressed: false, enabled: true },
-    { side: 'R', px: 370, py: 880, len: 74, rest: Math.PI - 0.52, up: Math.PI + 0.45, angle: Math.PI - 0.52, omega: 0, r1: 13, r2: 7, pressed: false, enabled: true },
-  );
+  T.flipper({ side: 'L', px: 195, py: 880, len: 74, rest: 0.52, up: -0.45, r1: 13, r2: 7, label: 'ALU' });
+  T.flipper({ side: 'R', px: 370, py: 880, len: 74, rest: Math.PI - 0.52, up: Math.PI + 0.45, r1: 13, r2: 7, label: 'ALU' });
 
   /* ---------- senzorji ---------- */
-  const sensor = (kind, x, y, r, o = {}) => {
-    const s = { kind, x, y, r, layer: o.layer ?? 0, idx: o.idx ?? 0, inside: new Set() };
-    T.sensors.push(s);
-    return s;
+  const lanes = ['A', 'L', 'U'].map((ch, i) => T.sensor('lane', 240 + 50 * i, 113, 13, { idx: i }));
+  T.laneGroup('alu', lanes);
+  T.sensor('orbit', 40, 312, 18);
+  T.spinner('spinner', SPINNER.x, SPINNER.y, { w: 38, r: 20, label: 'VALJ', x1: 22, x2: 66 });
+  T.saucer('scoop', SCOOP.x, SCOOP.y, {
+    r: 15, capture: { maxUp: 2800, maxAny: 650 },
+    eject: { vx: -380, rvx: -120, vy: -300, rvy: -100 },
+  });
+  T.sensor('inlane', 78, 760, 14, { idx: 0 });
+  T.sensor('inlane', 487, 760, 14, { idx: 1 });
+  T.sensor('outlane', 37, 800, 14, { idx: 0 });
+  T.sensor('outlane', 528, 800, 14, { idx: 1 });
+  T.sensor('rampMade', R.turnCx, R.turnY - (R.turnR + R.turnRi) / 2, 14, { layer: 1 });
+
+  /* ---------- strele (za combo, merilec strelov, debug) ---------- */
+  T.shot('orbit', { label: N.orbit + ' orbit', switches: ['orbit'], x: 60, y: 330 });
+  T.shot('ramp', { label: N.ramp + ' rampa', switches: ['rampMade'], x: 135, y: 320 });
+  T.shot('scoop', { label: N.scoop + ' livarna', switches: ['scoop'], x: SCOOP.x, y: SCOOP.y, combo: false });
+  T.shot('bug', { label: 'B·U·G', switches: ['drop'], x: 520, y: 620, combo: false });
+  T.shot('review', { label: 'code review', switches: ['review'], x: 282, y: 430 });
+  T.shot('lanes', { label: 'A·L·U kanali', switches: ['lane'], x: 290, y: 113, combo: false });
+  T.shot('pops', { label: 'pop bumperji', switches: ['bumper'], x: 285, y: 240, combo: false });
+  T.shot('spinner', { label: 'spinner', switches: ['spinner'], x: SPINNER.x, y: SPINNER.y, combo: false });
+
+  /* ---------- točke za efekte (kamera, bliski, svetlobni šovi) ---------- */
+  T.points = {
+    center: [293, 560], modes: [293, 590], scoop: [SCOOP.x, SCOOP.y], ramp: [140, 290], orbit: [60, 330],
+    review: [282, 430], drops: [520, 620], lineUp: [187, 0], start: [300, 600],
   };
-  ['A', 'L', 'U'].forEach((ch, i) => sensor('lane', 240 + 50 * i, 113, 13, { idx: i }));
-  sensor('orbit', 40, 312, 18);
-  sensor('spinner', SPINNER.x, SPINNER.y, 20);
-  sensor('scoop', SCOOP.x, SCOOP.y, 15);
-  sensor('inlane', 78, 760, 14, { idx: 0 });
-  sensor('inlane', 487, 760, 14, { idx: 1 });
-  sensor('outlane', 37, 800, 14, { idx: 0 });
-  sensor('outlane', 528, 800, 14, { idx: 1 });
-  sensor('rampMade', R.turnCx, R.turnY - (R.turnR + R.turnRi) / 2, 14, { layer: 1 });
+  T.heat = { x: SCOOP.x, y: SCOOP.y };            // peč: žerjavica, toplotna distorzija, žar
 
   /* ---------- luči (inserti) ---------- */
-  const lamp = (id, x, y, o = {}) => {
-    const l = { id, x, y, r: o.r ?? 10, shape: o.shape || 'circle', color: o.color || PAL.cyan,
-      label: o.label || '', angle: o.angle || 0, onRamp: !!o.onRamp, group: o.group || '', size: o.size || 1 };
-    T.lamps.push(l);
-    return l;
-  };
+  const lamp = T.lamp;
   ['A', 'L', 'U'].forEach((ch, i) => lamp('lane' + i, 240 + 50 * i, 162, { r: 11, label: ch, group: 'top' }));
   for (let k = 2; k <= 6; k++) lamp('mult' + k, 202 + (k - 2) * 40, 668, { r: 10, label: k + '×', group: 'mult' });
   // puščice strelov
@@ -191,14 +172,5 @@ export function buildTable() {
     lamp('gi' + T.lamps.filter(l => l.group === 'gi').length, x, y, { r: 3, color: '#ffe2b0', group: 'gi' });
   }
 
-  T.lampById = {};
-  for (const l of T.lamps) T.lampById[l.id] = l;
-  return T;
-}
-
-/** točka znotraj zunanjega roba mize (za teste in varovalo pred pobegom) */
-export function insideTable(x, y) {
-  if (x < 20 || x > 580) return false;
-  if (y < 300) return (x - 300) ** 2 + (y - 300) ** 2 < 280 * 280;
-  return true;
+  return T.finish();
 }

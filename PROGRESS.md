@@ -1447,3 +1447,31 @@ Tedenski pokal (52 tednov od 2026-W48): povprečna težavnost 2.6–3.4 (mediana
 - Tedenski pokal na pravem prehodu tedna (nedelja → ponedeljek po Ljubljani) in dosežek »Vsak teden« (3 tedni).
 - Dosežki »Bližnjica« (zlato na 18 po bližnjici) in »Zlata prihodnost« — logika je v igri, v brskalniku nista bila doseženi.
 - Okras novih lokacij (prompt 20 še ni narejen; nova lokacija `mine` ima le dekor `motes` in `embers`).
+
+# Pinball motor (prompt 22, 27. 11. 2026)
+
+Miza kot modul: `games/pinball/src/engine/` (motor) + `games/pinball/src/tables/<id>/` (miza). Podrobnosti v `games/pinball/README.md`.
+
+## Načrt
+- [x] Zlati test: 12 bot iger (semena 1000 + 17·i), točke, frame-i, štetje in hash zaporedja dogodkov → `tests/fixtures/pinball-golden.json`
+- [x] Ločitev motor / Alu miza (jedro igre, pravila kot vtičnik, miza kot podatek, generičen izris) — zlati test zelen
+- [x] Lestvica po uporabniku prek huba (`miza:<id>:f<verzija>`), arhiv `scores` samo za branje, brez inicialk
+- [ ] `?debug=1` (senzorji, drsniki, korak za korakom), merilec strelov (`tools/pinball-shots.mjs`, `?debug=shots`), bot kot modul
+- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++)
+- [ ] Novi elementi + testna miza `?miza=test`
+- [ ] README (struktura, nova miza, mapa strelov), prompt 23
+
+## Dnevnik
+- **Zlati test pred refaktorjem.** Bot je dobil `trace` (ime dogodka | točke | frame). Prvi poskus po ločitvi je dal 438 razlik:
+  kljuka motorja `onRamp(R, why)` se je ujela z Alu metodo `onRamp()` (rampa zadeta) → vsak vstop na rampo je štel kot
+  zadeta rampa. Alu metoda je zdaj `onRampMade`; zlati test je točno to ujel (zato je obstajal).
+- **Node ≠ brskalnik.** V Chromu (156) da isti bot drugačno zaporedje kot v Node (24) od frame ~9130 naprej — tudi stara koda
+  (preverjeno: stara in nova koda v Chromu imata enakih 2554/2554 dogodkov). Razlog so implementacije `Math.sin/exp/…`.
+  Posnetek je zato iz Node; v `tests.html` je zlati test samo informativen.
+- **`rulesTest` je bil nestabilen** (nesemeni `Math.random`, ~1 od 5 zagonov je padel »multiball se začne s 3 žogicami«).
+  Zdaj teče s semenom 5.
+- **Lestvica.** Igra po koncu sama pošlje rezultat (`hub.submitScore`, `seed: 'miza:alu:f1'`, meta: trajanje, žogice, multiballi,
+  misije, konec). Brez profila pokaže gumb »SHRANI NA LESTVICO« (odpre `ui.profileModal`). Zavihki: Ta verzija (vsi časi / teden /
+  danes), Prejšnje verzije (ko obstajajo), Arhiv (pred portalom) — branje `public.scores` prek REST, v offline načinu ni na voljo.
+
+## Ni bilo preverjeno

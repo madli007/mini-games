@@ -1,46 +1,19 @@
 /* =====================================================================
-   STATIČNA GRAFIKA MIZE — proceduralno (brez slikovnih datotek)
+   ALU MIZA — STATIČNA GRAFIKA (proceduralno, brez slikovnih datotek)
    floor  : potisk na aluminiju (RGBA; alfa = pokritost z barvo)
    mask   : G = talina (animirana v shaderju), R = sijaj kovine
    raised : dvignjeni elementi (stene, drogovi, plastike, predpasnik)
    emis   : statični neon (moduliran z GI)
    ramp   : sprite rampe (riše se med plastmi žogic)
    ===================================================================== */
-import { W, H, TAU, PAL, CFG, MODES } from '../config.js';
-import { RAMP, SCOOP, SPINNER } from '../table.js';
-import { drawLogo, tinted } from '../logos.js';
+import { W, H, TAU } from '../../engine/config.js';
+import { PAL, CFG, MODES } from './config.js';
+import { RAMP, SCOOP } from './table.js';
+import { drawLogo, tinted } from './logos.js';
+import { rng, tablePath, text, hexA, hazard, plastic, drawWall, lampShape, FONT_T, FONT_U, FONT_M } from '../../engine/render/art.js';
+import { chromeBall } from '../../engine/render/scene.js';
 
 const N = CFG.imena;
-
-export function makeCanvas(w, h) {
-  const c = (typeof OffscreenCanvas !== 'undefined' && false) ? new OffscreenCanvas(w, h) : document.createElement('canvas');
-  c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
-  return c;
-}
-
-function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
-
-export function tablePath(g, keep) {
-  if (!keep) g.beginPath();
-  g.moveTo(20, H + 40); g.lineTo(20, 300);
-  g.arc(300, 300, 280, Math.PI, TAU);
-  g.lineTo(580, H + 40); g.closePath();
-}
-
-const FONT_T = '"Orbitron", "Rajdhani", "Arial Black", sans-serif';
-const FONT_U = '"Rajdhani", "Segoe UI", Arial, sans-serif';
-const FONT_M = '"Share Tech Mono", Consolas, monospace';
-
-function text(g, s, x, y, o = {}) {
-  g.save();
-  g.translate(x, y); if (o.rot) g.rotate(o.rot);
-  g.font = `${o.weight || 700} ${o.size || 10}px ${o.font || FONT_U}`;
-  g.fillStyle = o.color || 'rgba(220,230,240,.5)';
-  g.textAlign = o.align || 'center'; g.textBaseline = 'middle';
-  if (o.spacing && 'letterSpacing' in g) g.letterSpacing = o.spacing + 'px';
-  g.fillText(s, 0, 0);
-  g.restore();
-}
 
 /* ------------------------------------------------------------------ */
 /* potisk mize                                                          */
@@ -184,10 +157,6 @@ export function drawFloor(g, T) {
   g.restore();
 }
 
-function hexA(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
-}
 
 function hexPath(g, cx, cy, r) {
   g.beginPath();
@@ -199,16 +168,6 @@ function hexPath(g, cx, cy, r) {
   g.closePath();
 }
 
-function hazard(g, x, y, w, h) {
-  g.save();
-  g.beginPath(); g.rect(x, y, w, h); g.clip();
-  g.fillStyle = 'rgba(20,16,4,0.9)'; g.fillRect(x, y, w, h);
-  g.fillStyle = 'rgba(255,190,40,0.35)';
-  for (let i = -h; i < w + h; i += 14) {
-    g.beginPath(); g.moveTo(x + i, y); g.lineTo(x + i + 7, y); g.lineTo(x + i + 7 - h, y + h); g.lineTo(x + i - h, y + h); g.closePath(); g.fill();
-  }
-  g.restore();
-}
 
 function drawBlueprint(g, r) {
   g.save();
@@ -359,47 +318,6 @@ export function drawRaised(g, T) {
   apron(g);
 }
 
-function drawWall(g, s) {
-  g.save();
-  g.lineCap = 'round';
-  const line = () => { g.beginPath(); g.moveTo(s.ax, s.ay); g.lineTo(s.bx, s.by); };
-  const w = Math.max(3.5, s.r * 2);
-  if (s.look === 'rubber') {
-    line(); g.strokeStyle = '#0c0d10'; g.lineWidth = w + 3; g.stroke();
-    line(); g.strokeStyle = '#2a2d33'; g.lineWidth = w; g.stroke();
-    g.translate(-0.6, -0.8); line(); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1; g.stroke();
-  } else if (s.look === 'rubberPost') {
-    g.beginPath(); g.arc(s.ax, s.ay, s.r + 1, 0, TAU); g.fillStyle = '#0c0d10'; g.fill();
-    g.beginPath(); g.arc(s.ax, s.ay, s.r - 1, 0, TAU); g.fillStyle = '#2b2e35'; g.fill();
-    const gr = g.createRadialGradient(s.ax - 1.5, s.ay - 2, 0.5, s.ax, s.ay, s.r * 0.6);
-    gr.addColorStop(0, '#f2f6ff'); gr.addColorStop(1, '#4a5566');
-    g.beginPath(); g.arc(s.ax, s.ay, s.r * 0.55, 0, TAU); g.fillStyle = gr; g.fill();
-  } else if (s.look === 'post') {
-    line(); g.strokeStyle = '#141a24'; g.lineWidth = w + 3; g.stroke();
-    line(); g.strokeStyle = '#8796a8'; g.lineWidth = w; g.stroke();
-    g.translate(-0.8, -0.8); line(); g.strokeStyle = 'rgba(240,248,255,.8)'; g.lineWidth = 1.2; g.stroke();
-    g.translate(0.8, 0.8);
-    for (const [x, y] of [[s.ax, s.ay], [s.bx, s.by]]) {
-      const gr = g.createRadialGradient(x - 1.5, y - 1.5, 0.5, x, y, 6);
-      gr.addColorStop(0, '#e6faff'); gr.addColorStop(0.5, '#3aa9d8'); gr.addColorStop(1, '#0b3b55');
-      g.beginPath(); g.arc(x, y, 5.5, 0, TAU); g.fillStyle = gr; g.fill();
-    }
-  } else if (s.look === 'gate') {
-    line(); g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 4; g.stroke();
-    line(); g.strokeStyle = '#c9d3df'; g.lineWidth = 1.6; g.stroke();
-    g.beginPath(); g.arc(s.ax, s.ay, 3, 0, TAU); g.fillStyle = '#ffab3d'; g.fill();
-  } else if (s.look === 'rampLip') {
-    line(); g.strokeStyle = '#1a222e'; g.lineWidth = w + 3; g.stroke();
-    line(); g.strokeStyle = '#a9b6c6'; g.lineWidth = w; g.stroke();
-  } else {
-    // kovinsko vodilo
-    line(); g.strokeStyle = '#121822'; g.lineWidth = w + 3.5; g.stroke();
-    line(); g.strokeStyle = '#5f6d80'; g.lineWidth = w + 1; g.stroke();
-    line(); g.strokeStyle = '#a7b4c4'; g.lineWidth = Math.max(1.5, w - 2); g.stroke();
-    g.translate(-0.7, -0.9); line(); g.strokeStyle = 'rgba(245,250,255,.75)'; g.lineWidth = 0.9; g.stroke();
-  }
-  g.restore();
-}
 
 function furnace(g) {
   const { x, y } = SCOOP;
@@ -423,20 +341,6 @@ function furnace(g) {
   g.restore();
 }
 
-function plastic(g, pts, color, label) {
-  g.save();
-  g.beginPath(); pts.forEach(([px, py], i) => i ? g.lineTo(px, py) : g.moveTo(px, py)); g.closePath();
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const gr = g.createLinearGradient(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
-  gr.addColorStop(0, hexA(color, 0.42)); gr.addColorStop(1, hexA(color, 0.16));
-  g.fillStyle = gr; g.fill();
-  g.strokeStyle = hexA(color, 0.8); g.lineWidth = 1.2; g.stroke();
-  g.clip();
-  g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(Math.min(...xs), Math.min(...ys) + 3); g.lineTo(Math.max(...xs), Math.min(...ys) + 1); g.stroke();
-  g.restore();
-  if (label) text(g, label, (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, { size: 9, color: 'rgba(240,250,255,.85)', font: FONT_T, spacing: 3 });
-}
 
 function apron(g) {
   g.save();
@@ -599,54 +503,33 @@ export function drawRampEmissive(g) {
 /* ------------------------------------------------------------------ */
 /* oblike insertov                                                       */
 /* ------------------------------------------------------------------ */
-export function lampShape(g, l, k = 1) {
-  const r = l.r * k;
-  g.beginPath();
-  switch (l.shape) {
-    case 'arrow':
-      g.moveTo(r * 1.15, 0); g.lineTo(-r * 0.7, -r * 0.8); g.lineTo(-r * 0.35, 0); g.lineTo(-r * 0.7, r * 0.8); g.closePath();
-      break;
-    case 'chevron':
-      g.moveTo(0, -r * 0.7); g.lineTo(r, r * 0.3); g.lineTo(r * 0.6, r * 0.7); g.lineTo(0, 0); g.lineTo(-r * 0.6, r * 0.7); g.lineTo(-r, r * 0.3); g.closePath();
-      break;
-    case 'hex':
-      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
-      g.closePath();
-      break;
-    case 'star':
-      for (let i = 0; i < 10; i++) {
-        const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
-        i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
-      }
-      g.closePath();
-      break;
-    default:
-      g.arc(0, 0, r, 0, TAU);
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /* panorama za kromirano žogico                                          */
 /* ------------------------------------------------------------------ */
-export function makeEnvMap() {
-  const c = makeCanvas(256, 128), g = c.getContext('2d');
-  const sky = g.createLinearGradient(0, 0, 0, 128);
-  sky.addColorStop(0, '#dfe9f5'); sky.addColorStop(0.35, '#7b8899'); sky.addColorStop(0.55, '#2b3340');
-  sky.addColorStop(0.75, '#14181f'); sky.addColorStop(1, '#3a2a20');
-  g.fillStyle = sky; g.fillRect(0, 0, 256, 128);
-  // okna / luči strehe tovarne
-  for (let i = 0; i < 8; i++) {
-    g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(i * 32 + 6, 10, 18, 8);
-    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(i * 32 + 4, 22, 22, 4);
+
+/* ------------------------------------------------------------------ */
+/* dinamični dekor: peč (zaklenjene žogice, žar taline)                  */
+/* ------------------------------------------------------------------ */
+export function drawToys(g, e, game, env, time) {
+  const { x, y } = SCOOP;
+  const BR = 10, R = game.rules;
+  // zaklenjene žogice v peči (vidno)
+  const lockPos = [[480, 459], [500, 459]];
+  for (let i = 0; i < R.locks; i++) {
+    const [lx, ly] = lockPos[i];
+    chromeBall(g, lx, ly, BR * 0.8, env, null);
+    g.beginPath(); g.arc(lx, ly, BR * 0.8, 0, TAU); g.fillStyle = 'rgba(255,110,20,.35)'; g.fill();
+    if (e) { e.beginPath(); e.arc(lx, ly, BR * 1.1, 0, TAU); e.fillStyle = `rgba(57,255,136,${0.4 + 0.2 * Math.sin(time * 5 + i)})`; e.fill(); }
   }
-  // talina in neon
-  const blob = (x, y, r, col) => {
-    const gr = g.createRadialGradient(x, y, 1, x, y, r);
-    gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
-  };
-  blob(60, 92, 30, 'rgba(255,120,30,0.9)');
-  blob(190, 88, 26, 'rgba(111,211,255,0.7)');
-  blob(130, 100, 18, 'rgba(57,255,136,0.5)');
-  return c;
+  // ujete žogice v peči: obarvane s talino
+  for (const b of game.balls) {
+    if (!b.captured) continue;
+    g.beginPath(); g.arc(b.x, b.y, BR * 0.86, 0, TAU); g.fillStyle = 'rgba(255,120,30,.3)'; g.fill();
+  }
+  if (e) {
+    const heat = game.heat;
+    e.beginPath(); e.arc(x, y, 30, 0, TAU);
+    e.fillStyle = `rgba(255,110,20,${0.12 + heat * 0.35 + 0.05 * Math.sin(time * 7)})`; e.fill();
+  }
 }

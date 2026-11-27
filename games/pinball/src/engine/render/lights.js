@@ -1,14 +1,21 @@
 /* =====================================================================
    SVETLOBNI ŠOVI — koreografije insertov in GI čez celo mizo
    ===================================================================== */
-import { PAL } from '../config.js';
+import { DEFAULT_PAL } from '../config.js';
+let PAL = DEFAULT_PAL;
 
 const hex = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
 const RAINBOW = ['#ff3b4a', '#ff7a1a', '#ffd23f', '#39ff88', '#6fd3ff', '#8a7bff', '#ff4fd8'];
 
 export class Lights {
-  constructor(T) {
+  constructor(T, pal) {
     this.T = T;
+    if (pal) PAL = pal;
+    const P = T.points || {};
+    this.C = P.center || [300, 560];             // središče radialnih šovov
+    this.S = P.scoop || this.C;                  // glavni lov (scoop)
+    this.M = P.modes || this.C;                  // plošča misij
+    this.R = P.lineUp || P.ramp || [187, 0];      // rampa (črta navzgor)
     this.shows = [];
     this.gi = 1;           // splošna osvetlitev (0..1.3)
     this.giFx = [];        // GI animacije
@@ -20,7 +27,7 @@ export class Lights {
 
   /** zaženi šov: tip, trajanje, barva, opcije */
   play(type, dur = 1.2, color = PAL.gold, o = {}) {
-    this.shows.push(Object.assign({ type, dur, t: 0, color, x: 293, y: 560 }, o));
+    this.shows.push(Object.assign({ type, dur, t: 0, color, x: this.C[0], y: this.C[1] }, o));
     if (this.shows.length > 6) this.shows.shift();
   }
 
@@ -50,12 +57,12 @@ export class Lights {
         break;
       case 'modeStart':
         this.play('sweepUp', 1.1, d.color || PAL.melt);
-        this.play('radial', 1.2, d.color || PAL.melt, { x: 490, y: 470, delay: 0.6 });
+        this.play('radial', 1.2, d.color || PAL.melt, { x: this.S[0], y: this.S[1], delay: 0.6 });
         this.giFlash([[0, 0.3], [1.0, 0.3], [1.2, 1]]);
         break;
       case 'modeComplete':
         this.play('rainbow', 1.6);
-        this.play('radial', 1.5, d.color || PAL.gold, { x: 293, y: 590 });
+        this.play('radial', 1.5, d.color || PAL.gold, { x: this.M[0], y: this.M[1] });
         this.giFlash([[0, 1.4], [0.2, 0.4], [0.4, 1.3], [1, 1]]);
         break;
       case 'wizardStart':
@@ -68,7 +75,7 @@ export class Lights {
         this.play('sweepUp', 0.9, name === 'skill' ? PAL.white : PAL.magenta);
         break;
       case 'lock':
-        this.play('radial', 1.1, PAL.code, { x: 490, y: 470 });
+        this.play('radial', 1.1, PAL.code, { x: this.S[0], y: this.S[1] });
         break;
       case 'drain':
         this.play('sweepDown', 0.7, PAL.red);
@@ -77,7 +84,7 @@ export class Lights {
         this.giFlash([[0, 0.15], [3, 0.15]]);
         break;
       case 'rampMade':
-        this.play('lineUp', 0.6, PAL.cyan, { x: 187 });
+        this.play('lineUp', 0.6, PAL.cyan, { x: this.R[0] });
         break;
       case 'combo':
         this.play('radial', 0.6, PAL.cyan, { x: d.x, y: d.y });
@@ -159,7 +166,7 @@ export class Lights {
       case 'strobe':
         return { i: Math.sin(st * 40) > 0 ? fade : 0, c: s.color };
       case 'chase': {
-        const a = Math.atan2(l.y - 560, l.x - 293);
+        const a = Math.atan2(l.y - this.C[1], l.x - this.C[0]);
         const v = Math.sin(a * 3 - st * 9);
         return { i: v > 0.6 ? fade : 0, c: s.color };
       }
@@ -186,7 +193,7 @@ export class Lights {
       return { i: Math.max(0.05, 1 - d / 160), c: cols[Math.floor(st / 1.5) % 4] };
     }
     if (seg === 1) {           // vrtenje okoli sredine
-      const a = Math.atan2(l.y - 560, l.x - 293);
+      const a = Math.atan2(l.y - this.C[1], l.x - this.C[0]);
       const v = Math.sin(a * 2 + st * 4);
       return { i: Math.max(0.05, v), c: v > 0.5 ? PAL.gold : PAL.melt };
     }

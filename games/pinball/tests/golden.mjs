@@ -3,7 +3,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { goldenRun, compareGolden } from './golden.js';
 import { botGame } from './tests.js';
-import { PHYSICS_VERSION } from '../src/config.js';
+import { PHYSICS_VERSION } from '../src/engine/config.js';
 
 const FILE = new URL('../../../tests/fixtures/pinball-golden.json', import.meta.url);
 const update = process.argv.includes('--update');

@@ -16,13 +16,15 @@
 </style>
 </head>
 <body>
-  <h1>ALU PINBALL 2.0 — skriptni testi fizike in pravil</h1>
+  <h1>PINBALL — testi motorja, Alu mize in zlati test</h1>
   <button id="run">Zaženi teste</button>
   <label>simuliranih iger: <input id="n" type="number" value="12" min="1" max="100" style="width:60px"></label>
   <div id="sum"></div>
   <pre id="log"></pre>
   <script type="module">
     import { runAll } from './tests/tests.js';
+    let golden = null;
+    try { golden = await (await fetch('../../tests/fixtures/pinball-golden.json', { cache: 'no-store' })).json(); } catch (e) { /* ni posnetka */ }
     const log = document.getElementById('log'), sum = document.getElementById('sum');
     const line = (s) => {
       const span = document.createElement('span');
@@ -34,7 +36,7 @@
       log.textContent = ''; sum.textContent = 'teče …';
       setTimeout(() => {
         const t0 = performance.now();
-        const r = runAll(line, { games: +document.getElementById('n').value || 12 });
+        const r = runAll(line, { games: +document.getElementById('n').value || 12, golden });
         const sec = ((performance.now() - t0) / 1000).toFixed(1);
         sum.innerHTML = r.fails ? `<span class="bad">NEUSPELO: ${r.fails} / ${r.results.length}</span> (${sec} s)`
           : `<span class="ok">VSI TESTI USPEŠNI (${r.results.length})</span> (${sec} s)`;

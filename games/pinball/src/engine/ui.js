@@ -1,28 +1,26 @@
 /* =====================================================================
-   UI — zasloni (začetni, pavza, nastavitve, konec igre, vpis
-   inicialk, lestvica), stranski paneli in obvestila.
+   UI — zasloni (začetni, pavza, nastavitve, konec igre, lestvica),
+   stranski paneli in obvestila. Besedila mize dobi iz view.ui.
+   Lestvica je skupna lestvica huba (po uporabniku, engine/leaderboard.js).
    ===================================================================== */
-import { CFG, MODES, PAL, QUALITY, QUALITY_ORDER } from './config.js';
-import { fmt } from './rules.js';
+import { QUALITY, QUALITY_ORDER, PHYSICS_VERSION, fmt } from './config.js';
 import * as Store from './storage.js';
 import * as Board from './leaderboard.js';
-import { DW, textWidth } from './render/dmd.js';
-import { logoUrl } from './logos.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const CHARS = 'ABCČDEFGHIJKLMNOPRSŠTUVZŽXYWQ0123456789-· ';
 
 export class UI {
-  constructor(app) {
+  constructor(app, view = {}) {
     this.app = app;               // { game, audio, renderer, settings, startGame, resume, quit, setQuality, ... }
+    this.V = Object.assign({ title: 'PINBALL', version: '', subtitle: '', companies: '', hint: 'ENTER za začetek', legal: '',
+      modes: [], modesTitle: 'NAČINI', wizard: null, state: () => [], idle: () => '', attract: () => '' }, view.ui || {});
+    this.tableId = app.tableId || 'alu';
     this.ov = $('overlay');
     this.screen = 'none';
     this.dmdOverride = null;
-    this.newIdx = -1;
     this.dispScore = 0;
     this.panelT = 0;
-    this.toastT = 0;
     this.lastSummary = '';
     this.buildModes();
     this.refreshBoards();
@@ -35,7 +33,7 @@ export class UI {
     requestAnimationFrame(() => this.ov.classList.add('show'));
     const prim = this.ov.querySelector('.btn.primary');
     if (prim && !matchMedia('(pointer:coarse)').matches) setTimeout(() => prim.focus({ preventScroll: true }), 60);
-    this.ov.querySelectorAll('.btn, .seg button, .arr').forEach(b => b.addEventListener('click', () => this.app.audio.play('click')));
+    this.ov.querySelectorAll('.btn, .seg button').forEach(b => b.addEventListener('click', () => this.app.audio.play('click')));
   }
   close() {
     this.screen = 'none';
@@ -70,18 +68,19 @@ export class UI {
   topHtml() {
     const s = Board.scores().slice(0, 3);
     if (!s.length) return '<div class="hint">Lestvica je še prazna — postavi prvi rekord!</div>';
-    return `<ol class="board top3">${s.map(e => `<li><span class="n">${esc(e.name)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')}</ol>`;
+    return `<ol class="board top3">${s.map(e => `<li class="${e.me ? 'me' : ''}"><span class="n">${Board.who(e)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')}</ol>`;
   }
 
   /* ---------------- zasloni ---------------- */
   showStart() {
-    const logo = CFG.logotipi ? `<img class="brand-logo" src="${logoUrl('impol')}" alt="Impol" onerror="this.remove()">` : '';
+    const V = this.V;
+    const logo = V.logo ? `<img class="brand-logo" src="${esc(V.logo)}" alt="${esc(V.logoAlt || '')}" onerror="this.remove()">` : '';
     this.open(`
       ${logo}
-      <h1 class="title">${esc(CFG.naslov)}</h1>
-      <div class="title-ver">${esc(CFG.verzija)}</div>
-      <div class="subtitle">${esc(CFG.podnaslov)}</div>
-      <div class="companies">${esc(CFG.imena.podjetja)}</div>
+      <h1 class="title">${esc(V.title)}</h1>
+      ${V.version ? `<div class="title-ver">${esc(V.version)}</div>` : ''}
+      ${V.subtitle ? `<div class="subtitle">${esc(V.subtitle)}</div>` : ''}
+      ${V.companies ? `<div class="companies">${esc(V.companies)}</div>` : ''}
       <div class="btns">
         <button class="btn primary" id="uStart">ZAČNI IGRO</button>
         <div class="btn-row">
@@ -91,8 +90,8 @@ export class UI {
       </div>
       <div id="uTop">${this.topHtml()}</div>
       ${this.controlsHtml()}
-      <div class="hint">ENTER za začetek · misije, multiball in finale te čakajo v livarni ${esc(CFG.imena.scoop)}</div>
-      <div class="legal">${esc(CFG.opomba)}</div>
+      <div class="hint">${esc(V.hint)}</div>
+      ${V.legal ? `<div class="legal">${esc(V.legal)}</div>` : ''}
       <a class="hub-back" href="../../">← MINI GAMES HUB</a>`, 'start');
     this.on('uStart', () => this.app.startGame());
     this.on('uScores', () => this.showScores('start'));
@@ -146,14 +145,21 @@ export class UI {
     this.on('uBack', () => back === 'pause' ? this.showPause() : this.showStart());
   }
 
-  showScores(back, highlight = -1) {
-    const s = Board.scores(), st = Store.loadStats();
-    const rows = s.length ? s.map((e, i) => `<li class="${i === highlight ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')
-      : '<li class="empty"><span></span><span>Še ni rekordov — bodi prvi!</span><span></span></li>';
+  /**
+   * lestvica: zavihki »Ta verzija« (seed trenutne fizike), »Prejšnje verzije«, »Arhiv (pred portalom)«
+   * (samo Alu: stara tabela scores z inicialkami, samo branje)
+   */
+  showScores(back) {
+    const st = Store.loadStats(this.tableId);
+    const prev = Board.previousSeeds();
+    const tabs = [{ id: 'now', label: 'Ta verzija (f' + PHYSICS_VERSION + ')' }];
+    if (prev.length) tabs.push({ id: 'prev', label: 'Prejšnje verzije' });
+    if (this.V.archive) tabs.push({ id: 'arch', label: 'Arhiv (pred portalom)' });
     const mins = Math.round(st.playSec / 60);
     this.open(`
-      <div class="h2 gold-t">${Board.isGlobal() ? 'SKUPNA LESTVICA' : 'LESTVICA'}</div>
-      <ol class="board" style="text-align:left;margin:10px 0 14px">${rows}</ol>
+      <div class="h2 gold-t">LESTVICA</div>
+      <div class="seg tabs" id="uTabs">${tabs.map((t, i) => `<button data-t="${t.id}" class="${i ? '' : 'on'}">${esc(t.label)}</button>`).join('')}</div>
+      <div id="uBoard" class="hub-board"></div>
       <div class="stats-grid" style="text-align:left">
         <span>Odigranih iger</span><span>${st.games}</span>
         <span>Najboljši rezultat</span><span>${fmt(st.bestScore)}</span>
@@ -165,20 +171,48 @@ export class UI {
       </div>
       <div class="btns"><button class="btn primary" id="uBack">${back === 'over' ? 'ŠE ENKRAT' : 'NAZAJ'}</button>
       ${back === 'over' ? '<button class="btn" id="uMenu">MENI</button>' : ''}</div>`, 'scores');
+    const show = id => {
+      this.ov.querySelectorAll('#uTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === id));
+      const el = $('uBoard'); if (!el) return;
+      const { ui } = Board.hubApi();
+      if (id === 'arch') {
+        el.innerHTML = '<div class="hint">nalagam arhiv …</div>';
+        Board.archive().then(rows => {
+          if (!$('uBoard')) return;
+          el.innerHTML = rows === null ? '<div class="hint">Arhiv je na voljo le s povezavo do strežnika (ne v offline načinu).</div>'
+            : rows.length ? `<ol class="board">${rows.map(e => `<li><span class="n">${esc(e.name)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')}</ol>
+              <div class="hint">Stara lestvica z inicialkami (pred portalom). Samo za branje.</div>`
+              : '<div class="hint">Arhiv je prazen.</div>';
+        });
+        return;
+      }
+      if (!ui) { el.innerHTML = '<div class="hint">Lestvica ni dosegljiva.</div>'; return; }
+      const fmtS = s => fmt(s);
+      if (id === 'now') ui.leaderboard(el, { seed: Board.seed(), title: '', periods: ['all', 'week', 'today'], format: fmtS });
+      else ui.leaderboard(el, { tabs: prev.map(p => ({ label: p.label, seed: p.seed })), title: '', format: fmtS });
+    };
+    this.ov.querySelectorAll('#uTabs button').forEach(b => b.addEventListener('click', () => show(b.dataset.t)));
+    Board.whenReady().then(() => { if (this.screen === 'scores') show('now'); });
     this.on('uBack', () => back === 'over' ? this.app.startGame() : this.showStart());
     this.on('uMenu', () => this.showStart());
   }
 
+  /** konec igre; rezultat se samodejno shrani na lestvico huba pod uporabnikom */
   showGameOver(d) {
+    const V = this.V;
+    const nModes = V.modes.length;
     this.open(`
       <div class="h2">KONEC IGRE</div>
       <div class="big">${fmt(d.score)}</div>
+      <div class="rank" id="uRank">&nbsp;</div>
       <div class="stats-grid" style="text-align:left;max-width:300px;margin:10px auto">
-        <span>Opravljene misije</span><span>${d.modes} / 4</span>
+        ${nModes ? `<span>Opravljene misije</span><span>${d.modes || 0} / ${nModes}</span>` : ''}
         <span>Najdaljši combo</span><span>×${d.maxCombo}</span>
         <span>Največji jackpot</span><span>${fmt(d.maxJackpot)}</span>
         <span>Trajanje</span><span>${Math.floor(d.playSec / 60)}:${String(Math.floor(d.playSec % 60)).padStart(2, '0')}</span>
+        ${d.match ? `<span>Match</span><span>${String(d.match.num).padStart(2, '0')}${d.match.hit ? ' · MATCH!' : ''}</span>` : ''}
       </div>
+      <div id="uSave"></div>
       <div class="btns">
         <button class="btn primary" id="uAgain">ŠE ENKRAT</button>
         <div class="btn-row"><button class="btn" id="uScores">LESTVICA</button><button class="btn" id="uMenu">MENI</button></div>
@@ -186,133 +220,71 @@ export class UI {
     this.on('uAgain', () => this.app.startGame());
     this.on('uScores', () => this.showScores('over'));
     this.on('uMenu', () => this.showStart());
+    this.saveScore(d);
   }
 
-  /* ---------------- arkadni vpis inicialk ---------------- */
-  showInitials(d) {
-    let last = 'AAA';
-    const saved = Store.load('lastName', '');
-    if (saved && saved.length === 3) last = saved;
-    this.ini = { letters: [...last].map(c => Math.max(0, CHARS.indexOf(c))), pos: 0, score: d.score, data: d };
-    const rank = (() => { const s = Board.scores(); let r = 1; for (const e of s) if (e.score >= d.score) r++; return r; })();
-    this.open(`
-      <div class="h2 gold-t">NOV REKORD!</div>
-      <div class="rank">NASLOVNICA METALURGA!</div>
-      <div class="rank">${rank}. MESTO NA LESTVICI</div>
-      <div class="big">${fmt(d.score)}</div>
-      <div class="initials" id="uIni"></div>
-      <div class="hint" id="uIniHint"></div>
-      <div class="btns"><button class="btn primary" id="uOk">SHRANI</button></div>`, 'initials');
-    const touch = document.body.classList.contains('touch');
-    $('uIniHint').textContent = touch ? 'tapni ▲ ▼ za črko, nato SHRANI'
-      : 'flipperja (← →) menjata črko · PRESLEDEK potrdi · ali tipkaj';
-    this.renderInitials();
-    this.on('uOk', () => this.saveInitials());
-    this.app.audio.play('highScore');
-    this.dmdOverride = (dmd) => {
-      dmd.text('VPIŠI INICIALKE', DW / 2, 1, { color: [1, 0.82, 0.25], align: 'center' });
-      const s = this.ini;
-      for (let i = 0; i < 3; i++) {
-        const ch = CHARS[s.letters[i]];
-        const on = i !== s.pos || Math.floor(performance.now() / 250) % 2;
-        dmd.text(ch === ' ' ? '_' : ch, DW / 2 - 24 + i * 24, 12, { scale: 2, color: i === s.pos ? [1, 1, 1] : [1, 0.48, 0.1], align: 'center', alpha: on ? 1 : 0.25 });
+  async saveScore(d) {
+    const box = () => $('uSave'), rank = () => $('uRank');
+    if (d._saved) return;
+    if (!Board.hasProfile()) {
+      await Board.whenReady();
+      if (!Board.hasHub()) { if (box()) box().innerHTML = '<div class="hint">Lestvica ni dosegljiva.</div>'; return; }
+      if (!Board.hasProfile()) {
+        if (box()) {
+          box().innerHTML = '<button class="btn" id="uProfile">SHRANI NA LESTVICO</button><div class="hint">Za lestvico potrebuješ vzdevek (profil huba).</div>';
+          this.on('uProfile', async () => {
+            if (await Board.ensureProfile()) this.saveScore(d);
+          });
+        }
+        return;
       }
-    };
-  }
-  renderInitials() {
-    const s = this.ini, box = $('uIni');
-    if (!box) return;
-    box.innerHTML = s.letters.map((l, i) => `
-      <div class="slot ${i === s.pos ? 'cur' : ''}" data-i="${i}">
-        <button class="arr" data-d="-1" data-i="${i}">▲</button>
-        <div class="ch">${esc(CHARS[l] === ' ' ? '_' : CHARS[l])}</div>
-        <button class="arr" data-d="1" data-i="${i}">▼</button>
-      </div>`).join('');
-    box.querySelectorAll('.arr').forEach(b => b.addEventListener('click', e => {
-      e.stopPropagation();
-      s.pos = +b.dataset.i; this.stepLetter(+b.dataset.d);
-    }));
-    box.querySelectorAll('.ch').forEach((c, i) => c.addEventListener('click', () => { s.pos = i; this.renderInitials(); }));
-  }
-  stepLetter(d) {
-    const s = this.ini;
-    s.letters[s.pos] = (s.letters[s.pos] + d + CHARS.length) % CHARS.length;
-    this.app.audio.play('click');
-    this.renderInitials();
-  }
-  confirmLetter() {
-    const s = this.ini;
-    this.app.audio.play('select');
-    if (s.pos < 2) { s.pos++; this.renderInitials(); }
-    else this.saveInitials();
-  }
-  saveInitials() {
-    const s = this.ini;
-    if (!s || s.saved) return;
-    s.saved = true;
-    const name = s.letters.map(i => CHARS[i]).join('').trim() || '???';
-    Store.save('lastName', s.letters.map(i => CHARS[i]).join(''));
-    this.dmdOverride = null;
-    this.open(`<div class="h2">SHRANJUJEM …</div><div class="hint">${Board.enabled() ? 'pošiljam na skupno lestvico' : ''}</div>`, 'saving');
-    Board.submit(name, s.data).then(r => {
-      if (r.global === false) this.toast('Skupna lestvica: ' + r.error + ' — rekord je shranjen lokalno', 5);
-      this.refreshBoards(r.rank);
-      if (this.screen === 'saving') this.showScores('over', r.rank);
-    });
+    }
+    d._saved = true;
+    if (box()) box().innerHTML = '<div class="hint">shranjujem na lestvico …</div>';
+    const r = await Board.submit(d);
+    Board.report(d);
+    this.refreshBoards(r.rank);
+    if (!box()) return;
+    if (r.ok) {
+      box().innerHTML = '';
+      if (rank()) rank().textContent = r.rank >= 0 ? (r.rank + 1) + '. MESTO NA LESTVICI' : 'shranjeno na lestvico';
+      if (r.rank >= 0) this.app.audio.play('highScore');
+    } else box().innerHTML = '<div class="hint">Rezultata ni bilo mogoče shraniti.</div>';
   }
 
   /** tipke v menijih; vrne true, če je tipko porabil meni */
   menuKey(e) {
-    if (this.screen === 'initials' && this.ini) {
-      const c = e.code, k = e.key;
-      if (c === 'ArrowLeft' || c === 'KeyZ' || c === 'ShiftLeft' || c === 'ArrowUp') { this.stepLetter(-1); return true; }
-      if (c === 'ArrowRight' || c === 'Slash' || c === 'ShiftRight' || c === 'ArrowDown') { this.stepLetter(1); return true; }
-      if (c === 'Space' || c === 'Enter') { if (!e.repeat) this.confirmLetter(); return true; }
-      if (c === 'Backspace') { this.ini.pos = Math.max(0, this.ini.pos - 1); this.renderInitials(); return true; }
-      if (k && k.length === 1) {
-        const up = k.toUpperCase(), i = CHARS.indexOf(up);
-        if (i >= 0) { this.ini.letters[this.ini.pos] = i; this.confirmLetter(); return true; }
-      }
-      return true;
-    }
     if (this.screen === 'start' && (e.code === 'Space' || e.code === 'Enter') && document.activeElement?.tagName !== 'BUTTON') {
       if (!e.repeat) this.app.startGame(); return true;
     }
     return false;
   }
-  menuPad(btn, down) {
-    if (this.screen !== 'initials' || !down) return this.screen === 'initials';
-    if (btn === 'L') this.stepLetter(-1);
-    if (btn === 'R') this.stepLetter(1);
-    if (btn === 'A') this.confirmLetter();
-    return true;
-  }
-  /** flipper v menijih (dotik / tipkovnica brez porabe) */
+  menuPad() { return false; }
   get blocking() { return this.screen !== 'none'; }
 
   /* ---------------- stranski paneli ---------------- */
   buildModes() {
-    const ul = $('pModes');
-    ul.innerHTML = MODES.map((m, i) => `<li id="pm${i}" style="color:${m.barva}"><span class="dot"></span><span>${m.ime}</span><small></small></li>`).join('')
-      + `<li id="pmW" class="wiz" style="color:${PAL.gold}"><span class="dot"></span><span>NAROČILO IZPOLNJENO</span><small>FINALE</small></li>`;
+    const V = this.V, ul = $('pModes');
+    const h = $('pModesTitle'); if (h) h.textContent = V.modesTitle;
+    ul.innerHTML = V.modes.map((m, i) => `<li id="pm${i}" style="color:${m.color}"><span class="dot"></span><span>${esc(m.name)}</span><small></small></li>`).join('')
+      + (V.wizard ? `<li id="pmW" class="wiz" style="color:${this.app.game.PAL.gold}"><span class="dot"></span><span>${esc(V.wizard.name)}</span><small>${esc(V.wizard.short)}</small></li>` : '');
   }
 
   refreshBoards(highlight = -1) {
     const s = Board.scores();
-    const ttl = $('pBoardTitle'); if (ttl) ttl.textContent = Board.isGlobal() ? 'SKUPNA LESTVICA' : 'LESTVICA';
-    $('pBoard').innerHTML = s.length ? s.map((e, i) => `<li class="${i === highlight ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')
-      : '<li class="empty"><span></span><span>Še ni rekordov</span><span></span></li>';
-    const st = Store.loadStats();
+    const ttl = $('pBoardTitle'); if (ttl) ttl.textContent = 'LESTVICA · f' + PHYSICS_VERSION;
+    $('pBoard').innerHTML = s.length ? s.map((e, i) => `<li class="${i === highlight ? 'new' : ''}${e.me ? ' me' : ''}"><span class="n">${Board.who(e)}</span><span class="s">${fmt(e.score)}</span></li>`).join('')
+      : '<li class="empty"><span></span><span>Še ni rezultatov</span><span></span></li>';
+    const st = Store.loadStats(this.tableId);
     $('pStats').innerHTML = `
       <span>Iger</span><span>${st.games}</span>
       <span>Rekord</span><span>${fmt(st.bestScore)}</span>
       <span>Najdaljši combo</span><span>×${st.maxCombo}</span>
       <span>Največji jackpot</span><span>${fmt(st.maxJackpot)}</span>`;
-    this.scoresCache = s; this.statsCache = st;
   }
 
   update(dt, game) {
-    const s = game.summary();
+    const s = game.summary(), V = this.V;
     this.dispScore += (s.score - this.dispScore) * Math.min(1, dt * 7);
     if (Math.abs(s.score - this.dispScore) < 5) this.dispScore = s.score;
     if (!document.body.classList.contains('wide')) return;
@@ -328,37 +300,27 @@ export class UI {
     const playing = s.state === 'play' || s.state === 'bonus';
     $('pBall').textContent = playing ? s.ball + ' / ' + s.balls : '–';
     $('pMult').textContent = '×' + s.mult;
-    MODES.forEach((m, i) => {
+    V.modes.forEach((m, i) => {
       const li = $('pm' + i);
-      const run = s.mode && s.mode.i === i, done = s.modesDone[i], lit = s.modeLit && s.next === i && !s.mode;
+      if (!li) return;
+      const run = s.mode && s.mode.i === i, done = s.modesDone && s.modesDone[i], lit = s.modeLit && s.next === i && !s.mode;
       li.className = run ? 'run' : done ? 'done' : lit ? 'lit' : '';
       li.querySelector('small').textContent = run ? Math.ceil(s.mode.t) + ' s' : done ? '✓' : lit ? 'PRIŽGANA' : '';
     });
     const w = $('pmW');
-    w.className = 'wiz ' + (s.wizard ? 'run' : s.wizardLit ? 'lit' : '');
+    if (w) w.className = 'wiz ' + (s.wizard ? 'run' : s.wizardLit ? 'lit' : '');
     const now = $('pModeNow');
     if (s.mode) {
-      const m = MODES[s.mode.i];
-      let prog = '';
-      if (m.id === 'hotfix') prog = 'vrednost: ' + fmt(s.mode.value);
-      else prog = s.mode.prog + ' / ' + s.mode.goal + (m.id === 'valjarna' ? ' m' : '');
-      now.innerHTML = `<div class="name" style="color:${m.barva}">${esc(m.polno || m.ime)}</div><div class="desc">${esc(m.opis)} · ${esc(prog)}</div>
-        <div class="bar" style="color:${m.barva}"><i style="width:${(s.mode.t / s.mode.total * 100).toFixed(1)}%"></i></div>`;
-    } else if (s.wizard) {
-      now.innerHTML = `<div class="name gold-t">FINALE!</div><div class="desc">Vse je vredno jackpot.</div>`;
+      const m = V.modes[s.mode.i] || { name: s.mode.name, color: s.mode.color, desc: '' };
+      const prog = s.mode.info ? s.mode.info.toLowerCase() : s.mode.prog + ' / ' + s.mode.goal + (m.unit || '');
+      now.innerHTML = `<div class="name" style="color:${m.color}">${esc(m.full || m.name)}</div><div class="desc">${esc(m.desc || '')} · ${esc(prog)}</div>
+        <div class="bar" style="color:${m.color}"><i style="width:${(s.mode.t / s.mode.total * 100).toFixed(1)}%"></i></div>`;
+    } else if (s.wizard && V.wizard) {
+      now.innerHTML = `<div class="name gold-t">${esc(V.wizard.live)}</div><div class="desc">${esc(V.wizard.liveDesc)}</div>`;
     } else if (playing) {
-      now.innerHTML = s.modeLit ? `<div class="desc">Misija <b style="color:${MODES[s.next].barva}">${MODES[s.next].ime}</b> čaka v livarni ${esc(CFG.imena.scoop)}.</div>`
-        : s.wizardLit ? `<div class="desc gold-t">Finale prižgan — zadeni ${esc(CFG.imena.scoop)}!</div>`
-        : `<div class="desc">Še ${s.rampsToMode}× rampa do naslednje misije.</div>`;
-    } else now.innerHTML = `<div class="desc">Začni igro in zadeni ${esc(CFG.imena.scoop)}.</div>`;
-    const st = (label, on, txt, cls) => `<span>${label}</span><span class="${on ? (cls || 'on') : 'off'}">${txt}</span>`;
-    $('pState').innerHTML = [
-      st('Lock', s.locks > 0 || s.lockLit, s.lockLit ? 'PRIŽGAN' : s.locks + ' / 2'),
-      st('Multiball', s.multiball, s.multiball ? 'AKTIVEN' : '—', 'gold'),
-      st('Jackpot', true, fmt(s.jackpot), 'gold'),
-      st('Kickback', s.kickback, s.kickback ? 'DA' : 'NE'),
-      st('Ball save', s.ballSave > 0, s.ballSave > 0 ? Math.ceil(s.ballSave) + ' s' : '—'),
-      st('Extra ball', s.extraBalls > 0 || s.extraLit, s.extraLit ? 'PRIŽGAN' : s.extraBalls),
-    ].join('');
+      now.innerHTML = `<div class="desc">${V.idle(s, esc)}</div>`;
+    } else now.innerHTML = `<div class="desc">${V.attract(esc)}</div>`;
+    const st = (label, on, txt, cls) => `<span>${esc(label)}</span><span class="${on ? (cls || 'on') : 'off'}">${esc(txt)}</span>`;
+    $('pState').innerHTML = V.state(s, fmt).map(r => st(...r)).join('');
   }
 }

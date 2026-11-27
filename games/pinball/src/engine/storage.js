@@ -1,4 +1,5 @@
-/* Shramba: samo localStorage, vsak dostop v try/catch (igra deluje tudi brez shrambe). */
+/* Shramba: samo localStorage, vsak dostop v try/catch (igra deluje tudi brez shrambe).
+   Lestvica ni tu: gre prek huba (tudi offline, lokalni adapter huba). */
 
 const PREFIX = 'aluPinball2.';
 
@@ -22,44 +23,19 @@ export function save(key, value) {
   }
 }
 
-/* ---------------- rekordi (top 10) ---------------- */
-export function loadScores() {
-  const v = load('scores', []);
-  if (!Array.isArray(v)) return [];
-  return v
-    .filter(e => e && typeof e.score === 'number' && typeof e.name === 'string')
-    .map(e => ({ name: e.name.slice(0, 12), score: Math.max(0, Math.floor(e.score)), date: e.date || '' }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
-}
-
-export function qualifies(score) {
-  if (score <= 0) return false;
-  const s = loadScores();
-  return s.length < 10 || score > s[s.length - 1].score;
-}
-
-/** vstavi rezultat, vrne indeks na lestvici (ali -1) */
-export function addScore(name, score) {
-  const s = loadScores();
-  const entry = { name: String(name).slice(0, 12), score: Math.floor(score), date: new Date().toISOString().slice(0, 10) };
-  s.push(entry);
-  s.sort((a, b) => b.score - a.score);
-  const top = s.slice(0, 10);
-  save('scores', top);
-  return top.indexOf(entry);
-}
-
 /* ---------------- statistika ---------------- */
 const STATS0 = { games: 0, maxCombo: 0, maxJackpot: 0, bestScore: 0, playSec: 0, wizards: 0, modes: 0 };
 
-export function loadStats() {
-  const v = load('stats', {});
+// statistika po mizah (Alu ohrani stari ključ 'stats')
+const statsKey = id => (!id || id === 'alu') ? 'stats' : 'stats:' + id;
+
+export function loadStats(id) {
+  const v = load(statsKey(id), {});
   return Object.assign({}, STATS0, typeof v === 'object' && v ? v : {});
 }
 
-export function recordGame(g) {
-  const s = loadStats();
+export function recordGame(g, id) {
+  const s = loadStats(id);
   s.games++;
   s.maxCombo = Math.max(s.maxCombo, g.maxCombo || 0);
   s.maxJackpot = Math.max(s.maxJackpot, g.maxJackpot || 0);
@@ -67,7 +43,7 @@ export function recordGame(g) {
   s.playSec += Math.round(g.playSec || 0);
   s.wizards += g.wizards || 0;
   s.modes += g.modes || 0;
-  save('stats', s);
+  save(statsKey(id), s);
   return s;
 }
 

@@ -1,20 +1,18 @@
 /* =====================================================================
-   DINAMIČNI SLOJ — vse, kar se premika ali sveti (vsak frame)
+   DINAMIČNI SLOJ — vse, kar se premika ali sveti (vsak frame), splošno iz T
    g = barvni sloj, e = emisijski sloj (bloom), oba v logičnih koordinatah
    ===================================================================== */
-import { TAU, BR, PAL, MODES, CFG } from '../config.js';
-import { PLUNGER_Y, SCOOP, SPINNER, RAMP } from '../table.js';
-import { lampShape } from './art.js';
-
-const FONT_T = '"Orbitron", "Rajdhani", "Arial Black", sans-serif';
-const FONT_M = '"Share Tech Mono", Consolas, monospace';
+import { TAU, BR } from '../config.js';
+import { lampShape, FONT_T, FONT_M } from './art.js';
 
 const rgbStr = (c, a = 1, k = 1) => `rgba(${Math.round(Math.min(255, c[0] * 255 * k))},${Math.round(Math.min(255, c[1] * 255 * k))},${Math.round(Math.min(255, c[2] * 255 * k))},${a})`;
+const hex3 = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
+const mix = (c, k, a = 1) => rgbStr(c, a, k);
 
 /* ------------------------------------------------------------------ */
-export function drawLamps(g, e, T, lights, onRamp) {
+export function drawLamps(g, e, T, lights, layer) {
   for (const l of T.lamps) {
-    if (!!l.onRamp !== onRamp) continue;
+    if ((l.layer || 0) !== layer) continue;
     const o = lights.out[l.id];
     const i = o.i, c = o.rgb;
     if (l.group === 'gi') {
@@ -68,27 +66,31 @@ export function drawBumpers(g, e, T, time) {
     g.beginPath(); g.arc(c.x, c.y, r + 2, 0, TAU); g.fillStyle = gr; g.fill();
     // osvetlitev od spodaj (obroč)
     const glow = 0.45 + 0.55 * f + 0.1 * Math.sin(time * 3 + c.i * 2);
+    const col = c.color ? hex3(c.color) : null;
     g.beginPath(); g.arc(c.x, c.y, r - 1.5, 0, TAU);
-    g.fillStyle = `rgba(255,${Math.round(110 + 90 * f)},${Math.round(30 + 120 * f)},${0.55 + 0.45 * glow})`; g.fill();
+    g.fillStyle = col ? rgbStr(col, 0.55 + 0.45 * glow, 0.7 + 0.5 * f)
+      : `rgba(255,${Math.round(110 + 90 * f)},${Math.round(30 + 120 * f)},${0.55 + 0.45 * glow})`;
+    g.fill();
     // kapica (poskoči ob udarcu)
     const cy = c.y - p * 3.5, cr = (r - 5) * (1 + p * 0.1);
     g.beginPath(); g.arc(c.x + 1.5, c.y + 2, cr, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
     const cg = g.createRadialGradient(c.x - cr * 0.35, cy - cr * 0.4, 1, c.x, cy, cr);
-    if (f > 0.2) { cg.addColorStop(0, '#fffaf0'); cg.addColorStop(0.5, '#ffc070'); cg.addColorStop(1, '#ff7a1a'); }
+    if (col) { cg.addColorStop(0, '#ffffff'); cg.addColorStop(0.5, mix(col, f > 0.2 ? 1.2 : 1)); cg.addColorStop(1, mix(col, 0.4)); }
+    else if (f > 0.2) { cg.addColorStop(0, '#fffaf0'); cg.addColorStop(0.5, '#ffc070'); cg.addColorStop(1, '#ff7a1a'); }
     else { cg.addColorStop(0, '#ffd8a8'); cg.addColorStop(0.5, '#ff8a2a'); cg.addColorStop(1, '#8a2a00'); }
     g.beginPath(); g.arc(c.x, cy, cr, 0, TAU); g.fillStyle = cg; g.fill();
     g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,240,220,.65)'; g.stroke();
     // napis
     g.fillStyle = 'rgba(40,10,0,.85)';
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.font = `900 ${Math.round(cr * 0.85)}px ${FONT_T}`; g.fillText('Al', c.x, cy + 1.5);
-    g.font = `700 ${Math.round(cr * 0.38)}px ${FONT_M}`; g.fillText('13', c.x - cr * 0.55, cy - cr * 0.55);
+    if (c.label) { g.font = `900 ${Math.round(cr * (c.label.length > 2 ? 0.55 : 0.85))}px ${FONT_T}`; g.fillText(c.label, c.x, cy + 1.5); }
+    if (c.sub) { g.font = `700 ${Math.round(cr * 0.38)}px ${FONT_M}`; g.fillText(c.sub, c.x - cr * 0.55, cy - cr * 0.55); }
     // bleščica
     g.beginPath(); g.ellipse(c.x - cr * 0.38, cy - cr * 0.5, cr * 0.38, cr * 0.18, -0.5, 0, TAU);
     g.fillStyle = 'rgba(255,255,255,.55)'; g.fill();
     if (e) {
       e.beginPath(); e.arc(c.x, c.y, r + 1, 0, TAU);
-      e.fillStyle = `rgba(255,${Math.round(100 + 80 * f)},30,${0.12 + 0.6 * f})`; e.fill();
+      e.fillStyle = col ? rgbStr(col, 0.12 + 0.6 * f) : `rgba(255,${Math.round(100 + 80 * f)},30,${0.12 + 0.6 * f})`; e.fill();
       if (f > 0.05) { e.beginPath(); e.arc(c.x, cy, cr, 0, TAU); e.fillStyle = `rgba(255,200,140,${f * 0.7})`; e.fill(); }
     }
   }
@@ -121,13 +123,15 @@ export function drawSlings(g, e, T) {
       g.beginPath(); g.arc(px - 1, py - 1, 2, 0, TAU); g.fillStyle = '#f5f8ff'; g.fill();
     }
     // tekst
-    g.save();
-    g.translate((ax + bx + cx) / 3 + (s.side === 'L' ? -4 : 4), (ay + by + cy) / 3);
-    g.rotate(s.side === 'L' ? 1.1 : -1.1);
-    g.font = `800 8px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(255,235,210,.75)';
-    g.fillText(CFG.imena.sling, 0, 0);
-    g.restore();
+    if (s.label) {
+      g.save();
+      g.translate((ax + bx + cx) / 3 + (s.side === 'L' ? -4 : 4), (ay + by + cy) / 3);
+      g.rotate(s.side === 'L' ? 1.1 : -1.1);
+      g.font = `800 8px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = 'rgba(255,235,210,.75)';
+      g.fillText(s.label, 0, 0);
+      g.restore();
+    }
     if (e) {
       e.lineCap = 'round';
       e.beginPath(); e.moveTo(ax, ay); e.quadraticCurveTo(qx, qy, cx, cy);
@@ -137,98 +141,124 @@ export function drawSlings(g, e, T) {
 }
 
 /* ------------------------------------------------------------------ */
-export function drawTargets(g, e, T, game, time) {
+/* tarče: drop (pogreznejo se) in standup (zanihajo); poljubna smer      */
+/* ------------------------------------------------------------------ */
+function along(g, s, fn) {
+  const dx = s.bx - s.ax, dy = s.by - s.ay, L = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  g.save(); g.translate((s.ax + s.bx) / 2, (s.ay + s.by) / 2); g.rotate(a);
+  fn(L, a);
+  g.restore();
+}
+export function drawTargets(g, e, T, time) {
   for (const s of T.drops) {
-    const ch = 'BUG'[s.data.idx], y0 = s.ay - 3, h = s.by - s.ay + 6, k = s.sink;
-    // reža
-    g.fillStyle = '#020305'; g.fillRect(s.ax - 6, y0, 12, h);
-    if (k < 0.98) {
-      g.save();
-      g.globalAlpha = 1 - k * 0.85;
-      const x = s.ax - 5 + k * 3, w = 10 - k * 6;
-      const gr = g.createLinearGradient(x, 0, x + w, 0);
-      gr.addColorStop(0, '#b6ffd2'); gr.addColorStop(0.35, '#39ff88'); gr.addColorStop(1, '#0d6b38');
-      g.fillStyle = gr; g.fillRect(x, y0 + k * 4, w, h - k * 8);
-      g.fillStyle = 'rgba(0,30,12,.9)';
-      g.font = `900 10px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(ch, s.ax + k * 2, y0 + h / 2);
-      g.restore();
-      if (e) {
-        const pulse = game.lockLit ? 0.25 : 0.35 + 0.25 * Math.sin(time * 4 + s.data.idx);
-        e.fillStyle = `rgba(57,255,136,${pulse * (1 - k)})`; e.fillRect(s.ax - 8, y0 - 2, 16, h + 4);
+    const k = s.sink, c = hex3(s.color || '#39ff88');
+    along(g, s, (L, a) => {
+      // reža
+      g.fillStyle = '#020305'; g.fillRect(-L / 2 - 3, -6, L + 6, 12);
+      if (k < 0.98) {
+        g.globalAlpha = 1 - k * 0.85;
+        const w = 10 - k * 6;
+        const gr = g.createLinearGradient(0, -w / 2, 0, w / 2);
+        gr.addColorStop(0, mix(c, 1.9)); gr.addColorStop(0.35, mix(c, 1)); gr.addColorStop(1, mix(c, 0.35));
+        g.fillStyle = gr; g.fillRect(-L / 2 + k * 4, -w / 2 + k * 1.5, L - k * 8, w);
+        if (s.label) {
+          g.rotate(-a);
+          g.fillStyle = 'rgba(0,30,12,.9)';
+          g.font = `900 10px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText(s.label, k * 2, 0);
+        }
+        g.globalAlpha = 1;
       }
+    });
+    if (e && k < 0.98) {
+      const pulse = s.pulse === false ? 0.25 : 0.35 + 0.25 * Math.sin(time * 4 + s.data.idx);
+      along(e, s, (L) => { e.fillStyle = rgbStr(c, pulse * (1 - k)); e.fillRect(-L / 2 - 2, -8, L + 4, 16); });
     }
   }
-  // code review (standup)
-  const r = T.review, w = r.wobble, ox = Math.sin(w * 30) * w * 2.5;
-  g.fillStyle = '#05070a'; g.fillRect(r.ax - 2, r.ay - 4, r.bx - r.ax + 4, 9);
-  const gr = g.createLinearGradient(0, r.ay - 6, 0, r.ay + 6);
-  gr.addColorStop(0, '#ffc2f2'); gr.addColorStop(0.4, '#ff4fd8'); gr.addColorStop(1, '#6a0d58');
-  g.fillStyle = gr; g.fillRect(r.ax + ox, r.ay - 5, r.bx - r.ax, 10);
-  g.fillStyle = 'rgba(40,0,30,.85)'; g.font = `800 6.5px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText('REVIEW', (r.ax + r.bx) / 2 + ox, r.ay + 0.5);
-  if (e) { e.fillStyle = `rgba(255,79,216,${0.3 + w * 0.7})`; e.fillRect(r.ax - 3 + ox, r.ay - 7, r.bx - r.ax + 6, 14); }
+  for (const r of T.standups) {
+    const w = r.wobble, ox = Math.sin(w * 30) * w * 2.5, c = hex3(r.color || '#ff4fd8');
+    along(g, r, (L, a) => {
+      g.fillStyle = '#05070a'; g.fillRect(-L / 2 - 2, -4, L + 4, 9);
+      const gr = g.createLinearGradient(0, -6, 0, 6);
+      gr.addColorStop(0, mix(c, 1.6)); gr.addColorStop(0.4, mix(c, 1)); gr.addColorStop(1, mix(c, 0.4));
+      g.fillStyle = gr; g.fillRect(-L / 2 + ox, -5, L, 10);
+      if (r.label) {
+        if (Math.abs(a) > Math.PI / 2) g.rotate(Math.PI);
+        g.fillStyle = 'rgba(40,0,30,.85)'; g.font = `800 ${r.label.length > 3 ? 6.5 : 8}px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(r.label, ox, 0.5);
+      }
+    });
+    if (e) along(e, r, (L) => { e.fillStyle = rgbStr(c, 0.3 + w * 0.7 + (r.lit ? 0.3 : 0)); e.fillRect(-L / 2 - 3 + ox, -7, L + 6, 14); });
+  }
 }
 
 /* ------------------------------------------------------------------ */
-export function drawSpinner(g, e, sp) {
-  const x = SPINNER.x, y = SPINNER.y;
-  // nosilec
-  g.strokeStyle = '#c3cdd9'; g.lineWidth = 1.6;
-  g.beginPath(); g.moveTo(22, y); g.lineTo(66, y); g.stroke();
-  for (const px of [23, 65]) { g.beginPath(); g.arc(px, y, 3, 0, TAU); g.fillStyle = '#7f8c9d'; g.fill(); }
-  // plošča se vrti okoli vodoravne osi
-  const a = sp.angle, s = Math.sin(a), c = Math.cos(a);
-  const h = Math.abs(s) * 13 + 1.2;
-  const front = s > 0;
-  const blur = Math.min(1, sp.w / 30);
-  if (blur > 0.3) {
-    g.fillStyle = `rgba(200,215,230,${0.18 * blur})`;
-    g.fillRect(x - 19, y - 13, 38, 26);
+export function drawSpinners(g, e, T) {
+  for (const spn of T.spinners) {
+    const sp = spn.state, x = spn.x, y = spn.y, hw = spn.w / 2;
+    g.save();
+    if (spn.angle) { g.translate(x, y); g.rotate(spn.angle); g.translate(-x, -y); }
+    // nosilec
+    g.strokeStyle = '#c3cdd9'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(spn.x1, y); g.lineTo(spn.x2, y); g.stroke();
+    for (const px of [spn.x1 + 1, spn.x2 - 1]) { g.beginPath(); g.arc(px, y, 3, 0, TAU); g.fillStyle = '#7f8c9d'; g.fill(); }
+    // plošča se vrti okoli vodoravne osi
+    const a = sp.angle, s = Math.sin(a);
+    const h = Math.abs(s) * 13 + 1.2;
+    const front = s > 0;
+    const blur = Math.min(1, sp.w / 30);
+    if (blur > 0.3) {
+      g.fillStyle = `rgba(200,215,230,${0.18 * blur})`;
+      g.fillRect(x - hw, y - 13, hw * 2, 26);
+    }
+    const gr = g.createLinearGradient(0, y - h / 2, 0, y + h / 2);
+    if (front) { gr.addColorStop(0, '#f8fbff'); gr.addColorStop(0.5, '#9fb0c4'); gr.addColorStop(1, '#5a6a7e'); }
+    else { gr.addColorStop(0, '#5d6878'); gr.addColorStop(1, '#2a323e'); }
+    g.fillStyle = gr;
+    g.fillRect(x - hw, y - h / 2, hw * 2, h);
+    if (front && h > 6 && spn.label) {
+      g.fillStyle = 'rgba(10,30,50,.7)'; g.font = `800 ${Math.min(9, h * 0.7)}px ${FONT_T}`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.save(); g.translate(x, y); g.scale(1, Math.max(0.2, h / 13)); g.fillText(spn.label, 0, 0.5); g.restore();
+    }
+    g.restore();
+    if (e && sp.w > 2) { e.fillStyle = `rgba(111,211,255,${Math.min(0.7, sp.w / 40)})`; e.fillRect(x - hw - 2, y - h / 2 - 2, hw * 2 + 4, h + 4); }
   }
-  const gr = g.createLinearGradient(0, y - h / 2, 0, y + h / 2);
-  if (front) { gr.addColorStop(0, '#f8fbff'); gr.addColorStop(0.5, '#9fb0c4'); gr.addColorStop(1, '#5a6a7e'); }
-  else { gr.addColorStop(0, '#5d6878'); gr.addColorStop(1, '#2a323e'); }
-  g.fillStyle = gr;
-  g.fillRect(x - 19, y - h / 2 + (c > 0 ? 0 : 0), 38, h);
-  if (front && h > 6) {
-    g.fillStyle = 'rgba(10,30,50,.7)'; g.font = `800 ${Math.min(9, h * 0.7)}px ${FONT_T}`;
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.save(); g.translate(x, y); g.scale(1, Math.max(0.2, h / 13)); g.fillText('VALJ', 0, 0.5); g.restore();
-  }
-  if (e && sp.w > 2) { e.fillStyle = `rgba(111,211,255,${Math.min(0.7, sp.w / 40)})`; e.fillRect(x - 21, y - h / 2 - 2, 42, h + 4); }
 }
 
 /* ------------------------------------------------------------------ */
 export function drawPlunger(g, e, game) {
-  const top = PLUNGER_Y + game.plungerPull * 28;
-  g.fillStyle = '#05070a'; g.fillRect(548, top - 2, 29, 1000 - top + 2);
+  const L = game.T.launch;
+  const x1 = L.x1 + 3, x2 = L.x2 - 3, w = x2 - x1;
+  const top = L.y + game.plungerPull * L.travel;
+  g.fillStyle = '#05070a'; g.fillRect(x1, top - 2, w + 2, 1000 - top + 2);
   // vzmet
   g.strokeStyle = '#8b97a6'; g.lineWidth = 1.6;
   g.beginPath();
   const n = 9, len = 1000 - top - 8;
   for (let i = 0; i <= n; i++) {
-    const yy = top + 8 + len * i / n, xx = i % 2 ? 553 : 572;
+    const yy = top + 8 + len * i / n, xx = i % 2 ? x1 + 5 : x2 - 4;
     i ? g.lineTo(xx, yy) : g.moveTo(xx, yy);
   }
   g.stroke();
   // glava
-  const gr = g.createLinearGradient(549, 0, 576, 0);
+  const gr = g.createLinearGradient(x1 + 1, 0, x2, 0);
   gr.addColorStop(0, '#5a6576'); gr.addColorStop(0.4, '#f0f5fb'); gr.addColorStop(1, '#4b5566');
-  g.fillStyle = gr; g.fillRect(549, top, 27, 7);
-  g.fillStyle = '#ff7a1a'; g.fillRect(549, top + 7, 27, 2);
+  g.fillStyle = gr; g.fillRect(x1 + 1, top, w - 1, 7);
+  g.fillStyle = game.PAL.melt; g.fillRect(x1 + 1, top + 7, w - 1, 2);
   // moč
   if (game.plungerPull > 0) {
     const p = game.plungerPull;
     const col = `hsl(${40 - p * 40},100%,${50 + p * 10}%)`;
-    g.fillStyle = col; g.fillRect(583, 990 - p * 130, 4, p * 130);
-    if (e) { e.fillStyle = col; e.fillRect(581, 990 - p * 130, 8, p * 130); }
+    g.fillStyle = col; g.fillRect(x2 + 6, 990 - p * 130, 4, p * 130);
+    if (e) { e.fillStyle = col; e.fillRect(x2 + 4, 990 - p * 130, 8, p * 130); }
   }
 }
 
 /* ------------------------------------------------------------------ */
-export function drawFlippers(g, e, T, game) {
+export function drawFlippers(g, e, T, game, layer = 0) {
   for (const f of T.flippers) {
+    if ((f.layer || 0) !== layer) continue;
     const L = f.len;
     const shape = (ctx) => {
       ctx.beginPath();
@@ -255,10 +285,12 @@ export function drawFlippers(g, e, T, game) {
     g.beginPath(); g.moveTo(6, -f.r1 * 0.45 * flipSide); g.lineTo(L - 4, -f.r2 * 0.4 * flipSide);
     g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1.2; g.stroke();
     // logo
-    g.save(); g.translate(L * 0.52, 0); if (f.side === 'R') g.rotate(Math.PI);
-    g.fillStyle = game.tilted ? 'rgba(255,60,60,.9)' : 'rgba(255,122,26,.95)';
-    g.font = `900 8px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('ALU', 0, 0.5); g.restore();
+    if (f.label) {
+      g.save(); g.translate(L * 0.52, 0); if (f.side === 'R') g.rotate(Math.PI);
+      g.fillStyle = game.tilted ? 'rgba(255,60,60,.9)' : 'rgba(255,122,26,.95)';
+      g.font = `900 ${L < 60 ? 6.5 : 8}px ${FONT_T}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(f.label, 0, 0.5); g.restore();
+    }
     // os
     const pg = g.createRadialGradient(-1.5, -1.5, 0.5, 0, 0, 6);
     pg.addColorStop(0, '#ffffff'); pg.addColorStop(1, '#4a5566');
@@ -272,12 +304,79 @@ export function drawFlippers(g, e, T, game) {
 }
 
 /* ------------------------------------------------------------------ */
+/* novi elementi: stebrički, preusmerniki, ujeta žogica, magneti, lock,   */
+/* saucer/VUK, igrače (privzeto), stene ramp brez lastne grafike           */
+/* ------------------------------------------------------------------ */
+export function drawElements(g, e, T, game, env, time, view) {
+  const P = game.PAL;
+  // saucerji: žar ob ujetju
+  for (const s of T.saucers) {
+    if (e && s.flash > 0.02) { e.beginPath(); e.arc(s.x, s.y, s.r + 10, 0, TAU); e.fillStyle = `rgba(255,150,60,${s.flash * 0.6})`; e.fill(); }
+  }
+  // magneti
+  for (const m of T.magnets) {
+    if (!m.on) continue;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 18);
+    g.beginPath(); g.arc(m.x, m.y, m.r * (0.4 + 0.15 * pulse), 0, TAU);
+    g.strokeStyle = `rgba(111,211,255,${0.35 + 0.3 * pulse})`; g.lineWidth = 2; g.stroke();
+    if (e) { e.beginPath(); e.arc(m.x, m.y, m.r * 0.5, 0, TAU); e.fillStyle = `rgba(111,211,255,${0.15 + 0.2 * pulse})`; e.fill(); }
+  }
+  // dvižni stebrički
+  for (const s of T.posts) {
+    const k = s.lift;
+    if (k < 0.03) { g.beginPath(); g.arc(s.ax, s.ay, s.r, 0, TAU); g.fillStyle = '#0a0c10'; g.fill(); continue; }
+    g.beginPath(); g.arc(s.ax + 2, s.ay + 3, s.r * k, 0, TAU); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill();
+    const gr = g.createRadialGradient(s.ax - 2, s.ay - 2, 0.5, s.ax, s.ay, s.r);
+    gr.addColorStop(0, '#fff7e8'); gr.addColorStop(0.5, P.melt); gr.addColorStop(1, '#3a1400');
+    g.beginPath(); g.arc(s.ax, s.ay, s.r * (0.6 + 0.4 * k), 0, TAU); g.fillStyle = gr; g.fill();
+    if (e) { e.beginPath(); e.arc(s.ax, s.ay, s.r * 1.6, 0, TAU); e.fillStyle = `rgba(255,140,40,${0.35 * k})`; e.fill(); }
+  }
+  // preusmerniki
+  for (const s of T.diverters) {
+    g.lineCap = 'round';
+    g.beginPath(); g.moveTo(s.ax, s.ay); g.lineTo(s.bx, s.by);
+    g.strokeStyle = '#0e131b'; g.lineWidth = s.r * 2 + 4; g.stroke();
+    g.strokeStyle = s.on ? P.gold : '#a7b4c4'; g.lineWidth = s.r * 2; g.stroke();
+    g.beginPath(); g.arc(s.px, s.py, 4, 0, TAU); g.fillStyle = '#e8eef6'; g.fill();
+    if (e && s.on) { e.beginPath(); e.moveTo(s.ax, s.ay); e.lineTo(s.bx, s.by); e.strokeStyle = 'rgba(255,210,63,.5)'; e.lineWidth = 6; e.stroke(); }
+  }
+  // ujeta žogica
+  for (const c of T.captives) {
+    g.beginPath(); g.moveTo(c.ax, c.ay); g.lineTo(c.bx, c.by);
+    g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = BR * 2 + 4; g.lineCap = 'round'; g.stroke();
+    chromeBall(g, c.x, c.y, BR, env, null);
+    if (e && c.flash > 0.05) { e.beginPath(); e.arc(c.bx, c.by, 16, 0, TAU); e.fillStyle = `rgba(255,210,63,${c.flash * 0.7})`; e.fill(); }
+  }
+  // vidni lock: žogice v vrsti
+  for (const k of T.locks) {
+    for (let i = 0; i < k.slots.length; i++) {
+      const [x, y] = k.slots[i];
+      g.beginPath(); g.arc(x, y, BR + 2, 0, TAU); g.strokeStyle = 'rgba(160,190,220,.35)'; g.lineWidth = 1; g.stroke();
+      if (i < k.balls) chromeBall(g, x, y, BR, env, null);
+    }
+  }
+  // igrače: privzeto debele črte (miza jih nariše sama v art.drawToys)
+  if (!(view && view.art && view.art.drawToys)) {
+    for (const t of T.toys) {
+      for (const s of t.segs) {
+        g.lineCap = 'round';
+        g.beginPath(); g.moveTo(s.ax, s.ay); g.lineTo(s.bx, s.by);
+        g.strokeStyle = '#1b2230'; g.lineWidth = s.r * 2 + 3; g.stroke();
+        g.strokeStyle = P.magenta; g.lineWidth = s.r * 2 - 1; g.stroke();
+      }
+    }
+  }
+  // ujete žogice (saucer, VUK)
+  for (const b of game.balls) if (b.captured) chromeBall(g, b.x, b.y, BR * 0.86, env, null);
+}
+
+/* ------------------------------------------------------------------ */
 export function drawBalls(g, e, balls, env, layer, q, time) {
   for (const b of balls) {
     if (b.layer !== layer || b.captured) continue;
-    const R = BR * (layer === 1 ? 1.1 : 1);
+    const R = BR * (layer >= 1 ? 1.1 : 1);
     // senca
-    const so = layer === 1 ? [12, 16, 1.4] : [4.5, 6.5, 1];
+    const so = layer >= 1 ? [12, 16, 1.4] : [4.5, 6.5, 1];
     const sg = g.createRadialGradient(b.x + so[0], b.y + so[1], 1, b.x + so[0], b.y + so[1], R * 1.35 * so[2]);
     sg.addColorStop(0, 'rgba(0,0,0,.55)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = sg; g.beginPath(); g.arc(b.x + so[0], b.y + so[1], R * 1.35 * so[2], 0, TAU); g.fill();
@@ -331,29 +430,6 @@ export function chromeBall(g, x, y, R, env, b) {
   // bleščici
   g.beginPath(); g.arc(x - R * 0.36, y - R * 0.42, R * 0.26, 0, TAU); g.fillStyle = 'rgba(255,255,255,.95)'; g.fill();
   g.beginPath(); g.arc(x + R * 0.42, y + R * 0.38, R * 0.12, 0, TAU); g.fillStyle = 'rgba(255,190,120,.6)'; g.fill();
-}
-
-/* ------------------------------------------------------------------ */
-export function drawFurnace(g, e, game, env, time) {
-  const { x, y } = SCOOP;
-  // zaklenjene žogice v peči (vidno)
-  const lockPos = [[480, 459], [500, 459]];
-  for (let i = 0; i < game.locks; i++) {
-    const [lx, ly] = lockPos[i];
-    chromeBall(g, lx, ly, BR * 0.8, env, null);
-    g.beginPath(); g.arc(lx, ly, BR * 0.8, 0, TAU); g.fillStyle = 'rgba(255,110,20,.35)'; g.fill();
-    if (e) { e.beginPath(); e.arc(lx, ly, BR * 1.1, 0, TAU); e.fillStyle = `rgba(57,255,136,${0.4 + 0.2 * Math.sin(time * 5 + i)})`; e.fill(); }
-  }
-  for (const b of game.balls) {
-    if (!b.captured) continue;
-    chromeBall(g, x, y, BR * 0.86, env, null);
-    g.beginPath(); g.arc(x, y, BR * 0.86, 0, TAU); g.fillStyle = 'rgba(255,120,30,.3)'; g.fill();
-  }
-  if (e) {
-    const heat = game.heat;
-    e.beginPath(); e.arc(x, y, 30, 0, TAU);
-    e.fillStyle = `rgba(255,110,20,${0.12 + heat * 0.35 + 0.05 * Math.sin(time * 7)})`; e.fill();
-  }
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,6 +1,6 @@
 /* =====================================================================
-   ALU PINBALL 2.0 — konfiguracija
-   Spremeni po želji: imena, število žogic, ravnotežje igre.
+   ALU MIZA — konfiguracija (imena, besedila, ravnotežje, paleta, misije)
+   Splošne fizikalne konstante so v engine/config.js.
    ===================================================================== */
 
 export const CFG = {
@@ -30,14 +30,6 @@ export const CFG = {
   },
   skillShot: 182500,          // »od 1825«
 
-  // skupna lestvica (Supabase; tabela in pravila: supabase/scores.sql).
-  // Ključ je javni »publishable« ključ — zaščito zagotavljajo pravila v bazi.
-  // Prazen url = samo lokalna lestvica (localStorage).
-  lestvica: {
-    url: 'https://ygdjxwchjfvzigasmayg.supabase.co',
-    kljuc: 'sb_publishable_tIyU-rppDYcHt6AxIu9ahA_P1ofVudB',
-  },
-
   steviloZogic: 3,
   ballSaveSek: 10,            // ball save po izstrelitvi
   multiballSaveSek: 15,
@@ -49,16 +41,12 @@ export const CFG = {
   spinZaKickback: 50,
 };
 
-// verzija fizike: poveča se ob vsaki namerni spremembi fizike (zlati test, lestvica po verziji)
-export const PHYSICS_VERSION = 1;
-
-// logične dimenzije mize in fizika (uglašeno — previdno!)
-export const W = 600, H = 1000;
-export const BR = 10;               // polmer žogice
-export const GRAV = 1900;           // px/s²
-export const MAXV = 3400;           // px/s
-export const STEP = 1 / 720;        // korak fizike (12 substepov / frame pri 60 fps)
-export const TAU = Math.PI * 2;
+// sporočila jedra (engine/game.js) s Kadringom, R in R, Servisom
+CFG.sporocila = {
+  start: [CFG.imena.kadri + ': ZAPOSLEN!', 'dobrodošel v skupini Impol', 'code', 1.6],
+  ballSave: [CFG.imena.ballSave, 'ball save — še enkrat!', 'cyan', 1.8],
+  ballSearch: [CFG.imena.servis, 'na poti — sproščam žogico', 'cyan', 1.4],
+};
 
 // barvna paleta (ena za celo igro)
 export const PAL = {
@@ -95,11 +83,3 @@ export const MODES = [
   },
 ];
 
-// nastavitve kakovosti izrisa
-export const QUALITY = {
-  low:   { ime: 'Nizka',   dprCap: 1,   scale: 0.7, bloom: 0, emi: 0,    heat: false, ca: false, motion: false, particles: 0.4 },
-  med:   { ime: 'Srednja', dprCap: 1,   scale: 1,   bloom: 3, emi: 0.35, heat: true,  ca: false, motion: false, particles: 0.7 },
-  high:  { ime: 'Visoka',  dprCap: 1.5, scale: 1,   bloom: 5, emi: 0.5,  heat: true,  ca: true,  motion: true,  particles: 1 },
-  ultra: { ime: 'Ultra',   dprCap: 2,   scale: 1,   bloom: 6, emi: 0.6,  heat: true,  ca: true,  motion: true,  particles: 1.5 },
-};
-export const QUALITY_ORDER = ['low', 'med', 'high', 'ultra'];
