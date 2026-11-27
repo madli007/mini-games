@@ -50,6 +50,8 @@ export class Rules {
     if (name === 'drop' || name === 'dropBank') return;
   }
   onShot() {}
+  /** izstrelitev s plungerjem (moč 0–1); vrne moč (lahko spremenjeno) */
+  onLaunch(p) { return p; }
   onRamp() {}
   onDrain() {}
   onBallStart() {}
@@ -494,6 +496,7 @@ export class Game {
   }
   launch(p) {
     if (p < 0.05) return;
+    p = this.rules.onLaunch(p) ?? p;       // pravila lahko povozijo moč (npr. super skill shot)
     const L = this.T.launch;
     let any = false;
     for (const b of this.balls) {

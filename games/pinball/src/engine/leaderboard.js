@@ -12,7 +12,7 @@ import { PHYSICS_VERSION } from './config.js';
 
 const SHARED = '../../../../shared/';
 let hub = null, ui = null, cfg = null, ready = null;
-let tableId = 'alu', gameId = 'pinball';
+let tableId = 'alu', gameId = 'pinball', hooks = {};
 let top = [];
 const listeners = [];
 
@@ -22,8 +22,12 @@ export function onChange(fn) { listeners.push(fn); }
 const changed = () => listeners.forEach(fn => { try { fn(); } catch (e) { /* ignoriraj */ } });
 
 /** naloži hub (enkrat); igra deluje tudi, če hub ni dosegljiv */
-export function init(id, game = 'pinball') {
-  tableId = id || 'alu'; gameId = game;
+/**
+ * @param hooksIn modul mize lahko poda achievements(d) → [{ key, title, icon }] in events(d) → [{ name, value, times }]
+ *   (dosežki prek hub.unlock, dogodki za naloge prek hub.reportEvent — enkrat po vsaki igri)
+ */
+export function init(id, game = 'pinball', hooksIn = {}) {
+  tableId = id || 'alu'; gameId = game; hooks = hooksIn || {};
   if (!ready) {
     ready = Promise.all([import(SHARED + 'hub.js'), import(SHARED + 'config.js')]).then(async ([m, c]) => {
       hub = m.hub; ui = m.ui; cfg = c;
@@ -94,6 +98,8 @@ export async function report(d) {
   try {
     await hub.awardXp(Math.min(200, 20 + Math.floor((d.score || 0) / 1e6) * 5), gameId);
     await hub.reportGame({ players: 1, score: Math.round(d.score || 0) });
+    for (const a of (hooks.achievements ? hooks.achievements(d) : [])) await hub.unlock(a.key, { title: a.title, icon: a.icon });
+    for (const ev of (hooks.events ? hooks.events(d) : [])) if (ev.times !== 0) await hub.reportEvent(ev.name, ev.value ?? 1, { times: ev.times ?? 1 });
   } catch (e) { /* hub ni dosegljiv */ }
 }
 

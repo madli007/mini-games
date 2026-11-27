@@ -50,6 +50,7 @@ export function sampleShot(table, flipperIdx, kind, pressMs, o = {}) {
     g.state = 'play';
     g.rules.resetGame(); g.rules.resetBall();
     if ('skillArmed' in g.rules) g.rules.skillArmed = false;
+    if (g.rules.shotMapSetup) g.rules.shotMapSetup();      // miza lahko pripravi stanje za merjenje (npr. zapre luknje)
     const f = T.flippers[flipperIdx];
     const st = startFor(T, f, kind);
     const hits = [];
@@ -148,7 +149,8 @@ export function shotMap(table, { starts = ['inlane', 'cradle'], before = 120, af
       if (k === run) runLen++; else { flush(); run = k; runLen = 1; }
     }
     flush();
-    const name = (f.button === f.side ? (f.side === 'L' ? 'levi' : 'desni') : 'zgornji ' + f.button) + (f.layer ? ' (plast ' + f.layer + ')' : '');
+    const low = Math.max(...T0.flippers.map(q => q.py));
+    const name = (f.py < low - 60 ? 'zgornji ' + (f.id || f.button) : f.side === 'L' ? 'levi' : 'desni') + (f.layer ? ' (plast ' + f.layer + ')' : '');
     for (const [shot, e] of [...by.entries()].sort((a, b) => b[1].n - a[1].n)) {
       const sp = e.speeds.sort((a, b) => a - b);
       rows.push({

@@ -9,6 +9,7 @@ import ALU from '../src/tables/alu/index.js';
 import { SCOOP } from '../src/tables/alu/table.js';
 import { goldenRun, compareGolden, GOLDEN_SEEDS } from './golden.js';
 import { elementsTest } from './elements.js';
+import { bozicTest } from './bozic.js';
 
 function makeGame(table = ALU) { return mk(table); }
 
@@ -332,6 +333,9 @@ export function runAll(log = console.log, { games = 12, golden = undefined, gold
 
   // novi elementi motorja na testni mizi (tables/test)
   for (const r of elementsTest()) check('element: ' + r.name, r.ok, r.info);
+
+  // božična miza (games/bozicni-pinball/table)
+  for (const r of bozicTest({ games })) check('božična: ' + r.name, r.ok, r.info);
 
   const seeds = [];
   for (let i = 0; i < games; i++) seeds.push(1000 + i * 17);

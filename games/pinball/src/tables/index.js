@@ -6,5 +6,7 @@
 export const TABLES = {
   alu: () => import('./alu/index.js'),
   test: () => import('./test/index.js'),
+  // božična miza je svoja igra v hubu (games/bozicni-pinball/); tu je le za orodja (merilec strelov, bot) in teste
+  bozic: () => import('../../../bozicni-pinball/table/index.js'),
 };
 export const DEFAULT_TABLE = 'alu';

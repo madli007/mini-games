@@ -9,6 +9,8 @@ import { startApp } from './engine/app.js';
 
 const params = new URLSearchParams(location.search);
 const want = params.get('miza');
+// božična miza je svoja igra v hubu (lestvica pod bozicni-pinball)
+if (want === 'bozic') location.replace('../bozicni-pinball/' + location.search.replace(/([?&])miza=bozic&?/, '$1').replace(/[?&]$/, ''));
 let id = want && Object.prototype.hasOwnProperty.call(TABLES, want) ? want : DEFAULT_TABLE;
 let table;
 try { table = (await TABLES[id]()).default; } catch (e) {

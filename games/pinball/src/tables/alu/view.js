@@ -38,6 +38,7 @@ export const ui = {
   companies: CFG.imena.podjetja,
   hint: 'ENTER za začetek · misije, multiball in finale te čakajo v livarni ' + CFG.imena.scoop,
   legal: CFG.opomba,
+  links: [{ label: '🎄 Božična miza', href: '../bozicni-pinball/' }],
   archive: true,               // zavihek »Arhiv (pred portalom)«: stara tabela scores (samo branje)
   logo: CFG.logotipi ? logoUrl('impol') : null,
   logoAlt: 'Impol',

@@ -1511,3 +1511,53 @@ Miza kot modul: `games/pinball/src/engine/` (motor) + `games/pinball/src/tables/
   danes), Prejšnje verzije (ko obstajajo), Arhiv (pred portalom) — branje `public.scores` prek REST, v offline načinu ni na voljo.
 
 ## Ni bilo preverjeno
+
+# Božični pinball (prompt 23, 28. 11. 2026)
+
+Nova igra `bozicni-pinball` (»Trije dobri možje«) na motorju pinballa: `games/bozicni-pinball/` (miza v `table/`, uvaža
+`../pinball/src/engine/`). Pravila, mapa strelov, legenda in bot statistika: `games/bozicni-pinball/README.md`.
+
+## Načrt
+- [x] Geometrija: pahljača (Sankališče, Smučka, Jelka, Vlakec, desni orbit, Kepa), Parklji, venec, Z·V·O·N, Snežaki, vreča (lock),
+      Alu dno; rampi po Catmull-Rom poteh (križata se nad centrom), zgornji flipper, up-post, ujeta žogica, jelka (igrača)
+- [x] Iteracija z merilcem strelov in botom (podaje, okna, outlane/sredina, ball search)
+- [x] Pravila: skill shot, super skill shot, ball save, kickback, tilt, bonus X, Darilni multiball (3 locki v vreči),
+      jackpoti na 4 strelih, super jackpot v Jelki, add-a-ball, combo, extra ball, pisma, venec, jelka; kljuke za prompt 24
+- [x] Grafika: snežna noč, vasica, ledene/plastične rampe, sladkorne palčke, jelka z lučkami in zvezdo, snežaki, dimnik z dimom,
+      vreča, vlakec, sani, sneženje (stikalo), backbox z girlando, DMD ilustracija
+- [x] Hub: `games.json` (live, 4 naloge), lestvica `miza:bozic:f3`, XP, reportGame, 4 dosežki, povezavi Alu ↔ Božična
+- [x] Motor (brez spremembe fizike, zlati test zelen): `Rules.onLaunch`, mapa strelov »?« (`view.ui.help`), stikala mize
+      (`view.ui.toggles`), `achievements`/`events` mize, `panelKey`, `shotMapSetup`, bot `drainX` in deleži vseh drainov
+- [x] Testi `games/pinball/tests/bozic.js` (41), vsi pinball testi (104) in testi huba (242) zeleni
+- [x] README mize in motorja, prompt 24 po dejanskem stanju
+
+## Dnevnik
+- **Kam letijo streli.** Najprej prazen »ventilator« trajektorij (Alu dno): z inlana je ≈ 48 ms dolg »pozni« strel (žogica na konici)
+  vedno v nasprotni orbit, iz cradla gredo skoraj vsi streli naravnost gor ob sredini (x ≈ 255 levo, 307 desno), vmes so koti
+  hitro prepihani (2–10 ms). Postavitev je temu prilagojena: orbita na poznih strelih (≈ 54 ms), rampi na cradle črtah
+  (Smučka 48 ms iz levega cradla, Vlakec 36 ms iz desnega), Jelka med njima (≈ 15 ms, namenoma ozka).
+- **Prvi poskusi ramp so imeli 0–4 ms:** pregrade med rampo in centrom so se začele na črti vhoda (žogica je zadela
+  njihov spodnji konec, preden je prešla na plast rampe), zavoj rampe takoj po vhodu je ubil hitrost (zavrnitev pri 1900 px/s).
+  Pregrade zdaj začnejo 18 px nad vhodom, rampi gresta najprej naravnost gor, naklon 320.
+- **Dimnik in Pisma sta luknji v kanalih orbitov** (VUK z `capture` 0 = zaprto). Samostojni VUK levo in scoop desno sta imela
+  okno 2–8 ms; luknja v orbitu ima okno orbita in ne zmoti pretoka, ko je zaprta. Merilec jih zapre (`shotMapSetup`).
+- **Vračanje desnega orbita:** strma vrata so žogico vrgla čez sredino (podaja 56 %). Položna vrata, kanal 70–100 do levega inlana
+  in brez gumijastega stebrička na koncu vodila → 64 % na levi flipper, 33 % na desnega (počasnejše žogice ne obkrožijo vrha
+  in se po desnem kanalu vrnejo v desni inlane). Cilj ≥ 85 % za desni orbit ni dosežen; Sankališče 96 %, rampi 100 %.
+- **Zgornji flipper:** desni (»R« oblika) je dobil žogico na os; obrnjen (»L« oblika, gumb R) pod up-postom (417, 70) jo ujame
+  pri moči 0,5–0,9. Super skill shot zato izstreli s fiksno močjo 0,68 (`onLaunch`). Zgornji flipper strelja skoraj navpično,
+  zato je »Kepa« tarča zgoraj desno namesto zgornje zanke.
+- **Outlane / sredina:** z Alu vodili (50/515) je bilo 81 % drainov po sredini. Vrh vodil 63/502: outlane 47,6 %, sredina 50,3 %.
+  Cilja iz prompta (outlane 35–55 % in sredina 20–40 %) hkrati nista dosegljiva, ker skoraj ni drugih drainov (vsota ≈ 98 %);
+  izbran je kompromis z daljšo igro (bolj odprta vodila skrajšajo žogico pod 50 s).
+- **Pregled slik:** spodnja polovica je bila presvetla (sneg + GI + ACES) → temnejša pobočja in GI; imena ramp na vrhu so bila
+  na nasprotni strani (vrh rampe je na drugi strani mize) → ob vhodu; ☃ na bumperjih se v pisavi ni izrisal → obrazi snežakov
+  v `drawToys`; naslov »XMAS« je na DMD prekril napis → »DEC«.
+
+## Ni bilo preverjeno
+- **Ročno igranje z roko na tipkovnici (5 iger z multiballom):** podokno brskalnika je bilo ves čas skrito, `requestAnimationFrame`
+  ne teče. Igra je preverjena z botom (200 iger), testi in s korakanjem igre iz skripte v brskalniku (super skill shot, lock,
+  multiball, konec igre, lestvica, dosežki). Občutek »z roko« še čaka na testnega igralca.
+- **fps na telefonu (Srednja):** brez vidnega podokna ni meritve; čas izrisa frame-a na CPU je < 1 ms na vseh kakovostih (GPU ni izmerjen).
+- **Supabase:** zapis rezultata pod uporabnikom (`miza:bozic:f3`), dosežki in naloge so preverjeni le offline (`?offline=1`).
+- Glasba in DMD animacije so še od motorja (prazniče teme so v promptu 24).

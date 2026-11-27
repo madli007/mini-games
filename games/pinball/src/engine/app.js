@@ -26,7 +26,7 @@ export function startApp(table, view = {}, opts = {}) {
   const renderer = new Renderer($('view'), T, game, bus, view);
   const dmd = new DMD($('dmd'), $('dmdGlow'), view.dmd || {}, PAL);
   const audio = new Audio(settings);
-  Board.init(table.id, opts.gameId || 'pinball');
+  Board.init(table.id, opts.gameId || 'pinball', { achievements: table.achievements, events: table.events });
 
   const isTouch = matchMedia('(pointer: coarse)').matches;
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
@@ -67,6 +67,8 @@ export function startApp(table, view = {}, opts = {}) {
     setVolume(kind, v) { settings[kind] = v; Store.saveSettings(settings); audio.setVolume(kind, v); },
     setMuted(m) { settings.muted = m; Store.saveSettings(settings); audio.setMuted(m); },
     setFps(on) { settings.fps = on; Store.saveSettings(settings); $('fps').classList.toggle('on', on); },
+    /** stikalo mize (view.ui.toggles), npr. sneženje — miza ga bere iz __pinball.settings */
+    setToggle(key, on) { settings[key] = !!on; Store.saveSettings(settings); },
   };
   const ui = new UI(app, view);
 

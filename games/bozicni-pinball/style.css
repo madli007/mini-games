@@ -1,0 +1,25 @@
+/* Božični pinball — dodatki k ../pinball/src/style.css (ohišje: les, rdeč lak, zlato, girlanda) */
+body { background: radial-gradient(ellipse at 50% 0%, #13285a 0%, #060b18 60%, #030509 100%); }
+#cab {
+  background: linear-gradient(180deg, #3a160c, #22090a 40%, #2a0e0a);
+  box-shadow: 0 0 0 2px #e8b64a, 0 0 0 5px #8e0f22, 0 30px 80px rgba(0,0,0,0.75), 0 0 70px rgba(255, 170, 90, 0.10);
+}
+#backbox {
+  background:
+    radial-gradient(circle at 8% 50%, rgba(255,80,90,.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 50%, rgba(120,255,170,.9) 0 2px, transparent 3px),
+    linear-gradient(180deg, #2a0a0e, #120406);
+  box-shadow: inset 0 0 0 2px #e8b64a, inset 0 0 0 4px #5a1020, inset 0 0 20px rgba(0,0,0,.9);
+}
+/* girlanda lučk na robu backboxa */
+#backbox::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(90deg, #ff4d5e 0 4px, transparent 4px 16px, #ffd166 16px 20px, transparent 20px 32px, #4cf08a 32px 36px, transparent 36px 48px, #8fdcff 48px 52px, transparent 52px 64px);
+  filter: drop-shadow(0 0 3px rgba(255,220,150,.9));
+  animation: xmasLights 1.6s steps(2) infinite;
+}
+@keyframes xmasLights { 50% { filter: drop-shadow(0 0 1px rgba(255,220,150,.4)) brightness(.6); } }
+@media (prefers-reduced-motion: reduce) { #backbox::before { animation: none; } }
+.title { color: #ffd166; text-shadow: 0 0 18px rgba(255, 120, 80, .55), 0 2px 0 #8e0f22; }
+.title-ver { color: #f6fbff; }
+.subtitle { color: #9cc8ff; }

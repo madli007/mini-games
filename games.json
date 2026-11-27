@@ -35,6 +35,24 @@
     ]
   },
   {
+    "id": "bozicni-pinball",
+    "name": "Božični pinball",
+    "description": "Snežna decembrska miza: Miklavž, Božiček in Dedek Mraz. Rampe, dimnik, jelka, darilni multiball in ognjemet ob polnoči.",
+    "icon": "🎄",
+    "path": "games/bozicni-pinball/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["pinball", "rekordi", "praznično"],
+    "status": "live",
+    "color": "#e63946",
+    "quests": [
+      { "id": "igraj", "tier": "e", "text": "Odigraj igro Božičnega pinballa", "event": "play:bozicni-pinball", "target": 1 },
+      { "id": "5mio", "tier": "m", "text": "V Božičnem pinballu doseži 5.000.000 točk", "event": "score:bozicni-pinball", "target": 1, "cmp": "gte", "goal": 5000000 },
+      { "id": "super-jp", "tier": "h", "text": "V Božičnem pinballu zadeni super jackpot", "event": "bozicni-pinball:superjackpot", "target": 1 },
+      { "id": "w-mb3", "tier": "w", "text": "Sproži 3 darilne multiballe v Božičnem pinballu", "event": "bozicni-pinball:multiball", "target": 3 }
+    ]
+  },
+  {
     "id": "ladjice",
     "name": "Potapljanje ladjic",
     "description": "Ladjice s kapitani, mano in powerupi. Dvoboj, battle royale do 10 igralcev ali dnevni izziv proti AI.",

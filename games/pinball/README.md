@@ -148,8 +148,11 @@ supabase/scores.sql       stara tabela scores (arhiv, ne spreminjaj)
    - `table.js` — `buildTable()` z `createTable({ id })` iz `engine/table.js` (glej »Elementi« spodaj), na koncu `return T.finish()`
    - `rules.js` — razred, ki razširi `Rules` iz `engine/game.js`
    - `config.js` — `CFG` (`steviloZogic`, `ballSaveSek`, `comboOkno`, `sporocila` …) in `PAL` (ključi kot `DEFAULT_PAL`)
-   - `view.js` — `art` (kljuke izrisa, lahko prazno), `dmd` (napisi za attract), `ui` (besedila, seznam načinov, vrstice STANJE),
-     opcijsko `loadAssets(onLoad)` in `envBlobs`
+   - `view.js` — `art` (kljuke izrisa, lahko prazno), `dmd` (napisi za attract, `attractExtra` za lastno sliko na DMD), `ui` (besedila,
+     seznam načinov, vrstice STANJE, `links` gumbi na začetnem zaslonu, `help: { legend, note }` = »? MAPA STRELOV« iz `T.shots`
+     (`color`, `label`, `labelX/labelY`, `from`), `toggles: [{ id, label, def }]` = stikala v nastavitvah), opcijsko `loadAssets(onLoad)` in `envBlobs`
+   - opcijsko v `index.js`: `achievements(d)` → `[{ key, title, icon }]` (hub.unlock) in `events(d)` → `[{ name, times }]` (hub.reportEvent) po vsaki igri;
+     `summary().panelKey` osveži stranske panele, ko se spremeni stanje mize
 2. Vrstica v `src/tables/index.js`. Miza je dostopna z `?miza=<id>`.
 3. Z `?debug=1` preveri senzorje in plasti, z `?debug=shots` / `node tools/pinball-shots.mjs <id>` mapo strelov,
    z `node tools/pinball-bot.mjs <id>` statistiko, dodaj teste (glej `tests/elements.js`).
@@ -164,6 +167,8 @@ supabase/scores.sql       stara tabela scores (arhiv, ne spreminjaj)
 | `onRamp(ramp, why, b)` | prehod plasti: `enter`, `fail` (zavrnitev), `exit` |
 | `onBallStart()`, `onBallEnd()`, `onDrain(b)`, `onLastBall()` | izstrelitev nove žogice, konec žogice, drain, ostala je ena žogica (konec multiballa) |
 | `onFlipper(button)`, `onTilt()` | pritisk gumba (lane change), tilt |
+| `onLaunch(p)` | izstrelitev s plungerjem; vrne moč 0–1 (npr. super skill shot s fiksno močjo) |
+| `shotMapSetup()` | (neobvezno) merilec strelov pripravi stanje, npr. zapre luknje |
 | `tick(dt)`, `substep(dt)`, `ballTick(b)` | vsak frame, vsak korak fizike, vsaka žogica (npr. kickback) |
 | `lamps(set, time)` | stanje luči: `set(id, 0 ugasnjena · 1 sveti · 2 utripa · 3 hitro utripa, barva)` |
 | `dmdIdle(summary)`, `summary()`, `gameStats()`, `isMulti()`, `musicLevel()`, `abort()` | DMD vrstica, paneli, statistika ob koncu, multiball, glasba, prekinitev |
@@ -228,7 +233,8 @@ Lestvica gre pod `gameId` te igre (`seed = miza:<id>:f<verzija>`). Povezavo na d
   iz inlana ali leži v cradlu) preleti čas pritiska v korakih po 1 ms (fizika teče s korakom 1/720 s, zato sta sosednja vzorca lahko enaka)
   in zapiše strel, skupno in najdaljše okno (ms), kam se žogica vrne in mediano hitrosti ob zadetku.
 - **Bot** (`engine/bot.js`, `node tools/pinball-bot.mjs`): povprečje točk, trajanje igre in žogice, delež drainov po sredini /
-  v outlanih, strele na minuto, multiballi, načini, ball search.
+  v outlanih (`centerDrainPct`/`outlaneDrainPct` = med njima; `centerAllPct`/`outlaneAllPct` = od vseh drainov), strele na minuto,
+  multiballi, načini, ball search. Druga miza: `node tools/pinball-bot.mjs bozic 200` (register `tables/index.js` ima tudi `bozic`).
 
 ## Fizika in verzije
 

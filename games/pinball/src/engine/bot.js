@@ -38,14 +38,14 @@ export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 
   const ev = {};
   let frame = 0;
   // kje odteče žogica (za poročilo): sredina med flipperji ali outlane
-  const drains = { center: 0, outlane: 0, other: 0 };
+  const drains = { center: 0, outlane: 0, other: 0 }, drainX = [];
   const low = Math.max(...T.flippers.map(f => f.py));
   const fl = T.flippers.filter(f => f.layer === 0 && f.py >= low - 30);     // spodnja flipperja (brez zgornjih)
   const fx1 = Math.min(...fl.map(f => f.px)), fx2 = Math.max(...fl.map(f => f.px));
   bus.on('*', (d, n) => {
     ev[n] = (ev[n] || 0) + 1;
     if (trace) trace(n, g.score, frame);
-    if (n === 'drain') { if (d.x > fx1 && d.x < fx2) drains.center++; else if (d.x < fx1 - 60 || d.x > fx2 + 60) drains.outlane++; else drains.other++; }
+    if (n === 'drain') { drainX.push(Math.round(d.x)); if (d.x > fx1 && d.x < fx2) drains.center++; else if (d.x < fx1 - 60 || d.x > fx2 + 60) drains.outlane++; else drains.other++; }
   });
   try {
     g.startGame();
@@ -97,7 +97,7 @@ export function botGame({ table, seed = 1, skill = 0.75, trace = null, maxSec = 
       ramps: ev.rampMade || 0, orbits: ev.orbit || 0, scoops: ev.scoopEnter || 0, drains: ev.drain || 0,
       modeStarts: ev.modeStart || 0, extraBalls: ev.extraBall || 0, searches: ev.ballSearch || 0,
       escapes: ev.escape || 0, tilts: ev.tilt || 0, mystery: ev.mystery || 0, kickbacks: ev.kickback || 0, maxCombo: g.maxCombo,
-      drainCenter: drains.center, drainOutlane: drains.outlane, shots, shotCounts: Object.assign({}, g.shotCounts),
+      drainCenter: drains.center, drainOutlane: drains.outlane, drainOther: drains.other, drainX, shots, shotCounts: Object.assign({}, g.shotCounts),
       balls: g.cfg.steviloZogic + (ev.extraBall || 0),
     };
   } finally {
@@ -118,6 +118,9 @@ export function botReport(games) {
     avgBallSec: +(sum('sec') / balls).toFixed(1),
     centerDrainPct: +(100 * sum('drainCenter') / drains).toFixed(1),
     outlaneDrainPct: +(100 * sum('drainOutlane') / drains).toFixed(1),
+    // deleži vseh drainov (z »ostalimi«: ob strani flipperjev, med outlanom in sredino)
+    centerAllPct: +(100 * sum('drainCenter') / (drains + sum('drainOther') || 1)).toFixed(1),
+    outlaneAllPct: +(100 * sum('drainOutlane') / (drains + sum('drainOther') || 1)).toFixed(1),
     shotsPerMin: +(sum('shots') / Math.max(1, sum('sec') / 60)).toFixed(1),
     multiballs: +(sum('multiballs') / n).toFixed(2),
     modes: +(sum('modes') / n).toFixed(2),

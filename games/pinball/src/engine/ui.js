@@ -87,6 +87,7 @@ export class UI {
           <button class="btn" id="uScores">LESTVICA</button>
           <button class="btn" id="uSettings">NASTAVITVE</button>
         </div>
+        ${V.help ? '<button class="btn" id="uHelp">? MAPA STRELOV</button>' : ''}
       </div>
       ${(V.links || []).length ? `<div class="btn-row">${V.links.map(l => `<a class="btn" href="${esc(l.href)}">${esc(l.label)}</a>`).join('')}</div>` : ''}
       <div id="uTop">${this.topHtml()}</div>
@@ -97,6 +98,43 @@ export class UI {
     this.on('uStart', () => this.app.startGame());
     this.on('uScores', () => this.showScores('start'));
     this.on('uSettings', () => this.showSettings('start'));
+    this.on('uHelp', () => this.showHelp('start'));
+  }
+
+  /**
+   * pomoč »?«: prekrivna mapa strelov (vsi veliki streli s puščicami in imeni) + legenda barv vstavkov.
+   * view.ui.help = { legend: [[barva, besedilo], …], note } — streli in barve so iz T.shots (color, label).
+   */
+  showHelp(back) {
+    const T = this.app.game.T, H = this.V.help || {}, o = T.outline;
+    const fl = T.flippers.filter(f => f.layer === 0);
+    const low = Math.max(...fl.map(f => f.py));
+    const base = fl.filter(f => f.py >= low - 1);
+    const fx = base.reduce((a, f) => a + f.px, 0) / (base.length || 1), fy = low - 30;
+    const shots = T.shots.filter(sh => !sh.minor);
+    const arrows = shots.map((sh, i) => {
+      const c = sh.color || '#ffffff', from = sh.from || [fx, fy];
+      const lx = sh.labelX ?? sh.x, ly = sh.labelY ?? (sh.y - 16);
+      return `<line x1="${from[0]}" y1="${from[1]}" x2="${sh.x}" y2="${sh.y}" stroke="${c}" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#hm${i})" opacity=".85"/>
+        <marker id="hm${i}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>
+        <circle cx="${sh.x}" cy="${sh.y}" r="9" fill="none" stroke="${c}" stroke-width="2"/>
+        <text x="${lx}" y="${ly}" fill="#fff" stroke="#000" stroke-width="5" paint-order="stroke" font-size="30" font-weight="800" text-anchor="middle" font-family="Rajdhani, Segoe UI, sans-serif">${esc(sh.label)}</text>`;
+    }).join('');
+    const flips = T.flippers.map(f => {
+      const tx = f.px + Math.cos(f.rest) * f.len, ty = f.py + Math.sin(f.rest) * f.len;
+      return `<line x1="${f.px}" y1="${f.py}" x2="${tx}" y2="${ty}" stroke="#e8eef6" stroke-width="12" stroke-linecap="round"/>`;
+    }).join('');
+    const legend = (H.legend || []).map(([c, t]) => `<span class="lg"><i style="background:${c}"></i>${esc(t)}</span>`).join('');
+    this.open(`
+      <div class="h2">MAPA STRELOV</div>
+      <svg class="shotmap" viewBox="0 0 600 1000" role="img" aria-label="Mapa strelov">
+        <path d="M${o.x1},1000 L${o.x1},${o.cy} A${o.r},${o.r} 0 0 1 ${o.x2},${o.cy} L${o.x2},1000 Z" fill="rgba(20,40,80,.55)" stroke="rgba(255,214,102,.7)" stroke-width="4"/>
+        ${flips}${arrows}
+      </svg>
+      ${legend ? `<div class="legend">${legend}</div>` : ''}
+      ${H.note ? `<div class="hint">${esc(H.note)}</div>` : ''}
+      <button class="btn primary" id="uBack">NAZAJ</button>`, 'help');
+    this.on('uBack', () => back === 'pause' ? this.showPause() : this.showStart());
   }
 
   showPause() {
@@ -109,11 +147,13 @@ export class UI {
           <button class="btn" id="uSettings">NASTAVITVE</button>
           <button class="btn" id="uQuit">KONČAJ IGRO</button>
         </div>
+        ${this.V.help ? '<button class="btn" id="uHelp">? MAPA STRELOV</button>' : ''}
       </div>
       ${this.controlsHtml()}`, 'pause');
     this.on('uResume', () => this.app.resume());
     this.on('uSettings', () => this.showSettings('pause'));
     this.on('uQuit', () => this.app.quit());
+    this.on('uHelp', () => this.showHelp('pause'));
   }
 
   showSettings(back) {
@@ -130,6 +170,7 @@ export class UI {
         <div><label>ZVOČNI EFEKTI</label><input type="range" id="uSfx" min="0" max="1" step="0.05" value="${s.sfx}"></div>
         <div class="toggle"><span>Zvok vklopljen</span><input type="checkbox" id="uMute" ${s.muted ? '' : 'checked'}></div>
         <div class="toggle"><span>Prikaži FPS</span><input type="checkbox" id="uFps" ${s.fps ? 'checked' : ''}></div>
+        ${(this.V.toggles || []).map(t => `<div class="toggle"><span>${esc(t.label)}</span><input type="checkbox" data-tg="${esc(t.id)}" ${(s[t.id] ?? t.def) ? 'checked' : ''}></div>`).join('')}
       </div>
       <button class="btn primary" id="uBack">NAZAJ</button>`, 'settings');
     const now = () => { const e = $('uQnow'); if (e) e.textContent = 'Trenutno: ' + QUALITY[this.app.renderer.qualityKey].ime + (this.app.renderer.usingGL ? ' · WebGL' : ' · 2D (brez WebGL)'); };
@@ -143,6 +184,7 @@ export class UI {
     $('uSfx').addEventListener('change', () => this.app.audio.play('bumper', { x: 300, i: 1 }));
     $('uMute').addEventListener('change', e => this.app.setMuted(!e.target.checked));
     $('uFps').addEventListener('change', e => this.app.setFps(e.target.checked));
+    this.ov.querySelectorAll('[data-tg]').forEach(i => i.addEventListener('change', e => this.app.setToggle(i.dataset.tg, e.target.checked)));
     this.on('uBack', () => back === 'pause' ? this.showPause() : this.showStart());
   }
 
@@ -296,7 +338,7 @@ export class UI {
     if (this.panelT > 0) return;
     this.panelT = 0.12;
     const key = JSON.stringify([s.state, s.ball, s.mult, s.modesDone, s.modeLit, s.mode && [s.mode.i, Math.ceil(s.mode.t), s.mode.prog, s.mode.value],
-      s.next, s.locks, s.lockLit, s.kickback, Math.ceil(s.ballSave), s.extraBalls, s.extraLit, s.multiball, s.wizard, s.wizardLit, s.jackpot, s.rampsToMode]);
+      s.next, s.locks, s.lockLit, s.kickback, Math.ceil(s.ballSave), s.extraBalls, s.extraLit, s.multiball, s.wizard, s.wizardLit, s.jackpot, s.rampsToMode, s.panelKey]);
     if (key === this.lastSummary) return;
     this.lastSummary = key;
     const playing = s.state === 'play' || s.state === 'bonus';

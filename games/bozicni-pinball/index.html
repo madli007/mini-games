@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1a3a">
+<meta name="description" content="Božični pinball — Trije dobri možje: snežna decembrska miza z Miklavžem, Božičkom in Dedkom Mrazom.">
+<title>Božični pinball — Trije dobri možje</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 L52 44 H12 Z' fill='%231c8a4a'/%3E%3Crect x='28' y='44' width='8' height='12' fill='%237a3b1e'/%3E%3Ccircle cx='32' cy='6' r='5' fill='%23ffd166'/%3E%3Ccircle cx='26' cy='30' r='3' fill='%23e63946'/%3E%3Ccircle cx='38' cy='36' r='3' fill='%23ffd166'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../pinball/src/style.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sideL" class="side">
+      <section class="glass panel score-panel">
+        <div class="lbl">TOČKE</div>
+        <div id="pScore" class="big-score">0</div>
+        <div class="row"><span class="lbl">ŽOGA</span><span id="pBall" class="val">–</span></div>
+        <div class="row"><span class="lbl">BONUS</span><span id="pMult" class="val">×1</span></div>
+      </section>
+      <section class="glass panel">
+        <h3 id="pModesTitle">DARILA</h3>
+        <ul id="pModes" class="modes"></ul>
+        <div id="pModeNow" class="mode-now"></div>
+      </section>
+      <section class="glass panel">
+        <h3>STANJE</h3>
+        <div id="pState" class="state-grid"></div>
+      </section>
+    </aside>
+
+    <main id="stage">
+      <div id="cab">
+        <div id="backbox">
+          <canvas id="dmdGlow" aria-hidden="true"></canvas>
+          <canvas id="dmd" aria-label="Zaslon točk"></canvas>
+        </div>
+        <div id="pf">
+          <canvas id="view" aria-label="Pinball miza"></canvas>
+          <div id="touchBar">
+            <button id="btnPause" class="tbtn" aria-label="Pavza">❚❚</button>
+            <button id="btnNudge" class="tbtn" aria-label="Tresenje">⇡</button>
+          </div>
+        </div>
+      </div>
+      <div id="touchHint" class="touch-hint">
+        <span>◀ levi flipper</span><span>desni flipper ▶</span>
+      </div>
+    </main>
+
+    <aside id="sideR" class="side">
+      <section class="glass panel">
+        <h3 id="pBoardTitle">LESTVICA</h3>
+        <ol id="pBoard" class="board"></ol>
+      </section>
+      <section class="glass panel">
+        <h3>STATISTIKA</h3>
+        <div id="pStats" class="stats-grid"></div>
+      </section>
+      <section class="glass panel keys">
+        <h3>KONTROLE</h3>
+        <div class="keys-grid">
+          <kbd>Z ← ⇧</kbd><span>levi flipper</span>
+          <kbd>M → ⇧</kbd><span>desni flipper</span>
+          <kbd>␣ ↓</kbd><span>izstrelitev (drži)</span>
+          <kbd>B ↑</kbd><span>tresenje</span>
+          <kbd>P Esc</kbd><span>pavza</span>
+          <kbd>O</kbd><span>zvok</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div id="overlay" class="overlay"></div>
+  <div id="toast" class="toast"></div>
+  <div id="fps" class="fps"></div>
+  <noscript><p style="color:#fff;text-align:center;margin-top:40vh">Za igro potrebuješ JavaScript.</p></noscript>
+  <script type="module">
+    // Božični pinball: uvozi motor iz ../pinball/src/engine/ (ne kopira kode), miza je v ./table/
+    import { startApp } from '../pinball/src/engine/app.js';
+    import table from './table/index.js';
+    const view = await table.view();
+    startApp(table, view, { gameId: 'bozicni-pinball', debug: new URLSearchParams(location.search).get('debug') || null });
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Božični pinball (3/4 — pravila, načini, wizard, DMD, glasba)
 
-> **Stanje:** ⬜ čaka — predpogoj: 23
+> **Stanje:** ⬜ čaka — predpogoj: 23 ✅ (lahko takoj)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/24-pinball-bozic-pravila.md in ga v celoti izvedi.«**
@@ -10,6 +10,35 @@
 >
 > Cilj: miza postane **»feature rich«** z globino, ki drži igralca dlje časa: jasna pot do wizarda, vsak način
 > drugačen, vse označeno s puščicami, bogat DMD in praznična glasba.
+
+## Stanje po promptu 23 (dejanska imena — preberi najprej)
+
+- **Miza:** `games/bozicni-pinball/table/` (`index.js` modul, `table.js` geometrija, `rules.js` razred `BozicRules`,
+  `config.js` CFG/PAL/SHOTS, `art.js` grafika, `view.js` DMD in UI). Pravila, mapa strelov, legenda in bot statistika:
+  `games/bozicni-pinball/README.md`. Testi: `games/pinball/tests/bozic.js`. Orodja: `node tools/pinball-shots.mjs bozic`,
+  `node tools/pinball-bot.mjs bozic 200`.
+- **Strele (id → ime):** `orbitL` Sankališče (levi orbit, spinner) · `rampL` Smučka (→ desni inlane) · `center` Jelka
+  (ozek kanal, ujeta žogica `okrasek`) · `rampR` Vlakec igrač (→ levi inlane) · `orbitR` desni orbit · `kepa` (tarča
+  zgoraj desno, le zgornji flipper) · `drops` Parklji (drop banka `parklji`) · `venec` (4 standupi) · `lanes` Z·V·O·N ·
+  `pops` Snežaki.
+- **Dimnik in Pisma sta luknji (VUK) v kanalih orbitov**, ki se odpreta le, ko je na voljo nagrada (`rules.holes()`
+  nastavi `saucer.capture`): `dimnik` v Sankališču (lock), `pisma` v desnem orbitu (pismo / extra ball). Oba izvržeta
+  podzemno na levi inlane. Zato: »zadeni dimnik« = Sankališče, ko je dimnik odprt; za »Dimnik za dimnikom« naj
+  »naslednji dimnik« pomeni drug strel z odprto luknjo ali prižgano puščico (npr. desni orbit → Pisma kot drugi dimnik).
+- **Zgornja zanka ne obstaja;** zgornji flipper zadene tarčo **Kepa** (`zanka` stikalo). Kepanje multiball: »Kepa 5×«.
+- **Kljuke:** `rules.mode` (null), `startMode()` (prazno), `musicLevel()`, `onPisma()` (tu se začnejo načini — zdaj
+  nagrada + »PISMA KMALU«), `letterLit` / `lightLetter()` (pismo se prižge na začetku, po 4+ rampah in po vencu),
+  `mysteryLit` + `onVenecComplete()` (adventni koledar), `treeLights` / `treeDone` (lučke jelke 0–9, `game.lamps.tree0..8`,
+  zvezda `star`), igrača `jelka` (`game.moveToy('jelka', { angle })`), `trainT` (vlakec), sani (`art.drawSleigh`, zdaj
+  med multiballom), `onMajor(id)` (combo + jackpot), `jackpot()`, `superJackpot()`, `startMultiball()`.
+- **Vstavki** (`table.js → buildLamps`): puščice `arrOrbitL, arrDrops, arrRampL, arrCenter, arrRampR, arrOrbitR`, mali
+  `jp*`, `cb*`, `lockL`, `superJ`, `pismo`, `extra`, `mystery`, `svec0..3`, `vreca0..2`, `lane0..3`, `mult2..6`, `kepaL`,
+  chevroni `rampLC*`, `rampRC*`. Barve načinov so v `PAL.miklavz`, `PAL.bozicek`, `PAL.mraz`.
+- **Motor** je dobil: `Rules.onLaunch(p)`, `T.shot({ from, labelX, labelY })`, `view.ui.help` (mapa strelov),
+  `view.ui.toggles` (stikala v nastavitvah), `summary.panelKey`, `table.achievements(d)` / `table.events(d)` (hub),
+  `rules.shotMapSetup()` (merilec), bot `drainX` / `centerAllPct` / `outlaneAllPct`.
+- **Ni bilo narejeno v 23:** ročno igranje z roko (podokno brskalnika je bilo skrito — preverjeno z botom in skripto),
+  fps na telefonu, zapis na Supabase lestvico v živo (offline preverjen). Glej `PROGRESS.md` → »Božični pinball«.
 
 ---
 
@@ -50,8 +79,8 @@ Vzporedno: Darilni multiball (prompt 23), Kepanje multiball, Adventni koledar (m
   vrednosti).
 
 ## Ostale funkcije
-- **Kepanje multiball** (2 žogici): zgornji flipper → zgornja zanka 5× → v nabiralniku »Kepanje!«. Snežne kepe
-  (delci) letijo ob vsakem zadetku. Jackpot na zgornji zanki in obeh orbitih. Lahko se zloži z Darilnim multiballom
+- **Kepanje multiball** (2 žogici): zgornji flipper → tarča **Kepa** 5× → v nabiralniku »Kepanje!«. Snežne kepe
+  (delci) letijo ob vsakem zadetku. Jackpot na Kepi in obeh orbitih. Lahko se zloži z Darilnim multiballom
   (»Božična zmešnjava«, 5 žogic, enkrat na igro).
 - **Adventni koledar (mystery):** 4 sveče adventnega venca (standupi) → v nabiralniku odpreš **vratca koledarja**
   (24 vratc na igro, vsako z nagrado: točke, ball save, lock, bonus X, prižgan način, množitelj mize, extra ball
