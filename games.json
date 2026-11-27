@@ -376,6 +376,18 @@
     "color": "#a78bfa"
   },
   {
+    "id": "gneca",
+    "name": "Gneča",
+    "description": "Streljaj tekače skozi vrata ×2 in ×3, preplavi sovražno hordo in podri njihov stolp.",
+    "icon": "🏃",
+    "path": "games/gneca/",
+    "players": { "min": 1, "max": 1 },
+    "mode": "single",
+    "tags": ["akcija", "daily", "arkada"],
+    "status": "soon",
+    "color": "#3fa9ff"
+  },
+  {
     "id": "retro-arkada",
     "name": "Retro arkada",
     "description": "Vsak dan druga mini arkadna igra z istim seedom za vse. En poskus, ena lestvica.",

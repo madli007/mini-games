@@ -23,6 +23,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
 | 6. Motorist (fizikalni trial) | 📝 | prompti 32–34 |
 | 61. Kresnik (klasični 2D platformer) | 📝 | prompti 36–39 |
+| 62. Gneča (top, vrata z množitelji, horde) | 📝 | prompt 40 |
 | 18. Ustavi uro | ✅ | `games/ustavi-uro/` (prompt 28) |
 | Vse ostale točke | ⬜ | — |
 
@@ -597,6 +598,33 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
       življenja, medalje, ghost, drsniki; 37 = svetova 2–3, lebdenje, kavlji, voda, veter, led, nova sovražnika in šefa;
       38 = svetova 4–5, finale z Moro, šprint, način »Na čas« za celo igro, kozmetika v trgovini; 39 = urejevalnik
       nivojev, nivoji skupnosti, nivo tedna, dnevni nivo.
+
+### Množične igre (top, vrata in horde)
+
+62. 📝 **Gneča (top, vrata z množitelji in horde)** ★★–★★★ — prompt [`40-gneca`](prompts/40-gneca.md)
+    - **Žanr:** mobilni »crowd« strelec. Spodaj je top, ki ga vlečeš levo in desno, in dokler držiš, strelja majhne
+      tekače. Ti tečejo naprej po stezi skozi **vrata** (`+5`, `×2`, `×3`, `−10`, `÷2`), ki se lahko premikajo, in se
+      zaletijo v **sovražno hordo**, ki prihaja z drugega konca (ena na ena, oba izgineta). Kdor pride do konca, ruši
+      sovražni stolp. Ime, liki, nivoji, grafika in zvok so **naši**, ne kopija nobene obstoječe igre.
+    - **Ali se da v tem repoju:** da. Three.js 0.160.0 že teče v Krogli. Stotine tekačev se izriše z enim
+      `InstancedMesh`. Simulacija je 2D (x, z) s fiksnim korakom in prostorsko mrežo za trke, brez knjižnice in brez
+      DOM-a, zato se da testirati v Node. Kamera 2,5D za topom, kot na mobilnih igrah tega žanra.
+    - **Tveganje:** zmogljivost na telefonu (cilj 600 živih tekačev pri ≥ 40 FPS, nad mejo se tekači združujejo v
+      »težje« z več življenji) in občutek vrat (vsak tekač gre skozi ista vrata samo enkrat, sicer se množica
+      eksponentno napihne). Zato sta v prvem promptu stran z drsniki `?debug=1` in merjenje FPS.
+    - **Glavne mehanike:**
+      - **Polnilec velikana:** vsak izstreljen tekač polni merilec; ko je poln, top izstreli **velikana** (več HP,
+        počasnejši, ruši vrata `−`). Kasneje še drugi posebni tekači (hitri, oklepni, bombaš).
+      - **Sovražniki:** valovi horde, sovražni velikani s HP-jem nad glavo, stolpi, ki streljajo, ovire (ograje,
+        valjarji, žage), **šef** na koncu sklopa.
+      - **Nadgradnje med nivoji** s kovanci v igri (hitrost streljanja, začetni bonus, polnilec velikana, tip topa),
+        ločeno od kovancev huba.
+    - **Načini:** kampanja (nivoji v JSON, sklopi s temami: puščava, kanjon, tovarna, zima, neon), **dnevni nivo**
+      iz `hub.dailySeed` (šteje prvi poskus), kasneje **dvoboj 1v1** (vsak top na svojem koncu iste steze, vrata
+      na sredini, determinističen lockstep kot pri Lane wars) in **2v2**.
+    - **Predlog razdelitve:** prompt 1 (`40-gneca`) = simulacija, izris, top, vrata, horde, velikani, stolpi,
+      20 nivojev v dveh sklopih, nadgradnje, dnevni nivo, drsniki; prompt 2 (`41-gneca-dvoboj`, napiše ga prompt 40
+      na koncu) = dvoboj 1v1/2v2 online, še dva sklopa, šefi, predmeti v trgovini (barva topa, kostumi tekačev).
 
 ## Predlagan vrstni red (posodobljeno 23. 11. 2026)
 

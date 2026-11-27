@@ -22,6 +22,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
 | [36-kresnik](36-kresnik.md) | Kresnik: klasični 2D platformer, 1. del (nova igra) | veliko |
+| [40-gneca](40-gneca.md) | Gneča: top, vrata z množitelji in horde, 1. del (nova igra) | veliko |
 
 ## Vsi prompti
 
@@ -66,9 +67,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 37 | [kresnik-svetova](37-kresnik-svetova.md) | Kresnik: Kraške jame in Planine, prijem in zamah, lebdenje, voda, veter, led, 2 šefa | 2/4 | ⬜ | | 36 |
 | 38 | [kresnik-finale](38-kresnik-finale.md) | Kresnik: Mlinska dolina, Barje, Morin grad in konec, šprint, speedrun in 100 %, trgovina | 3/4 | ⬜ | | 37 |
 | 39 | [kresnik-urejevalnik](39-kresnik-urejevalnik.md) | Kresnik: urejevalnik nivojev, nivoji skupnosti, nivo tedna, dnevni nivo | 4/4 | ⬜ | | 36 (37, 38 priporočena) |
+| 40 | [gneca](40-gneca.md) | Gneča: top, vrata z množitelji, horde, velikani, 20 nivojev, delavnica, dnevni nivo | 1/2 | ⬜ | | 01 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 40.**
+**Naslednja prosta številka: 41.**
 
 ## Pravila (da se ne izgubimo)
 
