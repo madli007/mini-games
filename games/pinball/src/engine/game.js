@@ -228,11 +228,11 @@ export class Game {
   }
 
   /* ---------------- drop banke, stebrički, preusmerniki, magneti, igrače ---------------- */
-  hitDrop(s) {
+  hitDrop(s, b) {
     if (!s.active) return;
     s.active = false;
     const bank = s.bank;
-    this.rules.onSwitch('drop', { s, bank, idx: s.data.idx, x: s.ax, y: (s.ay + s.by) / 2 });
+    this.rules.onSwitch('drop', { s, b, bank, idx: s.data.idx, x: s.ax, y: (s.ay + s.by) / 2 });
     if (bank && bank.targets.every(d => !d.active)) {
       this.rules.onSwitch('dropBank', { bank, x: bank.targets[0].ax, y: bank.targets[0].ay });
       if (bank.resetDelay != null) this.resetBank(bank.id, bank.resetDelay);
@@ -399,23 +399,23 @@ export class Game {
           s.cool = 0.12;
           const sl = this.T.slings.find(q => q.kick === s);
           if (sl) { sl.flash = 1; sl.bend = 1; }
-          this.rules.onSwitch('sling', { s, x: cx, y: cy, side: s.data.side });
+          this.rules.onSwitch('sling', { s, b, x: cx, y: cy, side: s.data.side });
         }
         break;
       case 'drop':
-        if (imp > 40 && s.active) this.hitDrop(s);
+        if (imp > 40 && s.active) this.hitDrop(s, b);
         break;
       case 'standup': {
         const f = s.face;
         if (imp > 60 && (!f || nx * f[0] + ny * f[1] > s.minFace) && s.cool <= 0) {
           s.cool = 0.35;
           s.wobble = 1;
-          this.rules.onSwitch(s.name, { s, x: cx, y: cy, idx: s.data.idx, bank: s.data.bank });
+          this.rules.onSwitch(s.name, { s, b, x: cx, y: cy, idx: s.data.idx, bank: s.data.bank });
         }
         break;
       }
       case 'toy':
-        if (imp > 80 && s.cool <= 0) { s.cool = 0.25; this.rules.onSwitch(s.id, { s, x: cx, y: cy, toy: s.toy }); }
+        if (imp > 80 && s.cool <= 0) { s.cool = 0.25; this.rules.onSwitch(s.id, { s, b, x: cx, y: cy, toy: s.toy }); }
         break;
       default:
         if (imp > 450) this.emit('wall', { x: cx, y: cy, v: imp, kind: s.kind });

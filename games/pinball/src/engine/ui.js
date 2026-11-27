@@ -226,6 +226,7 @@ export class UI {
   async saveScore(d) {
     const box = () => $('uSave'), rank = () => $('uRank');
     if (d._saved) return;
+    if (this.app.debug) { if (box()) box().innerHTML = '<div class="hint">Debug način: rezultat se ne shrani na lestvico.</div>'; return; }
     if (!Board.hasProfile()) {
       await Board.whenReady();
       if (!Board.hasHub()) { if (box()) box().innerHTML = '<div class="hint">Lestvica ni dosegljiva.</div>'; return; }

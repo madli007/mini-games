@@ -126,9 +126,9 @@ export function buildTable() {
   T.shot('scoop', { label: N.scoop + ' livarna', switches: ['scoop'], x: SCOOP.x, y: SCOOP.y, combo: false });
   T.shot('bug', { label: 'B·U·G', switches: ['drop'], x: 520, y: 620, combo: false });
   T.shot('review', { label: 'code review', switches: ['review'], x: 282, y: 430 });
-  T.shot('lanes', { label: 'A·L·U kanali', switches: ['lane'], x: 290, y: 113, combo: false });
-  T.shot('pops', { label: 'pop bumperji', switches: ['bumper'], x: 285, y: 240, combo: false });
-  T.shot('spinner', { label: 'spinner', switches: ['spinner'], x: SPINNER.x, y: SPINNER.y, combo: false });
+  T.shot('lanes', { label: 'A·L·U kanali', switches: ['lane'], x: 290, y: 113, combo: false, minor: true });
+  T.shot('pops', { label: 'pop bumperji', switches: ['bumper'], x: 285, y: 240, combo: false, minor: true });
+  T.shot('spinner', { label: 'spinner', switches: ['spinner'], x: SPINNER.x, y: SPINNER.y, combo: false, minor: true });
 
   /* ---------- točke za efekte (kamera, bliski, svetlobni šovi) ---------- */
   T.points = {

@@ -309,7 +309,7 @@ export function createTable(opts = {}) {
 
   /* ---------- strel (shot): ime + stikala, ki ga sprožijo ---------- */
   T.shot = (id, o = {}) => {
-    const sh = { id, label: o.label || id, switches: o.switches || [id], x: o.x ?? 300, y: o.y ?? 300, combo: o.combo ?? true, color: o.color || null };
+    const sh = { id, label: o.label || id, switches: o.switches || [id], x: o.x ?? 300, y: o.y ?? 300, combo: o.combo ?? true, color: o.color || null, minor: !!o.minor };
     T.shots.push(sh);
     return sh;
   };
