@@ -59,7 +59,7 @@ Vzporedno: Darilni multiball (prompt 23), Kepanje multiball, Adventni koledar (m
 - **Množitelj mize »Zvonček«:** zgornji kanali Z·V·O·N dvakrat zapored → ×2 vse točke za 30 s (×3 pri tretjem).
 - **Hurry-upi:** po vsakem lockcu kratek hurry-up v dimniku. **Extra ball** tudi iz koledarja in po 2. mini-wizardu.
 - **Combo** nadgradnja: »Snežna veriga« (combo ×5 = poseben bonus, ×10 = dosežek).
-- **Match** na koncu igre (DMD animacija z darili), **high score** z inicialkami (motor).
+- **Match** na koncu igre (DMD animacija z darili), **high score** z imenom uporabnika na lestvici huba (motor, prompt 22).
 - **Bonus ob koncu žogice** našteje: rampe, orbite, parklje, sveče, pisma, combo × bonus X (DMD seštevanje).
 
 ## DMD in prikaz

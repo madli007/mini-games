@@ -11,7 +11,9 @@
 >
 > Ta prompt **ne naredi nove mize**. Pripravi motor, da je druga miza samo nova mapa s podatki, pravili in grafiko,
 > doda manjkajoče elemente, ki jih ima vsaka moderna miza, in orodja za uglaševanje občutka.
-> **Alu Pinball mora po refaktorju igrati bit za bitom enako** (zlati test spodaj).
+> **Refaktor najprej ohrani obnašanje bit za bitom** (zlati test spodaj), da so nenamerne spremembe vidne.
+> **Izboljšave fizike so zaželene**, a kot ločeni, namerni koraki (razdelek 1b): vsaka poveča `PHYSICS_VERSION`
+> in zavestno regenerira zlati posnetek. Lestvica je po uporabniku (portal), ločena po verziji fizike (razdelek 6).
 
 ---
 
@@ -22,14 +24,25 @@
 - `config.js` meša splošno (fizika `BR`, `GRAV`, `STEP`, kakovost) in Alu (`CFG.imena`, `MODES`, `PAL`).
 - `tests/tests.js` ima bota (`botGame(seed)`), ki z zamenjavo `Math.random` igra deterministično.
 - Pinball v hubu je **kopija**; izvirnik je ločen repo `D:\Git\Brainstorm\pinball` — tega repoja **ne spreminjaj**.
-- Lestvica Alu mize je tabela `public.scores` — **ne spreminjaj** (CLAUDE.md).
+- Lestvica Alu mize je zdaj tabela `public.scores` (3 inicialke iz časa pred portalom, `src/leaderboard.js`).
+  Tabele **ne spreminjaj in ne briši** (CLAUDE.md); postane arhiv (razdelek 6).
 
 ## 1. Zlati test (najprej, pred vsako spremembo)
 - Dodaj test, ki odigra npr. 12 bot iger s fiksnimi semeni in zapiše **točke, trajanje in štetje dogodkov** ter hash
   zaporedja dogodkov (bus). Vrednosti zapiši v `tests/fixtures/pinball-golden.json`.
-- Po refaktorju mora test dati **enake** vrednosti. Če se kje razide, je refaktor narobe (ne popravljaj pričakovanj).
-  Edina dovoljena izjema: če fizikalni red operacij nujno spremeni rezultat, to utemelji v `PROGRESS.md` in pokaži,
-  da je občutek enak (statistika 100 bot iger: povprečje točk, trajanja, multiballov znotraj ±3 %).
+- Med refaktorjem (razdelek 2) mora test dati **enake** vrednosti. Če se kje razide, je refaktor narobe
+  (ne popravljaj pričakovanj). Zlati test tu ni cilj sam po sebi, ampak varovalo: dokazuje, da je nova
+  struktura pravilna, preden začneš namerno spreminjati obnašanje.
+- Posnetek ima polje `physicsVersion`; test pade, če se vrednosti razlikujejo pri **isti** verziji.
+
+## 1b. Izboljšave fizike (po zelenem refaktorju, namerno)
+- Ko je ločitev motor / miza zelena, **smeš in naj** izboljšaš fiziko, kjer je to opazno boljše: npr. fiksni
+  korak z akumulatorjem, preprečevanje tunelinga pri visokih hitrostih, natančnejši odboj in trenje flipperja
+  (cradle, post pass, live catch), sling/bumper impulzi, obnašanje na rampah.
+- Vsaka izboljšava je **svoj commit**: poveča `PHYSICS_VERSION` (v `engine/`), regenerira
+  `tests/fixtures/pinball-golden.json` z orodjem/ukazom (ne ročno) in v `PROGRESS.md` zapiše, kaj se je spremenilo
+  in zakaj, ter statistiko 100 bot iger pred/po (povprečje točk, trajanje, multiballi, delež drainov po sredini).
+- Ne spreminjaj fizike v istem commitu kot strukture — tako je vsaka razlika v zlatem testu razložljiva.
 
 ## 2. Miza kot modul
 Ciljna struktura (imena lahko prilagodiš, smisel ne):
@@ -91,12 +104,23 @@ Druga miza bo potrebovala elemente, ki jih Alu nima. Dodaj jih v motor kot podat
 - Pripravi, da lahko druga igra v hubu uvozi motor: `games/<druga-igra>/` bo uvažala `../pinball/src/engine/...` in
   svojo mizo (tako kot Rušilec uvaža Kroglo). Zapiši kratek primer v `games/pinball/README.md`.
 
+## 6. Lestvica po uporabniku (namesto inicialk)
+- Pinball naj uporablja **skupno lestvico huba**: po igri `hub.submitScore(score, { seed, meta })` (vrstica v
+  `game_scores` je vezana na `user_id`, ime in avatar pridejo iz profila prek `ui.who`). Vnos 3 inicialk odstrani.
+- `seed` = `'miza:<id>:f<PHYSICS_VERSION>'` (npr. `miza:alu:f2`); lestvica v igri, DMD (attract top 10) in hub
+  filtrirajo po trenutnem seedu, tako da so rezultati vedno primerljivi. Ob novi verziji fizike se lestvica
+  začne na novo, stari rezultati ostanejo (zavihek »Prejšnje verzije«). Brez spremembe sheme huba.
+- `meta`: trajanje, žogice, multiballi, način konca (za statistiko).
+- **Arhiv:** `public.scores` (inicialke) se samo še bere in je prikazan kot zavihek »Arhiv (pred portalom)«.
+  Ne piši vanj več. Lokalni top (`storage.js`) v offline načinu gre prek lokalnega adapterja huba.
+- Ne pozabi `hub.reportGame({ score, ... })` (verjetno že obstaja; preveri).
+
 ## Ni del te naloge
-Božična miza (prompt 23 in 24), več igralcev (prompt 25), sprememba tabele `scores`, spremembe repoja `pinball`.
+Božična miza (prompt 23 in 24), več igralcev (prompt 25), sprememba ali brisanje tabele `scores`, spremembe repoja `pinball`.
 
 ## Prioritete, če zmanjkuje časa
-1. Zlati test. 2. Ločitev motor / Alu miza z zelenim zlatim testom. 3. `?debug=1` in merilec strelov.
-4. Novi elementi in testna miza. Kar ostane, zapiši v `PROGRESS.md` in na začetek `prompts/23-pinball-bozic-miza.md`.
+1. Zlati test. 2. Ločitev motor / Alu miza z zelenim zlatim testom. 3. Lestvica po uporabniku.
+4. `?debug=1` in merilec strelov. 5. Izboljšave fizike (1b). 6. Novi elementi in testna miza. Kar ostane, zapiši v `PROGRESS.md` in na začetek `prompts/23-pinball-bozic-miza.md`.
 
 ---
 
@@ -114,7 +138,8 @@ dnevnik, »Ni bilo preverjeno«).
 1. Strežnik prek `.claude/launch.json` (`mini-games`, port 8124).
 2. `node games/pinball/tests/run-node.mjs` (vsi obstoječi testi + zlati test) in `node tests/run-node.mjs` uspešni.
 3. Alu Pinball v brskalniku: odigraj vsaj eno igro z multiballom, konzola brez napak, kakovost Nizka in Ultra,
-   telefon (375×812) in namizje, lestvica `scores` se še vedno bere.
+   telefon (375×812) in namizje, rezultat se zapiše na lestvico huba pod uporabnikom (Supabase in `?offline=1`),
+   arhiv `scores` se še vedno bere.
 4. Testna miza (`?miza=test`) z `?debug=1`: vsak nov element preizkušen, posnetki zaslona pregledani.
 5. Posodobi `games/pinball/README.md` (struktura motorja, kako dodati mizo, mapa strelov Alu mize) in `PROGRESS.md`.
 6. **Commit** na `main` z opisnim sporočilom v slovenščini. Ne pushaj.
@@ -123,5 +148,6 @@ dnevnik, »Ni bilo preverjeno«).
 Popravi `prompts/23-pinball-bozic-miza.md`, da se ujema z dejanskimi imeni modulov, vmesnikom pravil in elementi
 (npr. kako se v podatkih opiše rampa, VUK, igrača). Na vrh dodaj, kar iz tega prompta ni bilo narejeno.
 
-V končnem odgovoru kratko povzemi: kaj je narejeno, kaj je pokazal zlati test, mapa strelov Alu mize,
+V končnem odgovoru kratko povzemi: kaj je narejeno, kaj je pokazal zlati test, katere izboljšave fizike so šle
+noter (s `PHYSICS_VERSION` in statistiko pred/po), mapa strelov Alu mize,
 kaj ni bilo preverjeno.

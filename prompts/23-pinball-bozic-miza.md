@@ -24,8 +24,8 @@
   darilni multiball in ognjemet ob polnoči.«
 - **Način:** `single` · **Igralci:** 1 (več igralcev: prompt 25) · **Oznake:** `pinball`, `rekordi`, `praznično`
 - **Ikona / barva:** 🎄 · `#e63946` (ali zlata `#ffd166`)
-- **Rezultat:** točke, več je bolje. Lestvica **prek huba** (`hub.submitScore`, `ui.leaderboard`), ne v tabeli `scores`.
-  Lokalni arkadni top 10 z inicialkami lahko ostane kot v Alu mizi (motor).
+- **Rezultat:** točke, več je bolje. Lestvica **prek huba** (`hub.submitScore`, `ui.leaderboard`) po uporabniku, kot jo prompt 22 uvede za
+  Alu mizo (`seed` = `miza:bozic:f<PHYSICS_VERSION>`). Brez inicialk.
 - Na začetnem zaslonu Alu Pinballa dodaj gumb »🎄 Božična miza«, na božični mizi pa »Alu miza«.
 
 Tema je **slovenski december**: trije dobri možje (Miklavž s parklji, Božiček s sanmi in dimnikom, Dedek Mraz z
@@ -146,7 +146,7 @@ množitelj mize, DMD animacije in praznična glasba.
   le kjer se ne tepe s pinball izgledom (glavni zaslon pinballa ima svoj CSS).
 - Pravila mize brez DOM-a, testi v `games/pinball/tests/` (ali `tests/tests.js`): lock/multiball/jackpot zaporedja,
   skill shot, bonus X, extra ball, combo, bot statistika (meje zgoraj).
-- Alu miza in zlati test iz prompta 22 morata ostati zelena.
+- Alu miza in zlati test iz prompta 22 morata ostati zelena (sprememba fizike motorja je dovoljena le po pravilih 1b iz prompta 22: nova `PHYSICS_VERSION`, regeneriran posnetek, statistika pred/po).
 
 ### Obvezna preverjanja (pred commitom)
 1. Strežnik prek `.claude/launch.json` (`mini-games`, port 8124), konzola brez napak (Božična miza, Alu miza, dashboard).

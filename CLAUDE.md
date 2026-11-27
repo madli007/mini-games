@@ -46,7 +46,8 @@ PROGRESS.md                               dnevnik dela
 - RLS je vklopljen na vseh tabelah. Pisanje samo v svoje vrstice; sobe ureja host; `room_state`/`moves`
   pišejo le člani sobe; XP le prek `award_xp`. `security definer` funkcije so v shemi `private`,
   v `public` so le `security invoker` ovojnice.
-- Tabele `public.scores` (pinball) **ne spreminjaj**.
+- Tabele `public.scores` (stara lestvica pinballa z inicialkami) **ne spreminjaj in ne briši**; je samo še arhiv za branje.
+  Nove lestvice pinballa (vse mize) gredo prek huba (`game_scores`, po uporabniku, `seed` = `miza:<id>:f<verzija fizike>`).
 - Igra, ki potrebuje svoje tabele: SQL v **`supabase/games/<id>.sql`** (idempotenten: `create table if not exists`,
   `drop policy if exists`, RLS vklopljen, imena tabel s predpono igre, npr. `ladjice_*`). Po spremembi sheme
   preveri Supabase advisors (security + performance).

@@ -6,7 +6,7 @@
 > **»Preberi prompts/25-pinball-vec-igralcev.md in ga v celoti izvedi.«**
 >
 > Predpogoj: prompt 22 (motor) je narejen; idealno tudi 23 in 24 (Božična miza). Vse spremembe so v motorju,
-> zato delujejo na **obeh mizah**. Ne spreminjaj tabele `scores` in repoja `D:\Git\Brainstorm\pinball`.
+> zato delujejo na **obeh mizah**. Ne spreminjaj tabele `scores` (arhiv) in repoja `D:\Git\Brainstorm\pinball`.
 
 ---
 
@@ -17,8 +17,8 @@
   kot na pravih mizah) ali uporabi virtualne locke — izberi in utemelji.
 - DMD: »IGRALEC 2 — ŽOGA 1«, ob strani točke vseh igralcev; na koncu primerjava in stopničke.
 - Extra ball = isti igralec še enkrat. Match za vsakega.
-- Vsi rezultati gredo na lestvico (Alu: `scores` z inicialkami kot zdaj, Božična: hub). Prek huba samo prijavljeni
-  profil (ostali so gosti z inicialkami).
+- Vsi rezultati gredo na lestvico huba (obe mizi, po uporabniku, `seed` po mizi in verziji fizike). Na lestvico gre
+  samo prijavljeni profil; ostali sedeči igralci so gosti (ime za DMD, brez zapisa na lestvico).
 
 ## 2. Online: izmenično prek room kode (gledanje v živo)
 - `hub.createRoom` / `ui.lobby` / `?room=`: 2–4 igralci, vsak igra svojo žogico na **svoji napravi**, ko je na vrsti.
