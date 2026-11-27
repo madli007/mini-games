@@ -16,7 +16,8 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [19-krogla-dirka](19-krogla-dirka.md) | Hrčkova krogla: dirka v multiplayerju | veliko |
 | [20-krogla-okras](20-krogla-okras.md) | Hrčkova krogla: okolica prog | srednje |
 | [10-minigolf](10-minigolf.md) | Hrčkov minigolf (nova igra) | veliko |
-| [22-pinball-motor](22-pinball-motor.md) | Pinball motor (osnova za Božični pinball) | veliko |
+| [23-pinball-bozic-miza](23-pinball-bozic-miza.md) | Božični pinball: miza (na motorju iz 22) | veliko |
+| [25-pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi; idealno po 23 in 24) | veliko |
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
@@ -49,10 +50,10 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 19 | [krogla-dirka](19-krogla-dirka.md) | Hrčkova krogla: dirka (multiplayer) | — | ⬜ | | 07 ✅ |
 | 20 | [krogla-okras](20-krogla-okras.md) | Hrčkova krogla: okolica prog | — | ⬜ | | 05 ✅ |
 | 21 | [frnikole-kaos](21-frnikole-kaos.md) | Dirka frnikol: Kaos dirka | 4 | ⬜ | | 16 ✅ |
-| 22 | [pinball-motor](22-pinball-motor.md) | Pinball: miza kot modul | 1/4 | ⬜ | | — |
-| 23 | [pinball-bozic-miza](23-pinball-bozic-miza.md) | Božični pinball: miza | 2/4 | ⬜ | | 22 |
+| 22 | [pinball-motor](22-pinball-motor.md) | Pinball: miza kot modul | 1/4 | ✅ | `89d8a4c` | — |
+| 23 | [pinball-bozic-miza](23-pinball-bozic-miza.md) | Božični pinball: miza | 2/4 | ⬜ | | 22 ✅ |
 | 24 | [pinball-bozic-pravila](24-pinball-bozic-pravila.md) | Božični pinball: pravila | 3/4 | ⬜ | | 23 |
-| 25 | [pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi) | 4/4 | ⬜ | | 22 |
+| 25 | [pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi) | 4/4 | ⬜ | | 22 ✅ |
 | 26 | [lane-wars](26-lane-wars.md) | Lane wars skozi dobe | — | ⬜ | | 01 ✅ |
 | 27 | [tarce](27-tarce.md) | Tarče (aim trainer) | — | ⬜ | | 01 ✅ |
 | 28 | [ustavi-uro](28-ustavi-uro.md) | Ustavi uro | — | ✅ | `43c338d` | 01 ✅ |

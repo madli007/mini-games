@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Božični pinball (2/4 — miza: postavitev, streli, grafika, občutek)
 
-> **Stanje:** ⬜ čaka — predpogoj: 22
+> **Stanje:** ⬜ čaka — predpogoj: 22 ✅ (lahko takoj)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/23-pinball-bozic-miza.md in ga v celoti izvedi.«**

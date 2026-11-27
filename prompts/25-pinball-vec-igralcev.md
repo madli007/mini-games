@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Pinball za več igralcev (4/4 — obe mizi)
 
-> **Stanje:** ⬜ čaka — predpogoj: 22 (idealno tudi 23 in 24)
+> **Stanje:** ⬜ čaka — predpogoj: 22 ✅ (idealno tudi 23 in 24)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/25-pinball-vec-igralcev.md in ga v celoti izvedi.«**

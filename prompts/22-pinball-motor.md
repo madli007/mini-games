@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Pinball motor (1/4 — miza kot modul, osnova za Božični pinball)
 
-> **Stanje:** ⬜ čaka — lahko takoj (1. od 4 pinball promptov)
+> **Stanje:** ✅ narejeno (commiti `7a60eff` … `89d8a4c`, 27. 11. 2026) — zapis na Supabase lestvico ni bil preverjen v živo (glej `PROGRESS.md`)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/22-pinball-motor.md in ga v celoti izvedi.«**
