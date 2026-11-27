@@ -96,7 +96,15 @@ export function createPhysics(T, H) {
     if (d < 1e-6) return;
     // hitrost površine flipperja v točki stika (ω × r)
     const svx = -f.omega * (_cy - f.py), svy = f.omega * (_cx - f.px);
-    const imp = resolve(b, dx / d, dy / d, rr - d, P.flipE, svx, svy);
+    const nx = dx / d, ny = dy / d;
+    // f3: miren flipper (dvignjen ali spuščen) ima gumo z odbojnostjo, ki pada s hitrostjo udarca:
+    // počasna žogica malo odskoči, hitra »umre« (live catch, dead bounce). Udarec s flipperjem v gibanju ostane enak.
+    let e = P.flipE;
+    if (f.omega === 0) {
+      const vn = -((b.vx - svx) * nx + (b.vy - svy) * ny);
+      if (vn > 0) e = P.flipEStill / (1 + vn / P.flipFalloff);
+    }
+    const imp = resolve(b, nx, ny, rr - d, e, svx, svy);
     if (imp > 0 && H.flip) H.flip(f, b, imp);
   }
 

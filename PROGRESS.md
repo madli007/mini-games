@@ -53,6 +53,15 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026). Nadaljevanj
   Pri 60 Hz je rezultat bit za bitom enak (zlati posnetek se je spremenil le v `physicsVersion`); nov test »fizika enaka pri 60, 75 in 165 Hz«.
   100 bot iger pred/po (60 Hz, enako): povprečje 22.220.337 točk, igra 564 s, žoga 145 s, drain po sredini 59,2 % (outlane 40,8 %),
   9,9 strela/min, 1,57 multiballa, 2,4 začetih / 0,47 opravljenih misij.
+- **f3 — guma mirnega flipperja** (`engine/physics.js`). Prej je imel flipper vedno odbojnost 0,32. Zdaj ima miren flipper
+  (dvignjen ali spuščen) odbojnost, ki pada s hitrostjo udarca: `e = 0,40 / (1 + v / 1500)` — počasna žogica odskoči kot prej
+  (izmerjeno vzdolž normale: 0,317 proti 0,322), hitra žogica, ki pade na dvignjen flipper, »umre« (0,181 proti 0,32) → live catch
+  in mrtvi odboj kot na pravi mizi; udarec flipperja v gibanju je nespremenjen (strele imajo enako moč). Prvi poskus
+  (`0,55 / (1 + v / 1200)`) je bil pri počasnih udarcih preveč živ in je bot izgubljal žogice (12 iger: 347 s proti 422 s) → zavrnjen.
+  Drsnika v `?debug=1`: »Odbojnost mirnega flipperja«, »Padec odbojnosti«. Nov test »mirni flipper: … live catch«.
+  100 bot iger f2 → f3: točke 22,2 → 25,1 mio, igra 564 → 544 s, žoga 145 → 138 s, drain po sredini 59,2 → 59,3 %,
+  strele/min 9,9 → 10,3, multiballi 1,57 → 1,55, rampe 9,4 → 10,0, misije opravljene 0,47 → 0,46.
+  (Bot ne lovi žogice namerno, zato je razlika majhna; za človeka je ulov z držanjem flipperja zdaj zanesljivejši.)
 
 ## Ni bilo preverjeno
 
@@ -1464,7 +1473,7 @@ Miza kot modul: `games/pinball/src/engine/` (motor) + `games/pinball/src/tables/
 - [x] Ločitev motor / Alu miza (jedro igre, pravila kot vtičnik, miza kot podatek, generičen izris) — zlati test zelen
 - [x] Lestvica po uporabniku prek huba (`miza:<id>:f<verzija>`), arhiv `scores` samo za branje, brez inicialk
 - [x] `?debug=1` (senzorji, drsniki, korak za korakom), merilec strelov (`tools/pinball-shots.mjs`, `?debug=shots`), bot kot modul (`tools/pinball-bot.mjs`)
-- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++): f2 fiksni korak ✓
+- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++): f2 fiksni korak ✓, f3 guma mirnega flipperja ✓
 - [ ] Novi elementi + testna miza `?miza=test`
 - [ ] README (struktura, nova miza, mapa strelov), prompt 23
 

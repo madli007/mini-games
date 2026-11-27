@@ -5,8 +5,8 @@
    ===================================================================== */
 
 // verzija fizike: poveča se ob vsaki namerni spremembi fizike (zlati test, lestvica po verziji)
-// f1: prva verzija (ALU PINBALL 2.0) · f2: fiksni korak z akumulatorjem
-export const PHYSICS_VERSION = 2;
+// f1: prva verzija (ALU PINBALL 2.0) · f2: fiksni korak z akumulatorjem · f3: guma mirnega flipperja (odbojnost pada s hitrostjo)
+export const PHYSICS_VERSION = 3;
 
 // logične dimenzije mize in fizika (uglašeno — previdno!)
 export const W = 600, H = 1000;
@@ -24,7 +24,9 @@ export const PHYS = {
   grav: GRAV,            // naklon mize (gravitacija vzdolž mize), px/s²
   flipUp: 38,            // hitrost flipperja navzgor, rad/s
   flipDown: 18,          // hitrost vračanja, rad/s
-  flipE: 0.32,           // elastičnost gume flipperja
+  flipE: 0.32,           // elastičnost gume flipperja v gibanju (udarec)
+  flipEStill: 0.40,      // f3: odbojnost mirnega flipperja: e = flipEStill / (1 + v / flipFalloff) …
+  flipFalloff: 1500,     // … pri 300 px/s ≈ 0,33 (kot prej), pri 1800 px/s ≈ 0,18 (hitra žogica »umre«)
   rubberK: 1,            // množitelj elastičnosti gum (slingi, gumijasti drogovi, odbojniki)
   friction: 0.06,        // Coulombovo trenje ob trku
   sling: 900,            // impulz slingshota, px/s

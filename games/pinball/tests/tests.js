@@ -125,6 +125,33 @@ export function fpsTest() {
   return { d165: d(a, b), d75: d(a, c) };
 }
 
+/* ---------------- guma mirnega flipperja (f3): live catch ---------------- */
+// žogica pade na dvignjen (držan) levi flipper; razmerje = hitrost od flipperja / hitrost proti flipperju (vzdolž normale)
+export function catchTest() {
+  const out = {};
+  for (const v of [300, 1800]) {
+    const { g, T } = makeGame();
+    g.state = 'play';
+    const f = T.flippers[0];
+    g.setFlipper('L', true);
+    for (let i = 0; i < 30; i++) g.update(FRAME);
+    const a = f.up, nx = Math.sin(a), ny = -Math.cos(a);          // normala zgornje ploskve
+    const x = f.px + Math.cos(a) * f.len * 0.6 + nx * 40, y = f.py + Math.sin(a) * f.len * 0.6 + ny * 40;
+    const ball = g.newBall(x, y);
+    ball.vx = -nx * v; ball.vy = -ny * v;
+    let into = 0, away = 0, k = -1;
+    for (let i = 0; i < 300; i++) {
+      const vn0 = ball.vx * nx + ball.vy * ny;
+      g.update(1 / 720);
+      const vn = ball.vx * nx + ball.vy * ny;
+      if (k < 0 && vn0 < 0 && vn > vn0 + 1) { into = -vn0; k = i; }
+      if (k >= 0 && i - k < 4) away = Math.max(away, vn);
+    }
+    out['v' + v] = +(away / (into || 1)).toFixed(3);
+  }
+  return out;
+}
+
 /* ---------------- ball search ---------------- */
 export function stuckTest() {
   const { g, bus, T } = makeGame();
@@ -293,6 +320,9 @@ export function runAll(log = console.log, { games = 12, golden = undefined, gold
 
   const fp = fpsTest();
   check('fizika enaka pri 60, 75 in 165 Hz (fiksni korak)', fp.d165 < 1e-6 && fp.d75 < 1e-6, JSON.stringify(fp));
+
+  const lc = catchTest();
+  check('mirni flipper: počasna žogica odskoči, hitra se ujame (live catch)', lc.v300 > 0.27 && lc.v1800 < 0.22 && lc.v1800 < lc.v300 - 0.08, JSON.stringify(lc));
 
   const sk = stuckTest();
   check('ball search sprosti zataknjeno žogico', sk.freed && sk.searched > 0, JSON.stringify(sk));
