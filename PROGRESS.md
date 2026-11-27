@@ -47,6 +47,13 @@ Prompt: `prompts/01-hub.md`. Stanje: **hub končan** (20. 11. 2026). Nadaljevanj
   drugi igralec prevzame (tudi `rooms.host_id` v bazi prek `claim_host`) in igra se konča; pinball lestvica (`scores`)
   še deluje; konzola brez napak.
 
+- **f2 — fiksni korak z akumulatorjem** (`engine/game.js`). Prej: `n = round(dt / STEP)`, `korak = dt / n` → pri 75 Hz korak 1/750 s,
+  pri 165 Hz 1/660 s; isti strel se je pri različnih zaslonih obnašal drugače (test: žogica po 1440 korakih pri 60 Hz na y = 605,
+  pri 165 Hz na 458, pri 75 Hz je že odtekla). Zdaj je korak vedno 1/720 s, odvečni čas ostane v akumulatorju (tudi v slow-motionu).
+  Pri 60 Hz je rezultat bit za bitom enak (zlati posnetek se je spremenil le v `physicsVersion`); nov test »fizika enaka pri 60, 75 in 165 Hz«.
+  100 bot iger pred/po (60 Hz, enako): povprečje 22.220.337 točk, igra 564 s, žoga 145 s, drain po sredini 59,2 % (outlane 40,8 %),
+  9,9 strela/min, 1,57 multiballa, 2,4 začetih / 0,47 opravljenih misij.
+
 ## Ni bilo preverjeno
 
 - **Magic link** (povezava profila z emailom, prijava na drugi napravi) — ni preizkušeno (potrebuje email in
@@ -1456,8 +1463,8 @@ Miza kot modul: `games/pinball/src/engine/` (motor) + `games/pinball/src/tables/
 - [x] Zlati test: 12 bot iger (semena 1000 + 17·i), točke, frame-i, štetje in hash zaporedja dogodkov → `tests/fixtures/pinball-golden.json`
 - [x] Ločitev motor / Alu miza (jedro igre, pravila kot vtičnik, miza kot podatek, generičen izris) — zlati test zelen
 - [x] Lestvica po uporabniku prek huba (`miza:<id>:f<verzija>`), arhiv `scores` samo za branje, brez inicialk
-- [ ] `?debug=1` (senzorji, drsniki, korak za korakom), merilec strelov (`tools/pinball-shots.mjs`, `?debug=shots`), bot kot modul
-- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++)
+- [x] `?debug=1` (senzorji, drsniki, korak za korakom), merilec strelov (`tools/pinball-shots.mjs`, `?debug=shots`), bot kot modul (`tools/pinball-bot.mjs`)
+- [ ] Izboljšave fizike (vsaka svoj commit, `PHYSICS_VERSION`++): f2 fiksni korak ✓
 - [ ] Novi elementi + testna miza `?miza=test`
 - [ ] README (struktura, nova miza, mapa strelov), prompt 23
 

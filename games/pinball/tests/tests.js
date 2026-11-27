@@ -104,6 +104,27 @@ function distSeg(px, py, s) {
   return Math.hypot(px - (s.ax + dx * t), py - (s.ay + dy * t));
 }
 
+/* ---------------- fizika neodvisna od fps (f2) ---------------- */
+export function fpsTest() {
+  const run = (dt) => {
+    const { g } = makeGame();
+    g.state = 'play';
+    const b = g.newBall(300, 120);
+    b.vx = 700; b.vy = 300;
+    const steps = [];
+    let k = 0;
+    // po vsakem frame-u zapiši, koliko korakov fizike je bilo in kje je žogica
+    while (g.time < 2.5) { g.update(dt); k++; steps.push([Math.round(g.time / STEP), b.x, b.y]); }
+    return steps;
+  };
+  const A = run(1 / 60), B = run(1 / 165), C = run(1 / 75);   // 165 in 75 Hz: stari spremenljivi korak je dal 1/660 in 1/750 s
+  // primerjaj lego po enakem številu korakov (2 s = 1440 korakov)
+  const at = (L, n) => { const e = L.find(x => x[0] === n); return e ? [e[1], e[2]] : null; };
+  const n = 1440, a = at(A, n), b = at(B, n), c = at(C, n);
+  const d = (p, q) => p && q ? Math.hypot(p[0] - q[0], p[1] - q[1]) : Infinity;
+  return { d165: d(a, b), d75: d(a, c) };
+}
+
 /* ---------------- ball search ---------------- */
 export function stuckTest() {
   const { g, bus, T } = makeGame();
@@ -269,6 +290,9 @@ export function runAll(log = console.log, { games = 12, golden = undefined, gold
   const st = stressTest();
   check('stresni test: brez pobega iz mize', st.escapes === 0, JSON.stringify(st));
   check('stresni test: brez prodora v bumper', st.inside === 0);
+
+  const fp = fpsTest();
+  check('fizika enaka pri 60, 75 in 165 Hz (fiksni korak)', fp.d165 < 1e-6 && fp.d75 < 1e-6, JSON.stringify(fp));
 
   const sk = stuckTest();
   check('ball search sprosti zataknjeno žogico', sk.freed && sk.searched > 0, JSON.stringify(sk));

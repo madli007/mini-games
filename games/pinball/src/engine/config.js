@@ -5,14 +5,15 @@
    ===================================================================== */
 
 // verzija fizike: poveča se ob vsaki namerni spremembi fizike (zlati test, lestvica po verziji)
-export const PHYSICS_VERSION = 1;
+// f1: prva verzija (ALU PINBALL 2.0) · f2: fiksni korak z akumulatorjem
+export const PHYSICS_VERSION = 2;
 
 // logične dimenzije mize in fizika (uglašeno — previdno!)
 export const W = 600, H = 1000;
 export const BR = 10;               // polmer žogice
 export const GRAV = 1900;           // px/s²
 export const MAXV = 3400;           // px/s
-export const STEP = 1 / 720;        // korak fizike (12 substepov / frame pri 60 fps)
+export const STEP = 1 / 720;        // fiksni korak fizike (12 korakov / frame pri 60 fps, ne glede na fps)
 export const TAU = Math.PI * 2;
 
 /**

@@ -92,6 +92,7 @@ export class Game {
     this.plungerHeld = false;
     this.paused = false;
     this.launchHint = '';
+    this.physAcc = 0;                // akumulator fiksnega koraka fizike
     const R = table.Rules || Rules;
     this.rules = new R(this);
     this.rules.init(this);
@@ -556,13 +557,16 @@ export class Game {
     for (const s of T.diverters) this.stepDiverter(s, dt);
     for (const s of T.posts) s.lift += ((s.active ? 1 : 0) - s.lift) * Math.min(1, dt * 14);
 
-    // fizika
-    const n = Math.max(1, Math.round(dt / STEP));
-    const sdt = dt / n;
-    for (let i = 0; i < n; i++) {
-      this.phys.step(sdt, this.balls);
-      this.rules.substep(sdt);
+    // fizika: fiksni korak z akumulatorjem (f2) — enaka fizika pri 30, 60, 120 ali 144 Hz in v slow-motionu
+    this.physAcc += dt;
+    let n = 0;
+    while (this.physAcc >= STEP * (1 - 1e-6) && n < 48) {
+      this.phys.step(STEP, this.balls);
+      this.rules.substep(STEP);
+      this.physAcc -= STEP;
+      n++;
     }
+    if (n >= 48) this.physAcc = 0;          // varovalo pri zelo dolgem frame-u
 
     // ohladitve in animacije elementov
     for (const s of T.segs) { if (s.cool > 0) s.cool -= dt; }
