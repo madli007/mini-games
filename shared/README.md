@@ -134,6 +134,20 @@ await hub.levelPlayed(id);                                                      
   **`<igra>_level_played(p_id)`** (`security definer` v shemi `private`, glej `supabase/games/krogla.sql`).
 - `data` je tuj vnos: igra ga mora pred igranjem validirati, ime prikazati kot besedilo (`textContent`).
 
+### Shranjen napredek igre (kariera, nadgradnje, odklepi) — **online**
+Napredek igralca (kariera, nadgradnje, zvezdice, odklepi …) **ne sme biti samo v `localStorage`**: shrani ga prek huba,
+da sledi igralcu na vse naprave. En JSON zapis na (igralec, igra, slot).
+```js
+const s = await hub.loadSave();                       // { data, rev, updated_at } ali null (ni zapisa / napaka)
+await hub.writeSave(prog, { rev: prog.rev });         // true ob uspehu, false ob napaki (npr. brez povezave)
+await hub.loadSave({ slot: 'kariera' });              // več neodvisnih zapisov igre (slot: a-z0-9_-, do 24 znakov)
+```
+- `rev` je števec različic (igra ga poveča ob vsaki spremembi). Priporočen vzorec (`games/gneca/game.js`): lokalna kopija
+  v `shared/storage.js` kot predpomnilnik, ob nalaganju vzemi novejšega (večji `rev`), ob spremembi zapiši oboje.
+- `data` ≤ 60.000 znakov kot JSON (sicer napaka `invalid`). Igra mora prebrani zapis **validirati** (tuj vnos).
+- Offline: `localStorage` (`db:saves`). Supabase: tabela **`<igra>_saves`** (`user_id`, `slot`, `data jsonb`, `rev`, `updated_at`;
+  pk `(user_id, slot)`, RLS: branje in pisanje le svojih vrstic) — nova igra skopira `supabase/games/gneca.sql` in zamenja predpono.
+
 ### Kovanci, naloge, trgovina, kozmetika
 **Vsaka igra po vsaki odigrani igri pokliče `hub.reportGame`** (solo in multiplayer, enkrat na igralca):
 ```js

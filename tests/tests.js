@@ -34,6 +34,7 @@ import { ustaviUroTests } from './ustavi-uro.js';
 import { sport3Tests } from './sport3.js';
 import { skoki4Tests } from './skoki4.js';
 import { krogla2Tests } from './krogla2.js';
+import { gnecaTests } from './gneca.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -1281,6 +1282,17 @@ test('krogla: vse proge so rešljive (autopilot pod časom proge na Normalni)', 
   }
   return out.join(', ');
 });
+test('lokalno: shranjen napredek igre (loadSave / writeSave, ločeno po igralcu in slotu)', async () => {
+  clearLocal();
+  const [a, b] = await users('sa', 'sb');
+  eq(await a.loadSave({ game: 'gneca' }), null);
+  await a.writeSave({ game: 'gneca', data: { gears: 5 }, rev: 3 });
+  const r = await a.loadSave({ game: 'gneca' });
+  eq([r.data, r.rev], [{ gears: 5 }, 3]);
+  eq(await b.loadSave({ game: 'gneca' }), null, 'drug igralec ne vidi');
+  eq(await a.loadSave({ game: 'gneca', slot: 'drug' }), null, 'drug slot');
+  await throwsCode(() => a.writeSave({ game: 'gneca', data: { x: 'y'.repeat(70000) } }), 'invalid');
+});
 test('lokalno: ghosti (le boljši čas, seznam, podatki)', async () => {
   clearLocal();
   const [a, b] = await users('ga', 'gb');
@@ -1597,6 +1609,8 @@ ustaviUroTests(test, { eq, ok });
 sport3Tests(test, { eq, ok });
 krogla2Tests(test, { eq, ok });
 skoki4Tests(test, { eq, ok });
+/* ------------------------------------------------------- Gneča (tests/gneca.js) */
+gnecaTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.

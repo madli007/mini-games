@@ -1,0 +1,28 @@
+{
+  "id": "k08",
+  "name": "Visoki most",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 70,
+  "width": 6.5,
+  "time": 100,
+  "towerHp": 795,
+  "hint": "Zelo ozko in dolgo. Množitelji so na sredini.",
+  "gates": [
+    {"x":0,"z":12,"w":2.6,"op":"x","v":2},
+    {"x":0,"z":22,"w":2.4,"op":"x","v":2,"move":{"amp":1.9,"speed":1.2}},
+    {"x":-1.6,"z":34,"w":3.2,"op":"x","v":2},
+    {"x":1.6,"z":34,"w":3.2,"op":"/","v":2}
+  ],
+  "obstacles": [
+    {"type":"saw","x":0,"z":44,"r":0.8,"amp":2.2,"speed":1.6}
+  ],
+  "turrets": [
+    {"x":2.9,"z":50}
+  ],
+  "waves": [
+    {"t":3,"n":24,"every":3,"until":95,"grow":3.5},
+    {"t":30,"n":0,"every":7.5,"until":90,"grow":0,"giant":1,"hp":33}
+  ],
+  "stars": [2430,2580]
+}

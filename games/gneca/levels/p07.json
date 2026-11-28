@@ -1,0 +1,22 @@
+{
+  "id": "p07",
+  "name": "Utrujena vrata",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 58,
+  "width": 10,
+  "time": 90,
+  "towerHp": 410,
+  "hint": "Vrata ×3 po 40 prehodih postanejo ×1.",
+  "gates": [
+    {"x":-2.5,"z":13,"w":4.5,"op":"x","v":3,"change":{"after":40,"to":1}},
+    {"x":2.5,"z":13,"w":4.5,"op":"x","v":2},
+    {"x":-2.5,"z":27,"w":4.5,"op":"/","v":2},
+    {"x":2.5,"z":27,"w":4.5,"op":"+","v":50}
+  ],
+  "waves": [
+    {"t":3,"n":16,"every":3,"until":85,"grow":2.1},
+    {"t":35,"n":0,"giant":1,"hp":21}
+  ],
+  "stars": [2740,2840]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "p02",
+  "name": "Dvojna vrata",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 52,
+  "width": 10,
+  "time": 90,
+  "towerHp": 235,
+  "hint": "Vrata zaporedoma: ×2 in še enkrat ×2.",
+  "gates": [
+    {"x":-2.5,"z":12,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":12,"w":4.5,"op":"+","v":20},
+    {"x":0,"z":24,"w":4,"op":"x","v":2}
+  ],
+  "waves": [
+    {"t":3,"n":44,"every":3,"until":80,"grow":3.7}
+  ],
+  "stars": [3010,3110]
+}

@@ -23,7 +23,8 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
 | [36-kresnik](36-kresnik.md) | Kresnik: klasični 2D platformer, 1. del (nova igra) | veliko |
-| [40-gneca](40-gneca.md) | Gneča: top, vrata z množitelji in horde, 1. del (nova igra) | veliko |
+| [44-gneca-dvoboj](44-gneca-dvoboj.md) | Gneča: dvoboj 1v1 online (lockstep), 2v2, sklopa Tovarna in Zima, predmeti v trgovini | veliko |
+| [45-napredek-online](45-napredek-online.md) | Napredek igralcev online (`hub.writeSave`): kariera Skokov, Krogla, Ladjice, dnevni poskusi | srednje |
 | [41-herodle-liki](41-herodle-liki.md) | Herodle: ~75 novih MCU likov, popravek `inMcu`, debi v MCU, težavnost tedna (ne hkrati s 15) | veliko |
 
 ## Vsi prompti
@@ -69,13 +70,15 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 37 | [kresnik-svetova](37-kresnik-svetova.md) | Kresnik: Kraške jame in Planine, prijem in zamah, lebdenje, voda, veter, led, 2 šefa | 2/4 | ⬜ | | 36 |
 | 38 | [kresnik-finale](38-kresnik-finale.md) | Kresnik: Mlinska dolina, Barje, Morin grad in konec, šprint, speedrun in 100 %, trgovina | 3/4 | ⬜ | | 37 |
 | 39 | [kresnik-urejevalnik](39-kresnik-urejevalnik.md) | Kresnik: urejevalnik nivojev, nivoji skupnosti, nivo tedna, dnevni nivo | 4/4 | ⬜ | | 36 (37, 38 priporočena) |
-| 40 | [gneca](40-gneca.md) | Gneča: top, vrata z množitelji, horde, velikani, 20 nivojev, delavnica, dnevni nivo | 1/2 | ⬜ | | 01 ✅ |
+| 40 | [gneca](40-gneca.md) | Gneča: top, vrata z množitelji, horde, velikani, 20 nivojev, delavnica, dnevni nivo, napredek online | 1/2 | ✅ | `COMMIT` | 01 ✅ |
 | 41 | [herodle-liki](41-herodle-liki.md) | Herodle: ~75 novih MCU likov (filmi, Disney+, Netflix), pravilo in popravek `inMcu`, polja `mcuDebut`/`medium`/`fame`, stolpec »Debi v MCU«, težavnost tedna | 4 | ⬜ | | 09 ✅, 14 ✅ |
 | 42 | [herodle-zbirka](42-herodle-zbirka.md) | Herodle: Herodex (zbirka likov), vadba, statistika dneva, teme in animacije razkritja v trgovini | 5 | ⬜ | | 41 |
 | 43 | [herodle-skupine](43-herodle-skupine.md) | Herodle: nov dnevni način Skupine (16 likov v 4 skupine), arhiv, super dan | 6 | ⬜ | | 41 (42 priporočen) |
+| 44 | [gneca-dvoboj](44-gneca-dvoboj.md) | Gneča: dvoboj 1v1 online (lockstep, hash, posnetek, prenos hosta), 2v2, sklopa Tovarna in Zima s šefoma, predmeti v trgovini | 2/2 | ⬜ | | 40 ✅ |
+| 45 | [napredek-online](45-napredek-online.md) | Napredek online za obstoječe igre: kariera Skokov, Krogla, Ladjice, Frnikole, dnevni poskusi (`hub.loadSave`/`writeSave`) | — | ⬜ | | 40 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
-**Naslednja prosta številka: 44.**
+**Naslednja prosta številka: 46.**
 
 ## Pravila (da se ne izgubimo)
 

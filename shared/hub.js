@@ -282,6 +282,32 @@ export const hub = {
     catch (e) { console.warn('getGhost:', e.message); return null; }
   },
 
+  /* ------------------------- shranjen napredek igre (kariera) ------------------------- */
+  // En JSON zapis na (igralec, igra, slot): kariera, nadgradnje, zvezdice … — sledi igralcu na vse naprave.
+  // Supabase: tabela <igra>_saves (glej supabase/games/gneca.sql), branje in pisanje le svojih vrstic.
+  // Offline: localStorage (db:saves). data ≤ 60.000 znakov kot JSON; rev = števec različic (večji je novejši).
+
+  /**
+   * Moj shranjen napredek: { data, rev, updated_at } ali null (ni zapisa ali napaka).
+   * @param {{slot?:string, game?:string}} [q]
+   */
+  async loadSave({ slot = 'main', game = hub.gameId } = {}) {
+    if (!hub.userId) return null;
+    try { return await hub.backend.loadSave({ game, slot }); }
+    catch (e) { console.warn('loadSave:', e.message); return null; }
+  },
+
+  /**
+   * Shrani napredek (prepiše prejšnjega). Vrne true ob uspehu, false ob napaki (npr. brez povezave).
+   * @param {any} data JSON (≤ 60.000 znakov)
+   * @param {{slot?:string, rev?:number, game?:string}} [opt]
+   */
+  async writeSave(data, { slot = 'main', rev = 0, game = hub.gameId } = {}) {
+    if (!hub.userId) return false;
+    try { await hub.backend.writeSave({ game, slot, data, rev }); return true; }
+    catch (e) { console.warn('writeSave:', e.message); return false; }
+  },
+
   /* ------------------------- objavljene proge igralcev ------------------------- */
   // Supabase: tabela <igra>_custom_levels, RPC <igra>_publish_level in <igra>_level_played
   // (glej supabase/games/krogla.sql). Lestvica proge: submitScore s seedom 'custom:<id>'.

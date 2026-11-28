@@ -1,0 +1,19 @@
+{
+  "id": "p01",
+  "name": "Prvi koraki",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 50,
+  "width": 10,
+  "time": 90,
+  "towerHp": 200,
+  "hint": "Drži in vleci levo-desno. Zadeni vrata ×2!",
+  "gates": [
+    {"x":-2.5,"z":14,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":14,"w":4.5,"op":"+","v":15}
+  ],
+  "waves": [
+    {"t":4,"n":20,"every":3,"until":80,"grow":2}
+  ],
+  "stars": [2800,3050]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "k10",
+  "name": "Šef kanjona",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 66,
+  "width": 9,
+  "time": 120,
+  "towerHp": 1200,
+  "boss": true,
+  "hint": "Šef pošilja velikane. Podri ga!",
+  "gates": [
+    {"x":-2.25,"z":10,"w":4.5,"op":"x","v":3},
+    {"x":2.25,"z":10,"w":4.5,"op":"+","v":50},
+    {"x":0,"z":21,"w":3,"op":"x","v":2,"move":{"amp":3,"speed":1.1}},
+    {"x":-2.25,"z":32,"w":4.5,"op":"x","v":2},
+    {"x":2.25,"z":32,"w":4.5,"op":"-","v":30}
+  ],
+  "obstacles": [
+    {"type":"saw","x":0,"z":40,"r":0.9,"amp":3.3,"speed":1.3}
+  ],
+  "turrets": [
+    {"x":-4.1,"z":26},
+    {"x":4.1,"z":46}
+  ],
+  "waves": [
+    {"t":2,"n":61,"every":3,"until":115,"grow":8.3},
+    {"t":12,"n":0,"every":5,"until":110,"grow":0,"giant":1,"hp":54},
+    {"t":60,"n":0,"every":10,"until":110,"grow":0,"giant":1,"hp":68}
+  ],
+  "stars": [3630,3820]
+}

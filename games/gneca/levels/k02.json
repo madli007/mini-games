@@ -1,0 +1,26 @@
+{
+  "id": "k02",
+  "name": "Stražna stolpiča",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 60,
+  "width": 8,
+  "time": 90,
+  "towerHp": 585,
+  "hint": "Stolpiča ob stezi streljata. Podri ju s tekači!",
+  "gates": [
+    {"x":-2,"z":11,"w":4,"op":"x","v":3},
+    {"x":2,"z":11,"w":4,"op":"+","v":30},
+    {"x":-2,"z":26,"w":4,"op":"x","v":2},
+    {"x":2,"z":26,"w":4,"op":"/","v":2}
+  ],
+  "turrets": [
+    {"x":-3.6,"z":20},
+    {"x":3.6,"z":36}
+  ],
+  "waves": [
+    {"t":3,"n":56,"every":3,"until":85,"grow":6.9},
+    {"t":35,"n":0,"giant":1,"hp":38}
+  ],
+  "stars": [2830,2930]
+}

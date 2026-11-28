@@ -28,7 +28,10 @@ const herodleFixture = JSON.parse(await readFile(new URL('tests/fixtures/herodle
 const herodleHeroesSql = await readFile(new URL('supabase/games/herodle-heroes.sql', root), 'utf8');
 const herodleHintsSql = await readFile(new URL('supabase/games/herodle-hints.sql', root), 'utf8');
 
+const gIdx = JSON.parse(await readFile(new URL('games/gneca/levels/index.json', root), 'utf8'));
+const gnecaLevels = await Promise.all(gIdx.sets.flatMap(s => s.levels).map(async f => JSON.parse(await readFile(new URL('games/gneca/levels/' + f, root), 'utf8'))));
+
 const t0 = Date.now();
-const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef });
+const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef, gnecaLevels });
 console.log(`(${((Date.now() - t0) / 1000).toFixed(1)} s)`);
 process.exit(fails ? 1 : 0);

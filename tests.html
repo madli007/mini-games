@@ -40,13 +40,15 @@
     const herodleFixture = await (await fetch('tests/fixtures/herodle-compare.json', { cache: 'no-cache' })).json();
     const herodleHeroesSql = await (await fetch('supabase/games/herodle-heroes.sql', { cache: 'no-cache' })).text();
     const herodleHintsSql = await (await fetch('supabase/games/herodle-hints.sql', { cache: 'no-cache' })).text();
+    const gIdx = await (await fetch('games/gneca/levels/index.json', { cache: 'no-cache' })).json();
+    const gnecaLevels = await Promise.all(gIdx.sets.flatMap(s => s.levels).map(async f => (await fetch('games/gneca/levels/' + f, { cache: 'no-cache' })).json()));
     const log = s => {
       const line = document.createElement('div');
       line.textContent = s;
       line.className = s.startsWith('✔') ? 'ok' : s.startsWith('✘') ? 'bad' : '';
       out.appendChild(line);
     };
-    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef });
+    const { fails } = await runAll(log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef, gnecaLevels });
     document.title = (fails ? '✘ ' : '✔ ') + document.title;
   </script>
 </body>

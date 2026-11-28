@@ -442,6 +442,21 @@ export class LocalBackend {
     return g ? { user_id: g.user_id, time_ms: g.time_ms, data: g.data } : null;
   }
 
+  /* --------------------------- shranjen napredek --------------------------- */
+
+  async loadSave({ game, slot = 'main' }) {
+    const r = S.load('db:saves', {})[`${game}|${slot}|${this.userId}`];
+    return r ? { data: r.data, rev: r.rev, updated_at: r.updated_at } : null;
+  }
+
+  async writeSave({ game, slot = 'main', data, rev = 0 }) {
+    if (JSON.stringify(data).length > 60000) throw codedError('invalid', 'Zapis je prevelik.');
+    const all = S.load('db:saves', {});
+    all[`${game}|${slot}|${this.userId}`] = { data, rev: Math.max(0, Math.round(rev)), updated_at: now() };
+    S.save('db:saves', all);
+    return true;
+  }
+
   /* ------------------------------- pokal --------------------------------- */
   // Enaka pravila kot RPC <igra>_cup_submit (supabase/games/skoki.sql): okno postaje (podano iz koledarja igre),
   // en zapis na serijo, 2. serija le z 1. serijo in uvrstitvijo med `cut`, velikost vnosov, smiselne točke.

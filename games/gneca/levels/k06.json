@@ -1,0 +1,29 @@
+{
+  "id": "k06",
+  "name": "Žaga in valjar",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 64,
+  "width": 8,
+  "time": 90,
+  "towerHp": 725,
+  "hint": "Dve oviri zapored. Velikan gre skozi.",
+  "gates": [
+    {"x":-2,"z":9,"w":4,"op":"x","v":2},
+    {"x":2,"z":9,"w":4,"op":"+","v":40},
+    {"x":-2,"z":24,"w":4,"op":"x","v":3},
+    {"x":2,"z":24,"w":4,"op":"x","v":2}
+  ],
+  "obstacles": [
+    {"type":"saw","x":0,"z":16,"r":0.9,"amp":2.8,"speed":1.5},
+    {"type":"roller","x":0,"z":33,"w":2.6,"amp":2.6,"speed":0.9}
+  ],
+  "turrets": [
+    {"x":3.6,"z":44}
+  ],
+  "waves": [
+    {"t":3,"n":32,"every":3,"until":85,"grow":5.4},
+    {"t":25,"n":0,"every":7.5,"until":85,"grow":0,"giant":1,"hp":33}
+  ],
+  "stars": [2890,3100]
+}

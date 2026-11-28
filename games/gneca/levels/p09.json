@@ -1,0 +1,25 @@
+{
+  "id": "p09",
+  "name": "Žaga v sipinah",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 60,
+  "width": 10,
+  "time": 90,
+  "towerHp": 480,
+  "hint": "Žaga razreže tekače. Velikana ne.",
+  "gates": [
+    {"x":-2.5,"z":11,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":11,"w":4.5,"op":"+","v":25},
+    {"x":-2.5,"z":28,"w":4.5,"op":"x","v":3},
+    {"x":2.5,"z":28,"w":4.5,"op":"x","v":2}
+  ],
+  "obstacles": [
+    {"type":"saw","x":0,"z":19,"r":0.9,"amp":3.5,"speed":1.2}
+  ],
+  "waves": [
+    {"t":3,"n":56,"every":3,"until":85,"grow":9.4},
+    {"t":30,"n":0,"every":7.5,"until":80,"grow":0,"giant":1,"hp":36}
+  ],
+  "stars": [3080,3180]
+}

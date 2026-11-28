@@ -1561,3 +1561,85 @@ Nova igra `bozicni-pinball` (»Trije dobri možje«) na motorju pinballa: `games
 - **fps na telefonu (Srednja):** brez vidnega podokna ni meritve; čas izrisa frame-a na CPU je < 1 ms na vseh kakovostih (GPU ni izmerjen).
 - **Supabase:** zapis rezultata pod uporabnikom (`miza:bozic:f3`), dosežki in naloge so preverjeni le offline (`?offline=1`).
 - Glasba in DMD animacije so še od motorja (prazniče teme so v promptu 24).
+
+# Gneča (prompt 40, 28. 11. 2026)
+
+Nova igra `gneca`: top spodaj strelja tekače, ki gredo skozi vrata (`+ × − ÷`), se spopadejo s sovražno hordo in podrejo
+sovražni stolp. Pravila, kontrole, format nivoja in moduli: `games/gneca/README.md`.
+
+## Načrt
+- [x] Čista logika brez DOM-a: `balance.js`, `sim.js` (tipizirana polja, fiksen korak 60 Hz, naključje iz seeda v stanju),
+      `grid.js` (mreža 1×1), `level.js` (validacija), `score.js`, `upgrades.js`, `autopilot.js`, `daily.js`
+- [x] Vrata `+N` (zaloga), `×N`, `−N`, `÷N`, premična in spremenljiva; en prehod na vrata (bitna maska, potomci jo podedujejo)
+- [x] Spopad hp proti hp, velikani (merilec, gumb ali samodejno), sovražni velikani, stolpiči ob stezi, ograja, valjar, žaga
+- [x] Meja 600 na stran in združevanje (hp se sešteje, tekač zraste), hash stanja
+- [x] 20 nivojev (Puščava 10, Kanjon 10 s šefom), uglašeni z avtopilotom (`tools/gneca-tune.mjs`)
+- [x] Dnevni nivo iz seeda s fiksnimi nadgradnjami, prvi poskus na lestvico (`hub.submitScore`), ostali vadba
+- [x] Delavnica (5 nadgradenj, zobniki), zemljevid z zvezdicami in odklepi
+- [x] **Napredek online:** nov splošen API `hub.loadSave` / `hub.writeSave` (oba adapterja), Supabase tabela `gneca_saves`
+      (`supabase/games/gneca.sql`, migracija pognana, advisors preverjeni), lokalna kopija + novejši `rev` zmaga
+- [x] Three.js 0.160.0: tekači kot `InstancedMesh` (kapsula + oči, nihanje, barva strani), vrata s canvas napisi,
+      velikani s HP, stolp (pade ob zmagi), delci, sledi stolpičev, tresenje kamere; nebo in IBL uvožena iz Krogle
+- [x] Samodejna kakovost (Visoka/Srednja/Nizka: senče, delci, ločljivost), izbira v delavnici
+- [x] WebAudio zvoki + utišanje; vnos: relativno vlečenje (telefon spodnja polovica), miška, ←/→, A/D, Space, G, P
+- [x] `?debug=1` (drsniki, hitrost ×1/2/4, mreža trkov, 600 + 600, kakovost, FPS, `gnecaDebug.bench/advance`), `?demo=1`
+- [x] Hub: 7 dosežkov, XP (15 / +25 / +20 / +40), `reportGame`, `reportEvent` (`gneca:win|stars|crowd|giant|daily-stars`), 4 naloge
+- [x] Testi `tests/gneca.js` (12) + test `loadSave/writeSave` v lokalnem adapterju; vsi testi zeleni (Node in `tests.html`)
+
+## Dnevnik
+- **Prvi balans je bil eksploziven:** zmaga v 10–15 s, ker so bila vrata `+N` za vsakega tekača (`+12` ≈ `×13`).
+  `+N` je zdaj **zaloga** N tekačev (vsak, ki gre skozi, potegne enega; nato vrata ugasnejo) — zrcalo vrat `−N`.
+- **Sovražniki so zdrsnili mimo** ozkega curka tekačev (preboj v 15 s). Dodana privlačnost: sovražnik zavije k najbližjemu
+  mojemu tekaču pred sabo (doseg 4,5), moj rahlo k sovražniku (2,2); strel ima razpršenost ±0,45, da tečejo kot množica.
+- **Uglaševanje kampanje:** najprej je skript nastavljal HP stolpa → HP med 70 in 20.000 (nesmiselno). Zdaj HP stolpa raste
+  (200 + 35 × indeks, šef 1200), bisekcija pa nastavi moč valov, da avtopilot s pričakovanimi nadgradnjami zmaga v ciljnem času.
+  Točke za stolp so normalizirane (do 500), za uničene in izgubljene omejene, da hitrejša zmaga ne da manj točk.
+- **Avtopilot** cilja sredino dobrih vrat (oceni x ± 0,9), sicer pol množice zdrsne skozi sosednja slaba vrata.
+- **Dnevni nivo:** `DAILY` (stolp 420, val 17 na 3 s, +1,6) → avtopilot s fiksnimi nadgradnjami zmaga 195/200 seedov
+  (2026-01-01 … 2026-07-19). Današnji (2026-11-28) je eden redkih, ki ga avtopilot ne podre (čas).
+- **Merjenje FPS:** podokno brskalnika je bilo skrito, zato rAF teče ~1/s in FPS iz zanke ni veljaven (samodejna kakovost je
+  v takem podoknu padla na Nizko). Dodan sinhroni `gnecaDebug.bench()` (izris + `gl.finish`).
+
+## Nivoji (`node tools/gneca-tune.mjs`, avtopilot · pričakovane / brez / največje nadgradnje)
+
+| Nivo | HP stolpa | pričakovane | brez | največje | ★★ / ★★★ |
+|---|---|---|---|---|---|
+| 1-1 p01 | 200 | zmaga 37 s | zmaga 37 s | zmaga 11 s | 2800 / 3050 |
+| 1-2 p02 | 235 | 36 s | 36 s | 11 s | 3010 / 3110 |
+| 1-3 p03 | 270 | 40 s | 40 s | 12 s | 2690 / 2970 |
+| 1-4 p04 | 305 | 40 s | 51 s | 16 s | 2620 / 2850 |
+| 1-5 p05 | 340 | 41 s | čas | 16 s | 2930 / 3030 |
+| 1-6 p06 | 375 | 43 s | 89 s | 16 s | 2760 / 2970 |
+| 1-7 p07 | 410 | 44 s | 77 s | 17 s | 2740 / 2840 |
+| 1-8 p08 | 445 | 42 s | preboj | 13 s | 3050 / 3150 |
+| 1-9 p09 | 480 | 39 s | preboj | 14 s | 3080 / 3180 |
+| 1-10 p10 | 515 | 35 s | preboj | 16 s | 3050 / 3150 |
+| 2-1 k01 | 550 | 51 s | čas | 18 s | 2920 / 3020 |
+| 2-2 k02 | 585 | 42 s | čas | 16 s | 2830 / 2930 |
+| 2-3 k03 | 620 | 54 s | čas | 20 s | 2930 / 3120 |
+| 2-4 k04 | 655 | 50 s | čas | 18 s | 2990 / 3100 |
+| 2-5 k05 | 690 | 51 s | preboj | 23 s | 2600 / 2700 |
+| 2-6 k06 | 725 | 56 s | čas | 22 s | 2890 / 3100 |
+| 2-7 k07 | 760 | 58 s | čas | 24 s | 2760 / 2860 |
+| 2-8 k08 | 795 | 59 s | čas | 28 s | 2430 / 2580 |
+| 2-9 k09 | 830 | 59 s | čas | 29 s | 2390 / 2490 |
+| 2-10 k10 (šef) | 1200 | 45 s | preboj | 17 s | 3630 / 3820 |
+
+Pričakovane nadgradnje pri nivoju i: hitrost round(4·i/19), bonus round(2·i/19), polnilec in HP velikana round(3·i/19), brez širokega topa.
+
+## Zmogljivost
+- **Simulacija (Node, test):** 1000 korakov s 600 + 600 tekači = **268 ms** (0,27 ms/korak; meja testa 6000 ms).
+- **Brskalnik, namizje (RTX 5080, 1024×768, dpr 1), 591 + 600 tekačev, `gnecaDebug.bench(120)`:** izris Visoka **0,54 ms**,
+  Srednja 0,46 ms, Nizka 0,35 ms na sličico + simulacija ≈ 0,33 ms → zmogljivost ≫ 60 FPS (cilj 60 dosežen).
+- **Emulacija telefona (375×812):** postavitev preverjena; meritev na istem GPU ni prava meritev telefona (glej spodaj).
+
+## Ni bilo preverjeno
+- **FPS na pravem telefonu in v vidnem podoknu:** podokno je bilo skrito (rAF ~1/s), zato ni meritve »v živo«; emulacija
+  telefona uporablja namizni GPU. Cilj ≥ 40 FPS na telefonu ostane nepreverjen — samodejna kakovost na telefonu začne na Nizki
+  ali Srednji in pade, če FPS dve sekundi ostane pod 45.
+- **Ročno igranje z roko:** zaradi skritega podokna so nivoji (1-1, 1-5, dnevni, šef 2-10 z zmago in porazom, poraz na dnevnem)
+  odigrani s korakanjem simulacije iz skripte (`gnecaDebug.advance`) in avtopilotom; vlečenje/strel sta preverjena le s kratkim
+  vlečenjem miške. Občutek kontrol na telefonu še čaka na testnega igralca.
+- Zvoki so preverjeni le, da se ne sesujejo (brez poslušanja).
+- **Supabase:** shranjevanje (`gneca_saves`) in nalaganje brez lokalne kopije preverjena s testnim profilom `GnecaTest7`
+  (`?igralec=7`); ta je na današnji dnevni lestvici Gneče (398 točk) — lahko ga izbrišeš.

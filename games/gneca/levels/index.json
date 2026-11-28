@@ -1,0 +1,38 @@
+{
+  "sets": [
+    {
+      "id": "puscava",
+      "name": "Puščava",
+      "icon": "🏜️",
+      "levels": [
+        "p01.json",
+        "p02.json",
+        "p03.json",
+        "p04.json",
+        "p05.json",
+        "p06.json",
+        "p07.json",
+        "p08.json",
+        "p09.json",
+        "p10.json"
+      ]
+    },
+    {
+      "id": "kanjon",
+      "name": "Kanjon",
+      "icon": "🏔️",
+      "levels": [
+        "k01.json",
+        "k02.json",
+        "k03.json",
+        "k04.json",
+        "k05.json",
+        "k06.json",
+        "k07.json",
+        "k08.json",
+        "k09.json",
+        "k10.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "p03",
+  "name": "Pazi, minus",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 55,
+  "width": 10,
+  "time": 90,
+  "towerHp": 270,
+  "hint": "Rdeča vrata (−) vzamejo tekače. Izogni se jim.",
+  "gates": [
+    {"x":-2.5,"z":12,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":12,"w":4.5,"op":"-","v":10},
+    {"x":2.5,"z":25,"w":4.5,"op":"x","v":3},
+    {"x":-2.5,"z":25,"w":4.5,"op":"-","v":5}
+  ],
+  "waves": [
+    {"t":3,"n":12,"every":3,"until":85,"grow":2}
+  ],
+  "stars": [2690,2970]
+}

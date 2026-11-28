@@ -1,0 +1,25 @@
+{
+  "id": "p08",
+  "name": "Peščeni vihar",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 60,
+  "width": 10,
+  "time": 90,
+  "towerHp": 445,
+  "hint": "Veliko vrat — izberi pot z največ množitelji.",
+  "gates": [
+    {"x":-3,"z":10,"w":3.5,"op":"x","v":2},
+    {"x":0.5,"z":10,"w":3,"op":"-","v":15},
+    {"x":3.5,"z":10,"w":3,"op":"+","v":30},
+    {"x":0,"z":22,"w":3,"op":"x","v":2,"move":{"amp":3.2,"speed":0.9}},
+    {"x":-2.5,"z":33,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":33,"w":4.5,"op":"-","v":25}
+  ],
+  "waves": [
+    {"t":3,"n":69,"every":3,"until":85,"grow":7.6},
+    {"t":28,"n":0,"giant":1,"hp":40},
+    {"t":50,"n":0,"giant":1,"hp":40}
+  ],
+  "stars": [3050,3150]
+}

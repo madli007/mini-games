@@ -1,0 +1,28 @@
+{
+  "id": "k07",
+  "name": "Stražni stolpi",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 64,
+  "width": 8,
+  "time": 90,
+  "towerHp": 760,
+  "hint": "Trije stolpiči. Velikan jih podre takoj.",
+  "gates": [
+    {"x":-2,"z":11,"w":4,"op":"x","v":2,"change":{"after":60,"to":1}},
+    {"x":2,"z":11,"w":4,"op":"+","v":50},
+    {"x":0,"z":25,"w":3,"op":"x","v":2,"move":{"amp":2.5,"speed":1.3}},
+    {"x":-2,"z":38,"w":4,"op":"+","v":80},
+    {"x":2,"z":38,"w":4,"op":"-","v":25}
+  ],
+  "turrets": [
+    {"x":-3.6,"z":19},
+    {"x":3.6,"z":31},
+    {"x":-3.6,"z":45}
+  ],
+  "waves": [
+    {"t":3,"n":17,"every":3,"until":85,"grow":3},
+    {"t":30,"n":0,"every":7.5,"until":85,"grow":0,"giant":1,"hp":24}
+  ],
+  "stars": [2760,2860]
+}

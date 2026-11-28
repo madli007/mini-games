@@ -1,0 +1,21 @@
+{
+  "id": "k04",
+  "name": "Velikani iz kanjona",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 62,
+  "width": 8,
+  "time": 90,
+  "towerHp": 655,
+  "hint": "Sovražni velikani imajo veliko HP. Pošlji svojega.",
+  "gates": [
+    {"x":-2,"z":12,"w":4,"op":"x","v":2},
+    {"x":2,"z":12,"w":4,"op":"+","v":40},
+    {"x":0,"z":27,"w":3,"op":"x","v":2,"move":{"amp":2.5,"speed":1.2}}
+  ],
+  "waves": [
+    {"t":3,"n":36,"every":3.5,"until":85,"grow":5.2},
+    {"t":15,"n":0,"every":6,"until":85,"grow":0,"giant":1,"hp":40}
+  ],
+  "stars": [2990,3100]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "k03",
+  "name": "Valjar",
+  "set": "kanjon",
+  "theme": "kanjon",
+  "length": 60,
+  "width": 8,
+  "time": 90,
+  "towerHp": 620,
+  "hint": "Valjar zmelje tekače. Počakaj, da se umakne.",
+  "gates": [
+    {"x":-2,"z":10,"w":4,"op":"x","v":2},
+    {"x":2,"z":10,"w":4,"op":"x","v":2},
+    {"x":0,"z":28,"w":3,"op":"x","v":3}
+  ],
+  "obstacles": [
+    {"type":"roller","x":0,"z":18,"w":2.6,"amp":2.6,"speed":1.1}
+  ],
+  "turrets": [
+    {"x":3.6,"z":40}
+  ],
+  "waves": [
+    {"t":3,"n":41,"every":3,"until":85,"grow":4.7},
+    {"t":30,"n":0,"giant":1,"hp":37}
+  ],
+  "stars": [2930,3120]
+}

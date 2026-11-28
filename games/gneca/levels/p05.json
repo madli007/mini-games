@@ -1,0 +1,21 @@
+{
+  "id": "p05",
+  "name": "Prvi velikan",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 56,
+  "width": 10,
+  "time": 90,
+  "towerHp": 340,
+  "hint": "Ko je merilec poln, pritisni »Velikan« (G). Velikanu minus ne škodi.",
+  "gates": [
+    {"x":-2.5,"z":12,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":12,"w":4.5,"op":"-","v":20},
+    {"x":0,"z":26,"w":3.5,"op":"x","v":2}
+  ],
+  "waves": [
+    {"t":3,"n":29,"every":3,"until":85,"grow":4.1},
+    {"t":24,"n":0,"giant":1,"hp":24}
+  ],
+  "stars": [2930,3030]
+}

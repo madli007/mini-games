@@ -23,7 +23,7 @@ Vsi prompti, njihovo stanje in vrstni red: **[`prompts/README.md`](prompts/READM
 | 16. Tarče (aim trainer) | 📝 | prompt 27 |
 | 6. Motorist (fizikalni trial) | 📝 | prompti 32–34 |
 | 61. Kresnik (klasični 2D platformer) | 📝 | prompti 36–39 |
-| 62. Gneča (top, vrata z množitelji, horde) | 📝 | prompt 40 |
+| 62. Gneča (top, vrata z množitelji, horde) | 🟡 1. del ✅, 📝 2. del (dvoboj, 2v2, Tovarna, Zima, trgovina) | `games/gneca/` (prompt 40), prompt 44 |
 | 18. Ustavi uro | ✅ | `games/ustavi-uro/` (prompt 28) |
 | Vse ostale točke | ⬜ | — |
 
@@ -601,7 +601,7 @@ arhitekturo brez sprememb v `shared/`: ena mapa `games/<id>/`, čista logika v `
 
 ### Množične igre (top, vrata in horde)
 
-62. 📝 **Gneča (top, vrata z množitelji in horde)** ★★–★★★ — prompt [`40-gneca`](prompts/40-gneca.md)
+62. 🟡 **Gneča (top, vrata z množitelji in horde)** ★★–★★★ — 1. del ✅ [`40-gneca`](prompts/40-gneca.md) (`games/gneca/`), 2. del 📝 [`44-gneca-dvoboj`](prompts/44-gneca-dvoboj.md)
     - **Žanr:** mobilni »crowd« strelec. Spodaj je top, ki ga vlečeš levo in desno, in dokler držiš, strelja majhne
       tekače. Ti tečejo naprej po stezi skozi **vrata** (`+5`, `×2`, `×3`, `−10`, `÷2`), ki se lahko premikajo, in se
       zaletijo v **sovražno hordo**, ki prihaja z drugega konca (ena na ena, oba izgineta). Kdor pride do konca, ruši

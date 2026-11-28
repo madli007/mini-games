@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a1a">
+<meta name="description" content="Gneča — streljaj tekače skozi vrata ×2 in ×3, preplavi sovražno hordo in podri njihov stolp. Kampanja z delavnico in dnevni nivo.">
+<title>Gneča · MINI GAMES</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%233fa9ff'/%3E%3Ccircle cx='5' cy='6' r='2' fill='%23fff'/%3E%3Ccircle cx='11' cy='6' r='2' fill='%23fff'/%3E%3Ccircle cx='8' cy='11' r='2.4' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../shared/ui.css">
+<link rel="stylesheet" href="../../shared/cosmetics.css">
+<link rel="stylesheet" href="game.css">
+<!-- Three.js: ista pripeta verzija in importmap kot Hrčkova krogla -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="mg gn">
+  <main class="mg-container gn-menu" id="menu" aria-live="polite">
+    <div class="mg-empty"><span class="mg-spin"></span> Nalagam nivoje …</div>
+  </main>
+
+  <section class="gn-play mg-hidden" id="play" aria-label="Igra">
+    <canvas id="cv" aria-label="Igralno polje"></canvas>
+    <div class="gn-hud">
+      <div class="gn-hud__row">
+        <span class="gn-chip" id="hudLevel">1-1</span>
+        <div class="gn-tower" aria-label="HP sovražnega stolpa">
+          <div class="gn-tower__bar"><i id="hudTowerBar"></i></div>
+          <span id="hudTower">🏰 200</span>
+        </div>
+        <span class="gn-chip gn-chip--time" id="hudTime">1:30</span>
+        <button class="gn-btn" id="btnMute" type="button" aria-label="Zvok">🔊</button>
+        <button class="gn-btn" id="btnPause" type="button" aria-label="Pavza">⏸</button>
+      </div>
+      <div class="gn-hud__row gn-hud__row--sub">
+        <span class="gn-chip gn-chip--crowd" id="hudCrowd" title="Moji tekači">🏃 0</span>
+        <span class="gn-chip gn-chip--enemy" id="hudEnemy" title="Sovražniki na stezi">👹 0</span>
+        <span class="gn-chip gn-chip--hearts" id="hudHearts" title="Koliko sovražnikov še lahko pride do topa">❤❤❤❤❤</span>
+      </div>
+    </div>
+    <div class="gn-start mg-hidden" id="startHint">
+      <div class="gn-start__hand" aria-hidden="true">👆</div>
+      <b>Drži in vleci levo-desno</b>
+      <span class="mg-small" id="startKeys">ali ←/→ in preslednica · G = velikan</span>
+    </div>
+    <div class="gn-banner mg-hidden" id="banner"></div>
+    <button class="gn-giant" id="btnGiant" type="button" aria-label="Izstreli velikana">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" class="gn-giant__bg"/><circle cx="32" cy="32" r="28" class="gn-giant__ring" id="giantRing"/></svg>
+      <span class="gn-giant__icon">🗿</span>
+      <span class="gn-giant__lbl" id="giantLbl">0 %</span>
+    </button>
+    <div class="gn-fps mg-hidden" id="fps"></div>
+    <div class="gn-debug mg-hidden" id="debug"></div>
+  </section>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

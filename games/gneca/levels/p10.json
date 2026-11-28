@@ -1,0 +1,27 @@
+{
+  "id": "p10",
+  "name": "Trdnjava v sipinah",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 62,
+  "width": 10,
+  "time": 100,
+  "towerHp": 515,
+  "hint": "Velik stolp. Zberi čim večjo gnečo!",
+  "gates": [
+    {"x":2.5,"z":13,"w":4.5,"op":"x","v":2},
+    {"x":-2.5,"z":13,"w":4.5,"op":"+","v":40},
+    {"x":0,"z":24,"w":3,"op":"x","v":2,"move":{"amp":3,"speed":1}},
+    {"x":-2.5,"z":42,"w":4.5,"op":"x","v":2},
+    {"x":2.5,"z":42,"w":4.5,"op":"-","v":30}
+  ],
+  "obstacles": [
+    {"type":"fence","x":-2,"z":8,"w":2.5,"d":0.4},
+    {"type":"saw","x":2.5,"z":36,"r":0.9,"amp":1.5,"speed":1.4}
+  ],
+  "waves": [
+    {"t":3,"n":20,"every":3,"until":95,"grow":3.1},
+    {"t":25,"n":0,"every":7.5,"until":90,"grow":0,"giant":1,"hp":25}
+  ],
+  "stars": [3050,3150]
+}

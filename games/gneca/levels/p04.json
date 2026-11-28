@@ -1,0 +1,20 @@
+{
+  "id": "p04",
+  "name": "Premična vrata",
+  "set": "puscava",
+  "theme": "puscava",
+  "length": 55,
+  "width": 10,
+  "time": 90,
+  "towerHp": 305,
+  "hint": "Vrata ×3 se premikajo. Lovi jih!",
+  "gates": [
+    {"x":0,"z":14,"w":3,"op":"x","v":2,"move":{"amp":3,"speed":1.1}},
+    {"x":-2.5,"z":27,"w":4.5,"op":"+","v":40},
+    {"x":2.5,"z":27,"w":4.5,"op":"/","v":2}
+  ],
+  "waves": [
+    {"t":3,"n":11,"every":3,"until":85,"grow":1.7}
+  ],
+  "stars": [2620,2850]
+}

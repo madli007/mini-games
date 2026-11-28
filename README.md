@@ -16,7 +16,9 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
   **Zaporedje**, **Herodle** (dnevna uganka: ugani junaka ali zlobca Marvel + DC po namigih — Klasika, Emoji, Kostum,
   Dosje, arhiv in popolni dan), **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila
-  točkovanja, veter, trening z ghosti in rekord skakalnice) in napovedane igre (npr. **Motorist**, fizikalni trial — prompti
+  točkovanja, veter, trening z ghosti in rekord skakalnice), **Gneča** (3D »crowd« strelec: top, vrata ×2/×3/−/÷, horde,
+  velikani in stolp; 20 nivojev v dveh sklopih s šefom, delavnica z nadgradnjami, dnevni nivo s fiksnimi nadgradnjami;
+  napredek se shranjuje online prek `hub.writeSave`) in napovedane igre (npr. **Motorist**, fizikalni trial — prompti
   32–34, in **Kresnik**, klasični 2D platformer v duhu starih platformerjev — prompti 36–39 v
   [`prompts/README.md`](prompts/README.md)).
 - Čisti HTML/CSS/JS z ES moduli. **Brez build koraka, brez npm odvisnosti.**
@@ -123,8 +125,9 @@ games/ustavi-uro/                         Ustavi uro (logic.js, audio.js, game.j
 games/herodle/                            Herodle (heroes.js, hints.js, logic.js, daily.js · README.md)
 games/pinball/                            pinball: motor (src/engine/) + Alu miza (src/tables/alu/) · README.md
 games/bozicni-pinball/                    Božični pinball: miza v table/, uvaža motor iz ../pinball/src/engine/ · README.md
+games/gneca/                              Gneča (sim, grid, level, daily, score, autopilot, upgrades, render/ · levels/*.json · README.md)
 supabase/schema.sql                       shema huba (idempotentna)
-supabase/games/                           SQL posameznih iger (če ga potrebujejo)
+supabase/games/                           SQL posameznih iger (če ga potrebujejo; npr. gneca.sql = <igra>_saves za hub.writeSave)
 tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
 tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)
