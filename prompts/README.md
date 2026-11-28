@@ -70,7 +70,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 37 | [kresnik-svetova](37-kresnik-svetova.md) | Kresnik: Kraške jame in Planine, prijem in zamah, lebdenje, voda, veter, led, 2 šefa | 2/4 | ⬜ | | 36 |
 | 38 | [kresnik-finale](38-kresnik-finale.md) | Kresnik: Mlinska dolina, Barje, Morin grad in konec, šprint, speedrun in 100 %, trgovina | 3/4 | ⬜ | | 37 |
 | 39 | [kresnik-urejevalnik](39-kresnik-urejevalnik.md) | Kresnik: urejevalnik nivojev, nivoji skupnosti, nivo tedna, dnevni nivo | 4/4 | ⬜ | | 36 (37, 38 priporočena) |
-| 40 | [gneca](40-gneca.md) | Gneča: top, vrata z množitelji, horde, velikani, 20 nivojev, delavnica, dnevni nivo, napredek online | 1/2 | ✅ | `COMMIT` | 01 ✅ |
+| 40 | [gneca](40-gneca.md) | Gneča: top, vrata z množitelji, horde, velikani, 20 nivojev, delavnica, dnevni nivo, napredek online | 1/2 | ✅ | `1fb4056` | 01 ✅ |
 | 41 | [herodle-liki](41-herodle-liki.md) | Herodle: ~75 novih MCU likov (filmi, Disney+, Netflix), pravilo in popravek `inMcu`, polja `mcuDebut`/`medium`/`fame`, stolpec »Debi v MCU«, težavnost tedna | 4 | ⬜ | | 09 ✅, 14 ✅ |
 | 42 | [herodle-zbirka](42-herodle-zbirka.md) | Herodle: Herodex (zbirka likov), vadba, statistika dneva, teme in animacije razkritja v trgovini | 5 | ⬜ | | 41 |
 | 43 | [herodle-skupine](43-herodle-skupine.md) | Herodle: nov dnevni način Skupine (16 likov v 4 skupine), arhiv, super dan | 6 | ⬜ | | 41 (42 priporočen) |

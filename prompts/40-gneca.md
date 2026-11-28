@@ -1,6 +1,6 @@
 # Prompt za AI agenta: Gneča — top, vrata z množitelji in horde (nova igra, 1. del)
 
-> **Stanje:** ⬜ čaka — lahko takoj (predpogoj 01 je narejen)
+> **Stanje:** ✅ narejeno — commit `1fb4056` (28. 11. 2026); naslednji del: prompt 44 (in 45 za napredek online ostalih iger)
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/40-gneca.md in ga v celoti izvedi.«**
