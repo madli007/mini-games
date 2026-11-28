@@ -71,6 +71,8 @@ PROGRESS.md                               dnevnik dela
 - `?offline=1` vsili offline način, `?igralec=2` ločeno identiteto (test z več igralci na Supabase).
 - Brskalnik upočasni časovnike v zavihkih v ozadju (po nekaj minutah na enkrat na minuto), zato lahko
   igralec v dolgo skritem zavihku »izgine« iz presence. Za daljše teste uporabi ločena okna.
+- **Po koncu dela vedno pospravi:** ustavi localhost strežnik (`preview_stop`) in zapri vse zavihke brskalnika, ki si jih
+  odprl (`tabs_close`).
 
 ## Prompti
 - Kazalo in stanje vseh promptov: `prompts/README.md`. **Nov prompt:** vzemi naslednjo prosto številko iz kazala, ga takoj
