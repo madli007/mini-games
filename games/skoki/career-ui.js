@@ -7,7 +7,8 @@
    Brez nadgradenj fizike: napreduješ le z znanjem; kariera odklepa naslove
    (dosežki) in opremo (dosežki → trgovina).
    Logika: shared/sport/career.js; lige: cup-config.js. Tekma: match.js (runCompetition).
-   Shranjevanje: shared/storage.js (skoki:career:<profil>) po vsaki tekmi + izvoz/uvoz kode.
+   Shranjevanje: shared/storage.js (skoki:career:<profil>) po vsaki tekmi + izvoz/uvoz kode;
+   online prek cloud.js (slot »kariera« v game_saves) — sledi igralcu na vse naprave.
    Razvojno: ?kariera=1 (takoj zaslon kariere), ?bot=0.9 (namesto tebe skače bot).
    ===================================================================== */
 import { hub, ui } from '../../shared/hub.js';
@@ -33,7 +34,8 @@ const key = () => 'skoki:career:' + (hub.userId || 'anon');
 const prefKey = 'skoki:career:replay';
 
 function load() { return CA.restoreCareer(S.load(key(), null)); }
-function save(st) { S.save(key(), st); }
+// rev: števec različic za konflikt dveh naprav (games/skoki/cloud.js, mergeCareer)
+function save(st) { st.rev = ((S.load(key(), null)?.rev) | 0) + 1; S.save(key(), st); }
 
 /** Vgrajeni rivali: izmišljena imena z zastavami in barvami dresov (deterministično). */
 function builtinPool() {

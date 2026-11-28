@@ -23,6 +23,7 @@ const skokiParams = JSON.parse(await readFile(new URL('games/skoki/physics-param
 const skokiSql = await readFile(new URL('supabase/games/skoki.sql', root), 'utf8');
 const skokiRef = JSON.parse(await readFile(new URL('tests/fixtures/skoki-ref.json', root), 'utf8'));
 const skokiBotRef = JSON.parse(await readFile(new URL('tests/fixtures/skoki-bot-ref.json', root), 'utf8'));
+const skokiCareerOld = JSON.parse(await readFile(new URL('tests/fixtures/skoki-career-old.json', root), 'utf8'));
 
 const herodleFixture = JSON.parse(await readFile(new URL('tests/fixtures/herodle-compare.json', root), 'utf8'));
 const herodleHeroesSql = await readFile(new URL('supabase/games/herodle-heroes.sql', root), 'utf8');
@@ -32,6 +33,6 @@ const gIdx = JSON.parse(await readFile(new URL('games/gneca/levels/index.json', 
 const gnecaLevels = await Promise.all(gIdx.sets.flatMap(s => s.levels).map(async f => JSON.parse(await readFile(new URL('games/gneca/levels/' + f, root), 'utf8'))));
 
 const t0 = Date.now();
-const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef, gnecaLevels });
+const { fails } = await runAll(console.log, { games, schema, schemaSql, kroglaLevels, kroglaCups, rusilecArenas, herodleFixture, herodleHeroesSql, herodleHintsSql, frnikoleTracks, skokiHills, skokiParams, skokiSql, skokiRef, skokiBotRef, skokiCareerOld, gnecaLevels });
 console.log(`(${((Date.now() - t0) / 1000).toFixed(1)} s)`);
 process.exit(fails ? 1 : 0);

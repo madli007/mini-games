@@ -18,6 +18,7 @@ import { dayPlan, marbleById, formArrows, formText } from './day.js';
 import { line, nudgeFeed } from './texts.js';
 import { RaceRenderer } from './view.js';
 import { RaceAudio } from './sound.js';
+import { startCloud } from './cloud.js';
 
 const GAME = 'frnikole';
 const $ = s => document.querySelector(s);
@@ -64,6 +65,7 @@ const ME = 'me';
 
 async function main() {
   await hub.init({ gameId: GAME, scoreOrder: 'desc' });
+  await startCloud(hub);   // dnevni poskus online (»prvi poskus šteje« tudi na drugi napravi)
   ui.header({ title: 'Dirka frnikol' });
   try { TRACKS = await loadTracks(new URL('tracks/', import.meta.url)); }
   catch (e) { console.warn(e); $('#menu').innerHTML = '<div class="mg-empty">Prog ni bilo mogoče naložiti.</div>'; return; }

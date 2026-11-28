@@ -8,6 +8,7 @@ import * as S from '../../shared/storage.js';
 import * as Z from './logic.js';
 import { createBoard } from './board.js';
 import * as A from './audio.js';
+import { startCloud } from './cloud.js';
 
 const GAME = 'zaporedje';
 const $ = s => document.querySelector(s);
@@ -1111,6 +1112,7 @@ function renderMute() {
 
 async function main() {
   await hub.init({ gameId: GAME, scoreOrder: 'desc' });
+  await startCloud(hub);   // napredek online (rekord, dnevni izzivi)
   ui.header({ title: 'Zaporedje' });
   document.body.classList.toggle('zp-tv', tv);
   $('#soloLimit').value = String(S.load(key('limit'), Z.DEFAULT_LIMIT));

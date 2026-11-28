@@ -284,7 +284,8 @@ export const hub = {
 
   /* ------------------------- shranjen napredek igre (kariera) ------------------------- */
   // En JSON zapis na (igralec, igra, slot): kariera, nadgradnje, zvezdice … — sledi igralcu na vse naprave.
-  // Supabase: tabela <igra>_saves (glej supabase/games/gneca.sql), branje in pisanje le svojih vrstic.
+  // Supabase: skupna tabela game_saves (supabase/schema.sql), branje in pisanje le svojih vrstic.
+  // Sinhronizacija lokalnih ključev igre z enim zapisom: shared/progress.js (cloudSync).
   // Offline: localStorage (db:saves). data ≤ 60.000 znakov kot JSON; rev = števec različic (večji je novejši).
 
   /**

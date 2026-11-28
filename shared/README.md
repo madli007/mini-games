@@ -142,11 +142,34 @@ const s = await hub.loadSave();                       // { data, rev, updated_at
 await hub.writeSave(prog, { rev: prog.rev });         // true ob uspehu, false ob napaki (npr. brez povezave)
 await hub.loadSave({ slot: 'kariera' });              // več neodvisnih zapisov igre (slot: a-z0-9_-, do 24 znakov)
 ```
-- `rev` je števec različic (igra ga poveča ob vsaki spremembi). Priporočen vzorec (`games/gneca/game.js`): lokalna kopija
+- `rev` je števec različic (igra ga poveča ob vsaki spremembi). Ročni vzorec (`games/gneca/game.js`): lokalna kopija
   v `shared/storage.js` kot predpomnilnik, ob nalaganju vzemi novejšega (večji `rev`), ob spremembi zapiši oboje.
 - `data` ≤ 60.000 znakov kot JSON (sicer napaka `invalid`). Igra mora prebrani zapis **validirati** (tuj vnos).
-- Offline: `localStorage` (`db:saves`). Supabase: tabela **`<igra>_saves`** (`user_id`, `slot`, `data jsonb`, `rev`, `updated_at`;
-  pk `(user_id, slot)`, RLS: branje in pisanje le svojih vrstic) — nova igra skopira `supabase/games/gneca.sql` in zamenja predpono.
+- Offline: `localStorage` (`db:saves`). Supabase: **ena skupna tabela `game_saves`** v `supabase/schema.sql`
+  (`user_id`, `game`, `slot`, `data jsonb`, `rev`, `updated_at`; pk `(user_id, game, slot)`, RLS: branje in pisanje le svojih
+  vrstic). Nova igra **ne potrebuje** svojega SQL-a za napredek.
+
+#### Najlažje: `shared/progress.js` (`cloudSync`) — obstoječi lokalni ključi gredo sami online
+Igra še naprej bere in piše `S.load` / `S.save` kot doslej, le opiše, kateri ključi so napredek:
+```js
+import { cloudSync, merge as M } from '../../shared/progress.js';
+const cloud = cloudSync(hub, { slot: 'napredek', rules: [
+  { name: 'best', key: u => `igra:best:${u}`, check: v => (Number.isFinite(v) ? v : undefined), merge: M.max },
+  { name: 'daily:', prefix: u => `igra:daily:${u}:`, re: /^\d{4}-\d{2}-\d{2}$/, check: v => (v === true || undefined), merge: M.or, cap: 40 },
+] });
+await cloud.ready;     // takoj po hub.init in PRED branjem napredka (največ ~4 s, nato igra teče lokalno)
+```
+- Ob zagonu prebere zapis s strežnika, ga po pravilih združi z lokalnimi ključi in rezultat zapiše lokalno in (če se razlikuje)
+  na strežnik. **Star lokalni napredek se ob prvem zagonu sam preseli.** Vsak kasnejši `S.save`/`S.remove` ujetega ključa
+  sproži sinhronizacijo (zamik 1,5 s; ob skritju strani takoj) — `shared/storage.js` ima zato `S.onChange(fn)`.
+- `check(v)` validira (tudi lokalno) in vrne vrednost ali `undefined` (zavrženo). `merge(lokalno, strežnik)` je čista funkcija
+  za konflikt: `M.max`, `M.min`, `M.or`, `M.union(cap)`, `M.minBy`/`M.maxBy` (objekt števil), `M.longer`, `M.latest` (polje `t`),
+  `M.newer(score)` (večji `rev` v vrednosti, ob enakem več napredka — za stanja, ki jih ni mogoče združiti, npr. kariera).
+- **Tristransko:** lokalno se hrani osnova (zgoščene vrednosti zadnjega skupnega stanja, `progress:<igra>:<slot>:<uid>`).
+  Če se je spremenila le ena stran, zmaga ta (tudi urejanje in **brisanje** z druge naprave); `merge` odloči le, ko sta se
+  spremenili obe ali osnove še ni (selitev). Napaka pri branju (brez povezave) ne spremeni ničesar.
+- Prevelik zapis: `shrink(bag, max)` igre (npr. odreže ghoste) ali samodejno najstarejša predponska imena.
+- Primeri: `games/skoki/cloud.js` (4 sloti: kariera, skakalci, rekordi, napredek), `games/krogla/cloud.js`; testi: `tests/progress.js`.
 
 ### Kovanci, naloge, trgovina, kozmetika
 **Vsaka igra po vsaki odigrani igri pokliče `hub.reportGame`** (solo in multiplayer, enkrat na igralca):

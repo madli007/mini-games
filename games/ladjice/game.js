@@ -16,6 +16,7 @@ import {
   CAPTAINS, CAPTAIN_IDS, ITEMS, MODIFIERS, CONTRACTS, contractById, LINES, ACHIEVEMENTS, EMOTES,
 } from './content.js';
 import * as FX from './fx.js';
+import { startCloud } from './cloud.js';
 
 const GAME = 'ladjice';
 const $ = s => document.querySelector(s);
@@ -1474,6 +1475,7 @@ async function main() {
   $('#joinForm').addEventListener('submit', e => e.preventDefault());
   await hub.init({ gameId: GAME, scoreOrder: 'asc' });
   ME = hub.userId;
+  await startCloud(hub);   // napredek online (dnevni poskus, pogodbe, kapitani)
   ui.header({ title: 'Potapljanje ladjic' });
   $('#heroArt').innerHTML = FX.shipSvg(5, false);
   renderRules();

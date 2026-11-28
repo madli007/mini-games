@@ -114,7 +114,7 @@ index.html  dashboard.js  dashboard.css   dashboard (+ dnevne naloge)
 shop.html  shop.js  shop.css              trgovina in garderoba
 games.json  games.schema.json             register iger + JSON Schema
 shared/                                   skupni API (dokumentacija: shared/README.md)
-  hub.js room.js ui.js ui.css util.js storage.js config.js
+  hub.js room.js ui.js ui.css util.js storage.js config.js progress.js (napredek iger online)
   economy.js quests.js cosmetics.js cosmetics.css   kovanci, naloge, katalog kozmetike
   adapters/local.js adapters/supabase.js adapters/types.js
 games/reakcija/                           demo igra (index.html, game.js, logic.js, game.css)
@@ -127,7 +127,7 @@ games/pinball/                            pinball: motor (src/engine/) + Alu miz
 games/bozicni-pinball/                    Božični pinball: miza v table/, uvaža motor iz ../pinball/src/engine/ · README.md
 games/gneca/                              Gneča (sim, grid, level, daily, score, autopilot, upgrades, render/ · levels/*.json · README.md)
 supabase/schema.sql                       shema huba (idempotentna)
-supabase/games/                           SQL posameznih iger (če ga potrebujejo; npr. gneca.sql = <igra>_saves za hub.writeSave)
+supabase/games/                           SQL posameznih iger (če ga potrebujejo; napredek iger je v skupni game_saves v schema.sql)
 tests/  tests.html                        testi brez build koraka (+ simulacija ekonomije)
 tools/shop-sql.mjs                        SQL blok kataloga (shop_items) za schema.sql
 tools/krogla-levels.mjs                   generator prog Hrčkove krogle (+ autopilot, medalje, SQL zlatih časov)

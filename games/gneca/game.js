@@ -1,7 +1,7 @@
 /* =====================================================================
    GNEČA — game.js: vstop. Hub (profil, XP, dosežki, lestvica, naloge),
    napredek (zobniki, nadgradnje, zvezdice: shared/storage.js + hub.writeSave
-   → Supabase tabela gneca_saves, sledi igralcu na vse naprave), meni,
+   → Supabase tabela game_saves, sledi igralcu na vse naprave), meni,
    zanka igre s fiksnim korakom 60 Hz, konec z ui.results.
    URL: ?debug=1 (drsniki, FPS, mreža), ?demo=1 (igra autopilot), ?offline=1.
    ===================================================================== */

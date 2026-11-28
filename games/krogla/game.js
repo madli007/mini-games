@@ -17,6 +17,7 @@ import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { secretsFor, touches, lockKey } from './secrets.js';
 import * as THREE from 'three';
+import { startCloud } from './cloud.js';
 
 const GAME = 'krogla';
 const $ = s => document.querySelector(s);
@@ -71,6 +72,7 @@ const mkey = (id, mirror) => id + '|' + (mirror ? 1 : 0);
 
 async function boot() {
   await hub.init({ gameId: GAME });
+  await startCloud(hub);   // napredek online (časi, odklepi, turnirji, dnevni poskus): strežnik ↔ lokalno
   ui.header({ title: 'Hrčkova krogla' });
   try {
     const base = new URL('./levels/', import.meta.url);

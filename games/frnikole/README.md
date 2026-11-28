@@ -40,7 +40,7 @@ za trenutek upočasni (»foto finiš«). Gumbi so brez hover-only interakcij, `t
 - **Konec dneva:** `ui.results` (igralec + boti), `hub.submitScore` (samo prvi dnevni poskus), `hub.reportGame({ won: prvi
   med vsemi, players: 1 + boti, score, daily })`, `hub.awardXp(20 + 10 × zadeta stava na zmagovalca, ≤ 80)`.
 - **Dnevni izziv:** `dayPlan(hub.dailySeed())` (proge — vsaka vsaj enkrat, nikoli ista dvakrat zapored —, postave, forma,
-  5 botov in njihove osebnosti). Šteje **prvi začeti poskus dneva** (`localStorage` `frnikole:daily:<datum>` ob začetku
+  5 botov in njihove osebnosti). Šteje **prvi začeti poskus dneva** (`frnikole:daily:<datum>` ob začetku — lokalno in online prek `cloud.js`, zato tudi na drugi napravi
   ali obstoječ rezultat na lestvici); ponovitve so trening. **Prosta igra:** naključen seed, 3–7 botov, brez lestvice.
 - **Dosežki:** `outsider` (zadeta stava s kvoto ≥ 8), `trojna` (3 zadete v eni dirki), `saboter` (tvoj bočni sunek vrže
   favorita s proge in zmaga tvoja frnikola), `milijonar` (≥ 5000 na koncu dneva), `brez-sunka` (zmaga dneva brez sunka),

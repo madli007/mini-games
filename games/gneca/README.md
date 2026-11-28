@@ -52,7 +52,7 @@ Nivo se začne ob prvem dotiku (prej stoji). V delavnici lahko vklopiš »Velika
 
 Zobniki, nadgradnje, zvezdice in dnevni poskusi so en JSON (`upgrades.js`: `newProgress`, `sanitizeProgress`).
 Shranjen je **lokalno** (`shared/storage.js`, ključ `gneca:prog:<userId>`) in **na strežniku** prek `hub.writeSave`
-(Supabase tabela `gneca_saves`, glej `supabase/games/gneca.sql`; offline: `localStorage` `db:saves`).
+(Supabase: skupna tabela `game_saves`, `game = 'gneca'`, v `supabase/schema.sql`; offline: `localStorage` `db:saves`).
 Ob nalaganju se vzame novejši zapis (večji `rev`), tako da napredek sledi igralcu na vse naprave.
 
 ## Format nivoja (`levels/*.json`)

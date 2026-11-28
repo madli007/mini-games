@@ -272,17 +272,15 @@ export class SupabaseBackend {
   }
 
   /* --------------------------- shranjen napredek --------------------------- */
-  // Tabela <igra>_saves (user_id, slot, data jsonb, rev, updated_at), RLS: le svoje vrstice.
+  // Skupna tabela game_saves (user_id, game, slot, data jsonb, rev, updated_at), RLS: le svoje vrstice.
 
   async loadSave({ game, slot = 'main' }) {
-    const t = game.replace(/-/g, '_') + '_saves';
-    return check(await this.client.from(t).select('data,rev,updated_at').eq('user_id', this.userId).eq('slot', slot).maybeSingle());
+    return check(await this.client.from('game_saves').select('data,rev,updated_at').eq('user_id', this.userId).eq('game', game).eq('slot', slot).maybeSingle());
   }
 
   async writeSave({ game, slot = 'main', data, rev = 0 }) {
     if (JSON.stringify(data).length > 60000) throw codedError('invalid', 'Zapis je prevelik.');
-    const t = game.replace(/-/g, '_') + '_saves';
-    check(await this.client.from(t).upsert({ user_id: this.userId, slot, data, rev: Math.max(0, Math.round(rev)), updated_at: new Date().toISOString() }, { onConflict: 'user_id,slot' }));
+    check(await this.client.from('game_saves').upsert({ user_id: this.userId, game, slot, data, rev: Math.max(0, Math.round(rev)), updated_at: new Date().toISOString() }, { onConflict: 'user_id,game,slot' }));
     return true;
   }
 

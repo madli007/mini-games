@@ -24,6 +24,7 @@ import { Audio } from './audio.js';
 import { Renderer, detectQuality, QUALITY, QUALITY_ORDER, reducedMotion } from './render/scene.js';
 import { resultOf, dailyPick, DAILY_TRIES, msToMidnight, isOpen, unlocksBy, unlockKey, unlockText, createJury, juryBeforeJump, steadyMean } from './contest.js';
 import { flagOf } from './jumpers.js';
+import { startCloud } from './cloud.js';
 import { skinFromEquipped, flagEmoji, YELLOW } from './gear.js';
 
 const GAME = 'skoki';
@@ -1506,6 +1507,8 @@ $('#replayPos').addEventListener('change', () => { if (G.replay) G.replay.drag =
 for (const id of ['#card', '#replayBar', '#overlay']) $(id).addEventListener('pointerdown', e => e.stopPropagation());
 
 await hub.init({ gameId: GAME });
+await startCloud(hub);   // napredek online (kariera, skakalci, rekordi, dnevni izziv): strežnik ↔ lokalno
+Object.assign(stats, S.load('skoki:stats', {}));
 try { for (const a of await hub.getAchievements()) unlocked.add(a.key); } catch { /* */ }
 ui.header({ title: 'Smučarski skoki' });
 try {

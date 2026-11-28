@@ -275,3 +275,9 @@ izhajajo iz časovnega proračuna (`presetOpts`: delež ciljnega časa za ovire 
 **Seme.** Isti `opts` + isto seme → ista proga (mulberry32 iz `shared/util.js`, `rng(seed)`, poskusi `seed:k`, tema
 `seed:tema`), zato se seme da deliti. Zaradi zaokroževanja Math funkcij se lahko na drugem brskalniku (zelo redko) izbere
 drug poskus; deljena povezava (🔗 Deli) vedno prenese točno progo.
+
+## Napredek online
+Najboljši časi, odklepi turnirjev, zrcalni turnir, tedenski pokali, shranjen turnir (Maraton), dnevni poskus, ključavnice
+Rušilca in časi na deljenih progah so lokalno **in** na strežniku (`cloud.js` → `shared/progress.js` → tabela
+`game_saves`, slot `napredek`). Ob konfliktu: boljši čas, unija odklepov, novejši shranjen turnir. Ghosti, osnutki
+urejevalnika, skin in nastavitve ostanejo lokalni (uradni ghosti so že na strežniku).

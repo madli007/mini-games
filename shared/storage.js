@@ -8,6 +8,15 @@ let PREFIX = 'mg:';
 /** Zamenjaj predpono ključev (testi uporabljajo svojo, da ne pobrišejo pravih podatkov). */
 export function setPrefix(p) { PREFIX = p; }
 const memory = { local: new Map(), session: new Map() };
+const watchers = new Set();
+const notify = key => { for (const fn of watchers) try { fn(key); } catch (e) { console.warn('storage watcher:', e); } };
+
+/**
+ * Opazuj spremembe localStorage v tem zavihku (save/remove; ključ brez predpone).
+ * Uporablja shared/progress.js, da se napredek igre sam pošlje na strežnik. Vrne funkcijo za odjavo.
+ * @param {(key:string)=>void} fn
+ */
+export function onChange(fn) { watchers.add(fn); return () => watchers.delete(fn); }
 
 function area(kind) {
   try {
@@ -50,6 +59,7 @@ export function save(key, value, kind = 'local') {
   } catch {
     memory[kind].set(k, raw);
   }
+  if (kind === 'local') notify(key);
 }
 
 /** Odstrani ključ. */
@@ -57,6 +67,7 @@ export function remove(key, kind = 'local') {
   const k = PREFIX + key;
   try { area(kind)?.removeItem(k); } catch { /* ignore */ }
   memory[kind].delete(k);
+  if (kind === 'local') notify(key);
 }
 
 /**

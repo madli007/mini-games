@@ -146,3 +146,6 @@ sporočil/s (Supabase realtime: 20 na klienta).
 - Med igro se v bazo ne piše; lastnih tabel ni.
 
 Razvojni parametri: `?dev=1` (`window.__ru`, FPS, v lobbyju runda 30 s), `?q=low|medium|high|ultra`, `?tv=1`.
+
+## Napredek online
+Odigrane arene (dosežek »vse arene«) so lokalno in na strežniku (`cloud.js` → `shared/progress.js`, tabela `game_saves`).

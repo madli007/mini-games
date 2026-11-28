@@ -24,7 +24,6 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [32-motorist](32-motorist.md) | Motorist: fizikalni trial, 1. del (nova igra) | veliko |
 | [36-kresnik](36-kresnik.md) | Kresnik: klasični 2D platformer, 1. del (nova igra) | veliko |
 | [44-gneca-dvoboj](44-gneca-dvoboj.md) | Gneča: dvoboj 1v1 online (lockstep), 2v2, sklopa Tovarna in Zima, predmeti v trgovini | veliko |
-| [45-napredek-online](45-napredek-online.md) | Napredek igralcev online (`hub.writeSave`): kariera Skokov, Krogla, Ladjice, dnevni poskusi | srednje |
 | [41-herodle-liki](41-herodle-liki.md) | Herodle: ~75 novih MCU likov, popravek `inMcu`, debi v MCU, težavnost tedna (ne hkrati s 15) | veliko |
 
 ## Vsi prompti
@@ -75,7 +74,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 42 | [herodle-zbirka](42-herodle-zbirka.md) | Herodle: Herodex (zbirka likov), vadba, statistika dneva, teme in animacije razkritja v trgovini | 5 | ⬜ | | 41 |
 | 43 | [herodle-skupine](43-herodle-skupine.md) | Herodle: nov dnevni način Skupine (16 likov v 4 skupine), arhiv, super dan | 6 | ⬜ | | 41 (42 priporočen) |
 | 44 | [gneca-dvoboj](44-gneca-dvoboj.md) | Gneča: dvoboj 1v1 online (lockstep, hash, posnetek, prenos hosta), 2v2, sklopa Tovarna in Zima s šefoma, predmeti v trgovini | 2/2 | ⬜ | | 40 ✅ |
-| 45 | [napredek-online](45-napredek-online.md) | Napredek online za obstoječe igre: kariera Skokov, Krogla, Ladjice, Frnikole, dnevni poskusi (`hub.loadSave`/`writeSave`) | — | ⬜ | | 40 ✅ |
+| 45 | [napredek-online](45-napredek-online.md) | Napredek online za obstoječe igre: kariera Skokov, Krogla, Ladjice, Frnikole, dnevni poskusi (`hub.loadSave`/`writeSave`) | — | ✅ | COMMIT | 40 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
 **Naslednja prosta številka: 46.**

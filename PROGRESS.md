@@ -1643,3 +1643,55 @@ Pričakovane nadgradnje pri nivoju i: hitrost round(4·i/19), bonus round(2·i/1
 - Zvoki so preverjeni le, da se ne sesujejo (brez poslušanja).
 - **Supabase:** shranjevanje (`gneca_saves`) in nalaganje brez lokalne kopije preverjena s testnim profilom `GnecaTest7`
   (`?igralec=7`); ta je na današnji dnevni lestvici Gneče (398 točk) — lahko ga izbrišeš.
+
+# Napredek online (prompt 45, 28. 11. 2026)
+
+## Načrt
+- [x] **Odločitev: ena skupna tabela `game_saves`** (`user_id`, `game`, `slot`, `data`, `rev`, `updated_at`; pk `(user_id, game, slot)`,
+  RLS le svoje vrstice) v `supabase/schema.sql` namesto `<igra>_saves` na igro. **Razlog:** API (`hub.loadSave`/`writeSave`) je že
+  splošen, vse igre imajo isto obliko zapisa in ista pravila — 8 enakih tabel bi pomenilo 8× enak SQL, pravila in advisorje
+  ter SQL ob vsaki novi igri. Ena tabela: nova igra ne potrebuje SQL-a, adapter ne sestavlja imen tabel iz `gameId`.
+  `gneca_saves` (1 zapis) je prenesen (`game = 'gneca'`); stara tabela še obstaja, dokler GitHub Pages teče s staro kodo.
+- [x] `shared/progress.js` — `cloudSync(hub, { slot, rules })`: igra opiše, kateri ključi `shared/storage.js` so napredek
+  (`key`/`prefix`, `check` = validacija tujega vnosa, `merge` = čista funkcija za konflikt). Ob zagonu: strežnik + lokalno →
+  združeno → oboje; kasnejši `S.save`/`S.remove` se sam pošlje (`S.onChange` v `storage.js`). Tako se stari lokalni napredek
+  **sam preseli** in se igre skoraj ne spreminjajo (en `await startCloud(hub)` po `hub.init`).
+- [x] **Konflikti:** tristransko združevanje z osnovo (zgoščene vrednosti zadnjega skupnega stanja, lokalno): sprememba ene
+  strani zmaga (tudi urejanje in brisanje, npr. »Nova kariera«); ko sta spremenjeni obe ali osnove ni (selitev), odloči
+  `merge` igre. Kariera: `M.newer` — večji `rev` (nov `st.rev` ob vsakem shranjevanju), ob enakem več odigranih tekem.
+  Monotoni podatki (rekordi, odklepi, dnevni poskusi) se **združijo** (min/max/unija/ali) — strožje od »zmaga novejši«,
+  ker se ne izgubi nič z nobene naprave. Napaka pri branju (brez povezave) ne spremeni ničesar.
+- [x] **Skoki** (`games/skoki/cloud.js`, 4 sloti): `kariera` (cela kariera; nad 60.000 znakov obdrži 40 sezon zgodovine),
+  `skakalci` (Moji skakalci + statistika), `rekordi` (osebni rekordi z ghostom; nad mejo se odrežejo ghosti),
+  `napredek` (statistika skokov, reakcije, dnevni izziv, porabljeni poskusi in nagrade pokala).
+- [x] **Krogla** (časi, odklepi turnirjev, zrcalni, tedni, shranjen Maraton, dnevni poskus, ključavnice, časi deljenih prog),
+  **Ladjice** (dnevni poskus, pogodbe, kapitani z zmago), **Frnikole** (dnevni poskus), **Ustavi uro** (rekordi po težavnosti,
+  dnevni dnevi, notranja ura), **Zaporedje** (rekord, dnevni dnevi), **Rušilec** (odigrane arene).
+- [x] Že prej online: Gneča (zdaj v `game_saves`), Herodle (lastna `herodle_state`). Reakcija nima lokalnega napredka.
+- [x] Ostane lokalno (nastavitve / ne napredek): zvok, kakovost, filtri, izbrani kapitan in težavnost AI v Ladjicah
+  (`ladjice:level` je izbira, ne odklep), omejitev v Zaporedju, ghosti Krogle (uradni so že na strežniku), osnutki urejevalnika
+  Krogle, statistika pinballa (`aluPinball2.stats*`; rekordi so na lestvici huba).
+- [x] Testi `tests/progress.js` (10): jedro, round-trip vseh iger, konflikti po igrah, shrink, selitev stare kariere
+  (fixture `tests/fixtures/skoki-career-old.json`), dnevni poskus na drugi napravi, brisanje, napaka pri branju.
+  `clearLocal` v testih zdaj počisti tudi `db:saves`, `db:ghosts`, `db:quests` (ponoven zagon `tests.html` v istem brskalniku
+  je prej padel na 3 obstoječih testih).
+
+## Dnevnik
+- Migracija `game_saves_shared_table` prek Supabase MCP; advisors: security — za `game_saves` le splošno opozorilo o anonimni
+  prijavi (velja za vse tabele, projekt uporablja anonimne igralce; RLS dovoli le lastne vrstice), performance — nič novega.
+- `node tests/run-node.mjs`: 265/265; `tests.html`: 265/265 (tudi ob ponovnem zagonu).
+- Supabase, `?igralec=45` (profil `TestNapredek`): stara lokalna kariera (fixture, brez `rev`) vstavljena pred prvim zagonom →
+  po zagonu na strežniku (`game_saves`, `skoki/kariera`, 2 tekmi). »Nova kariera« → odigrana tekma kariere (bot, `?bot=0.9`) →
+  na strežniku nova kariera (1 tekma, rev 2). Izbris vseh lokalnih ključev Skokov → osvežitev → kariera nazaj s strežnika.
+- Ladjice: dnevni izziv začet → `ladjice/napredek` na strežniku → izbris lokalne kopije → gumb »Vaja (rezultat že oddan)«.
+- Krogla: zapis časov/odklepov → strežnik → izbris lokalno → nazaj (testni zapis potem izbrisan).
+- Konzola brez napak: Skoki, Ladjice, Krogla, Frnikole, Ustavi uro, Zaporedje, Rušilec, Gneča, dashboard; offline
+  (`?offline=1`) Skoki, Krogla, Ladjice.
+
+## Ni bilo preverjeno
+- **Dve napravi hkrati v živo** (dva brskalnika z isto identiteto) — konflikti so preverjeni le s testi in z brisanjem lokalne kopije.
+- Ročno igranje Frnikol, Ustavi uro, Zaporedja in Rušilca do konca na Supabaseu (preverjeno le nalaganje brez napak in testi pravil).
+- Velikost resnične dolge kariere (več sezon) in odrezovanje ghostov pri resničnih rekordih — le s testi.
+- Telefon (375×812): UI se ni spremenil, zato ni bil ponovno preverjen.
+- **Stara tabela `gneca_saves`:** ko objaviš novo kodo, ponovno poženi `supabase/schema.sql` (prenese morebitne novejše zapise
+  Gneče) in nato `drop table public.gneca_saves;`. Testni profil `TestNapredek` (`?igralec=45`) lahko izbrišeš.

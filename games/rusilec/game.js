@@ -22,6 +22,7 @@ import { dash, tickDash } from './collide.js';
 import { feedText } from './texts.js';
 import { ArenaRenderer } from './view.js';
 import { ArenaAudio } from './sound.js';
+import { startCloud } from './cloud.js';
 
 const GAME = 'rusilec';
 const $ = s => document.querySelector(s);
@@ -114,6 +115,7 @@ async function main() {
   isTV = QS.get('tv') === '1';
   await hub.init({ gameId: GAME });
   ME = hub.userId;
+  await startCloud(hub);   // napredek online (odigrane arene)
   ui.header({ title: 'Rušilec' });
   try { ARENAS = await loadArenas(new URL('arenas/', import.meta.url)); }
   catch (e) { console.warn(e); $('#menu').innerHTML = '<div class="mg-empty">Aren ni bilo mogoče naložiti.</div>'; return; }

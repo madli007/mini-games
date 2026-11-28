@@ -198,7 +198,7 @@ dogodki `skoki:tekma`, `skoki:zmaga`, `skoki:oder`, `skoki:letalnica`. Boti ne d
 ### Lokalna tekma in Moji skakalci
 - **Moji skakalci:** do 60 (ime, zastava, barvi dresa in čelade, človek ali bot s spretnostjo 0–1 in značajem: uravnotežen,
   agresiven odriv, varen pristanek, nestanoviten). Dodaj / uredi / podvoji / razvrsti / izbriši. Shranjeno lokalno
-  (`skoki:jumpers:<profil>`), na strežnik ne gre. **Izvoz/uvoz:** koda `SKOKI1:…` ali datoteka JSON (≤ 20.000 znakov,
+  (`skoki:jumpers:<profil>`) in online (slot `skakalci`, glej »Napredek online«). **Izvoz/uvoz:** koda `SKOKI1:…` ali datoteka JSON (≤ 20.000 znakov,
   neznana polja se zavržejo, neveljavni vnosi izpustijo). Igra ne ponuja imen pravih skakalcev; vgrajeni boti imajo 43 izmišljenih imen.
 - **Lokalna tekma:** izbereš skakalce (ali vse), skakalnico, format, veter, žirijo; ljudje skačejo po vrsti (»Na vrsti: …,
   pritisni za štart«), boti sami (v živo, 2× ali preskočeno). Ista logika (`sport/competition.js`, `contest.js`).
@@ -544,3 +544,11 @@ zastavica ob imenu in v publiki. Dosežek `garderoba` (5 kupljenih kosov).
 | `../../shared/sport/` | `season.js`, `ko.js`, `career.js` (+ `competition.js`, `live-replay.js` iz 2. faze) — glej `shared/sport/README.md` |
 
 Razvojno: `?pokal=1`, `?kariera=1`, `?date=2026-12-03[T18:30]` (simuliran datum, samo offline), `?bot=0.9` (bot skače namesto tebe).
+
+## Napredek online
+Kariera, »Moji skakalci« s statistiko, osebni rekordi (z ghostom), statistika skokov, dnevni izziv in porabljeni poskusi
+pokala so v `shared/storage.js` **in** na strežniku (`cloud.js` → `shared/progress.js` → tabela `game_saves`, sloti
+`kariera`, `skakalci`, `rekordi`, `napredek`). Ob zagonu se lokalno in strežniško stanje združita (obstoječa lokalna
+kariera se ob prvem zagonu sama preseli), vsaka sprememba gre na strežnik z zamikom ~1,5 s. Kariera ima `rev`
+(poveča se ob vsakem shranjevanju): ob konfliktu dveh naprav zmaga večji rev, ob enakem tista z več odigranimi tekmami.
+Če zapis rekordov preseže 60.000 znakov, se na strežniku odrežejo ghosti (rekordi ostanejo). Nastavitve ostanejo lokalne.

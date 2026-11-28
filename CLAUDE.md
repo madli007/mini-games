@@ -41,8 +41,8 @@ PROGRESS.md                               dnevnik dela
   katalog kozmetike `shared/cosmetics.js` se mora ujemati s `shop_items` v `schema.sql` (`node tools/shop-sql.mjs`).
 - Igralce prikazuj z `ui.who(p)` / `ui.avatar(p)` (z `equipped`), ne z lastnim HTML-jem — tako se kozmetika vidi povsod.
 - **Napredek igralca (kariera, nadgradnje, odklepi, zvezdice, dnevni poskusi) ne sme biti samo lokalen:** shrani ga prek
-  `hub.loadSave` / `hub.writeSave` (tabela `<igra>_saves`, vzorec `supabase/games/gneca.sql` in `games/gneca/game.js`);
-  `localStorage` je le predpomnilnik. Lokalne so lahko samo nastavitve (zvok, kakovost, filtri).
+  `hub.loadSave` / `hub.writeSave` (skupna tabela `game_saves` v `schema.sql`, brez lastnega SQL-a) — najlažje s
+  `shared/progress.js` (`cloudSync`: pravila za lokalne ključe, vzorec `games/skoki/cloud.js`); `localStorage` je le predpomnilnik. Lokalne so lahko samo nastavitve (zvok, kakovost, filtri).
 
 ## Supabase in varnost
 - Publishable/anon ključ je javen (`shared/config.js`). **Service role ključa nikoli ne daj v repo.**

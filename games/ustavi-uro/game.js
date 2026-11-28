@@ -7,6 +7,7 @@ import { hub, ui } from '../../shared/hub.js';
 import * as S from '../../shared/storage.js';
 import * as U from './logic.js';
 import * as A from './audio.js';
+import { startCloud } from './cloud.js';
 
 const GAME = U.GAME;
 const $ = s => document.querySelector(s);
@@ -1102,6 +1103,7 @@ function renderMute() {
 
 async function main() {
   await hub.init({ gameId: GAME, scoreOrder: 'asc' });
+  await startCloud(hub);   // napredek online (rekordi, dnevni izzivi, notranja ura)
   ui.header({ title: 'Ustavi uro' });
   if (tv) document.body.classList.add('uu-tv');
   renderMute();

@@ -16,4 +16,7 @@ gre njen SQL v `supabase/games/<id>.sql`:
 | `krogla.sql` | ghosti, zlati časi, proge skupnosti (vzorec za `hub.saveGhost`, `hub.publishLevel`) |
 | `skoki.sql` | ghosti (več je bolje), pokal (`hub.cupSubmit`) |
 | `herodle*.sql` | dnevni junak, namigi, napredek Herodla |
-| `gneca.sql` | `gneca_saves` — shranjen napredek (vzorec za `hub.loadSave` / `hub.writeSave`; RLS le svoje vrstice) |
+| `gneca.sql` | samo zgodovina: `gneca_saves` je prenesena v skupno tabelo **`game_saves`** (`schema.sql`) |
+
+Shranjen napredek (`hub.loadSave` / `hub.writeSave`, `shared/progress.js`) ima **ena skupna tabela `game_saves`** v
+`supabase/schema.sql` — igra zanj ne potrebuje svojega SQL-a.

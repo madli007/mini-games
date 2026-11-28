@@ -554,6 +554,48 @@ revoke all on function public.push_move(text, jsonb) from public, anon;
 grant execute on function public.push_move(text, jsonb) to authenticated;
 
 -- =====================================================================
+--  GAME_SAVES (shranjen napredek iger: kariera, odklepi, rekordi, dnevni poskusi)
+--  En JSON zapis na (igralec, igra, slot); bere in piše ga SAMO lastnik (RLS).
+--  API: hub.loadSave / hub.writeSave, sinhronizacija ključev: shared/progress.js.
+--  Ena skupna tabela namesto <igra>_saves (prej gneca_saves): manj tabel, isti API.
+-- =====================================================================
+create table if not exists public.game_saves (
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  game        text not null check (game ~ '^[a-z0-9-]{1,32}$'),
+  slot        text not null default 'main' check (slot ~ '^[a-z0-9_-]{1,24}$'),
+  data        jsonb not null check (pg_column_size(data) <= 60000),
+  rev         int not null default 0 check (rev >= 0),
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, game, slot)
+);
+
+alter table public.game_saves enable row level security;
+drop policy if exists game_saves_select on public.game_saves;
+create policy game_saves_select on public.game_saves for select to authenticated
+  using (user_id = (select auth.uid()));
+drop policy if exists game_saves_insert on public.game_saves;
+create policy game_saves_insert on public.game_saves for insert to authenticated
+  with check (user_id = (select auth.uid()));
+drop policy if exists game_saves_update on public.game_saves;
+create policy game_saves_update on public.game_saves for update to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+revoke all on table public.game_saves from anon, authenticated;
+grant select, insert, update on table public.game_saves to authenticated;
+
+-- Prenos iz stare tabele Gneče (prompt 40). Idempotentno: novejši rev zmaga.
+-- Ko je nova koda objavljena (GitHub Pages), lahko staro tabelo zbrišeš: drop table public.gneca_saves;
+do $$
+begin
+  if to_regclass('public.gneca_saves') is not null then
+    insert into public.game_saves (user_id, game, slot, data, rev, updated_at)
+      select g.user_id, 'gneca', g.slot, g.data, g.rev, g.updated_at from public.gneca_saves g
+      on conflict (user_id, game, slot) do update
+        set data = excluded.data, rev = excluded.rev, updated_at = excluded.updated_at
+        where excluded.rev > public.game_saves.rev;
+  end if;
+end $$;
+
+-- =====================================================================
 --  KOVANCI, TRGOVINA, KOZMETIKA, NALOGE
 --
 --  Številke so iste kot v shared/economy.js (COINS) in adapters/local.js:

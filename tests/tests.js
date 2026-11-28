@@ -35,6 +35,7 @@ import { sport3Tests } from './sport3.js';
 import { skoki4Tests } from './skoki4.js';
 import { krogla2Tests } from './krogla2.js';
 import { gnecaTests } from './gneca.js';
+import { progressTests } from './progress.js';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -174,7 +175,7 @@ test('validator sheme zazna napake', (ctx) => {
 
 /* ------------------------------------------------------- lokalni adapter */
 function clearLocal() {
-  for (const k of ['db:profiles', 'db:scores', 'db:ach', 'db:xplog', 'db:rooms', 'db:roomPlayers', 'db:state', 'db:moves']) {
+  for (const k of ['db:profiles', 'db:scores', 'db:ach', 'db:xplog', 'db:rooms', 'db:roomPlayers', 'db:state', 'db:moves', 'db:saves', 'db:ghosts', 'db:quests']) {
     S.remove(k);
   }
 }
@@ -1611,6 +1612,8 @@ krogla2Tests(test, { eq, ok });
 skoki4Tests(test, { eq, ok });
 /* ------------------------------------------------------- Gneča (tests/gneca.js) */
 gnecaTests(test, { eq, ok });
+/* ------------------------------------------------------- napredek online (tests/progress.js) */
+progressTests(test, { eq, ok });
 
 /**
  * Zaženi vse teste.
