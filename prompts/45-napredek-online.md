@@ -1,6 +1,6 @@
 # Prompt za AI agenta: napredek igralcev online — kariera Skokov, Krogla, Ladjice in dnevni poskusi
 
-> **Stanje:** ✅ narejeno (commit glej spodaj) — skupna tabela `game_saves`, `shared/progress.js`, `games/<igra>/cloud.js`
+> **Stanje:** ✅ narejeno (commit `ca34a64`) — skupna tabela `game_saves`, `shared/progress.js`, `games/<igra>/cloud.js`
 
 > Uporaba: v novi seji (delovna mapa `D:\Git\Brainstorm\mini-games`) napiši
 > **»Preberi prompts/45-napredek-online.md in ga v celoti izvedi.«**

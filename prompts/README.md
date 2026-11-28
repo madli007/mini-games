@@ -74,7 +74,7 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | 42 | [herodle-zbirka](42-herodle-zbirka.md) | Herodle: Herodex (zbirka likov), vadba, statistika dneva, teme in animacije razkritja v trgovini | 5 | ⬜ | | 41 |
 | 43 | [herodle-skupine](43-herodle-skupine.md) | Herodle: nov dnevni način Skupine (16 likov v 4 skupine), arhiv, super dan | 6 | ⬜ | | 41 (42 priporočen) |
 | 44 | [gneca-dvoboj](44-gneca-dvoboj.md) | Gneča: dvoboj 1v1 online (lockstep, hash, posnetek, prenos hosta), 2v2, sklopa Tovarna in Zima s šefoma, predmeti v trgovini | 2/2 | ⬜ | | 40 ✅ |
-| 45 | [napredek-online](45-napredek-online.md) | Napredek online za obstoječe igre: kariera Skokov, Krogla, Ladjice, Frnikole, dnevni poskusi (`hub.loadSave`/`writeSave`) | — | ✅ | COMMIT | 40 ✅ |
+| 45 | [napredek-online](45-napredek-online.md) | Napredek online za obstoječe igre: kariera Skokov, Krogla, Ladjice, Frnikole, dnevni poskusi (`hub.loadSave`/`writeSave`) | — | ✅ | `ca34a64` | 40 ✅ |
 | — | [TEMPLATE-igra](TEMPLATE-igra.md) | predloga za nov prompt | | | | |
 
 **Naslednja prosta številka: 46.**
