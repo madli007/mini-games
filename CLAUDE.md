@@ -57,7 +57,8 @@ PROGRESS.md                               dnevnik dela
 2. `await hub.init({ gameId: '<id>' })`, `ui.header({ title })`.
 3. Čisto logiko daj v ločen modul (npr. `logic.js`) in jo dodaj v `tests/tests.js`. Po vsaki igri `hub.reportGame(...)`.
 4. V `games.json` spremeni vnos iz `"status": "soon"` v `"live"` (ali dodaj nov vnos po `games.schema.json`).
-5. Preverjanja (spodaj), posodobi `PROGRESS.md`, commit.
+5. Igro dodaj v glavni `README.md` (seznam iger zgoraj in razdelek »Struktura«).
+6. Preverjanja (spodaj), posodobi `PROGRESS.md`, commit.
 
 ## Testiranje
 - Strežnik: `npx --yes http-server@14.1.1 . -p 8124 -c-1` (ali `.claude/launch.json` → `mini-games`).
@@ -72,6 +73,11 @@ PROGRESS.md                               dnevnik dela
 - Kazalo in stanje vseh promptov: `prompts/README.md`. **Nov prompt:** vzemi naslednjo prosto številko iz kazala, ga takoj
   vpiši (⬜) in na vrh prompta dodaj vrstico `> **Stanje:** …`. **Po izvedbi prompta:** stanje na vrhu prompta → ✅ s commitom,
   vrstica v kazalu in oznaka pri točki v `PREDLOGI-IGER.md`. Imen datotek promptov ne spreminjaj.
+- **Seznam »Kaj lahko poženem zdaj«** v `prompts/README.md` posodobi ob **vsaki** spremembi stanja (pogosto pozabljeno):
+  izvedeni prompt (✅) iz seznama **odstrani**, dodaj vse prompte, ki so zdaj odklenjeni (vsi predpogoji ✅, v tabeli
+  popravi tudi stolpec »Predpogoj«), in popravi opombe pri ostalih (npr. »idealno po …«). Nov prompt z izpolnjenimi
+  predpogoji takoj dodaj v seznam. Pred commitom preveri: vsak ⬜ prompt z vsemi predpogoji ✅ je v seznamu, noben ✅ ni.
+- Ko prompt doda ali bistveno spremeni igro, posodobi tudi glavni `README.md` (seznam iger, »Struktura«).
 
 ## Git
 - Veja `main`. Commit z opisnim sporočilom v slovenščini. **Ne pushaj**, razen če uporabnik izrecno reče.

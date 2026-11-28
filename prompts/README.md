@@ -16,8 +16,8 @@ Ideje brez prompta so v [`../PREDLOGI-IGER.md`](../PREDLOGI-IGER.md) (oznake ✅
 | [19-krogla-dirka](19-krogla-dirka.md) | Hrčkova krogla: dirka v multiplayerju | veliko |
 | [20-krogla-okras](20-krogla-okras.md) | Hrčkova krogla: okolica prog | srednje |
 | [10-minigolf](10-minigolf.md) | Hrčkov minigolf (nova igra) | veliko |
-| [23-pinball-bozic-miza](23-pinball-bozic-miza.md) | Božični pinball: miza (na motorju iz 22) | veliko |
-| [25-pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi; idealno po 23 in 24) | veliko |
+| [24-pinball-bozic-pravila](24-pinball-bozic-pravila.md) | Božični pinball: pravila, načini, wizard, DMD, glasba (na mizi iz 23) | veliko |
+| [25-pinball-vec-igralcev](25-pinball-vec-igralcev.md) | Pinball za več igralcev (obe mizi; idealno po 24) | veliko |
 | [26-lane-wars](26-lane-wars.md) | Lane wars skozi dobe (nova igra) | veliko |
 | [27-tarce](27-tarce.md) | Tarče, aim trainer (nova igra) | srednje |
 | [31-skoki-fizika-odriv](31-skoki-fizika-odriv.md) | Smučarski skoki: uglaševanje odriva in leta (DSJ), odriv kadarkoli | srednje |

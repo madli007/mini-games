@@ -13,7 +13,8 @@ profilom, skupno lestvico in aktivnimi lobbyji, **skupna infrastruktura** (`shar
   7 turnirjev/pokalov s prenosom časa in svojimi lestvicami — Klasični, Hrčkov, Sprint, Svetovna turneja, Maraton, Peklenski,
   Tedenski; Na čas z ghosti in filtri po dolžini, zrcalni turnir, dnevni izziv), **Rušilec**
   (party arena Hrčkove krogle za 2–8 igralcev v realnem času: izrivanje čez rob, 9 aren, boti, ekipe, TV pogled),
-  **Zaporedje**, **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
+  **Zaporedje**, **Herodle** (dnevna uganka: ugani junaka ali zlobca Marvel + DC po namigih — Klasika, Emoji, Kostum,
+  Dosje, arhiv in popolni dan), **Ustavi uro** (štoparica, ki izgine: dnevni izziv s 7 modifikatorji, dvoboj, Zadnji stoji),
   **Dirka frnikol**, **Smučarski skoki** (2,5D, deterministična fizika, 3 skakalnice, prava pravila
   točkovanja, veter, trening z ghosti in rekord skakalnice) in napovedane igre (npr. **Motorist**, fizikalni trial — prompti
   32–34, in **Kresnik**, klasični 2D platformer v duhu starih platformerjev — prompti 36–39 v
@@ -119,6 +120,7 @@ games/ladjice/                            Potapljanje ladjic (logic.js, ai.js, c
 games/krogla/                             Hrčkova krogla (physics, level, rules, ghost, render, … · levels/*.json · README.md)
 games/rusilec/                            Rušilec (match, collide, net, bots, arena, view · arenas/*.json · README.md)
 games/ustavi-uro/                         Ustavi uro (logic.js, audio.js, game.js, game.css)
+games/herodle/                            Herodle (heroes.js, hints.js, logic.js, daily.js · README.md)
 games/pinball/                            pinball: motor (src/engine/) + Alu miza (src/tables/alu/) · README.md
 games/bozicni-pinball/                    Božični pinball: miza v table/, uvaža motor iz ../pinball/src/engine/ · README.md
 supabase/schema.sql                       shema huba (idempotentna)
