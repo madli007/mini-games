@@ -1694,4 +1694,4 @@ Pričakovane nadgradnje pri nivoju i: hitrost round(4·i/19), bonus round(2·i/1
 - Ročno igranje Frnikol, Ustavi uro, Zaporedja in Rušilca do konca na Supabaseu (preverjeno le nalaganje brez napak in testi pravil).
 - Velikost resnične dolge kariere (več sezon) in odrezovanje ghostov pri resničnih rekordih — le s testi.
 - Telefon (375×812): UI se ni spremenil, zato ni bil ponovno preverjen.
-- Testni profil `TestNapredek` (`?igralec=45`) lahko izbrišeš.
+- Testni profil `TestNapredek` (`?igralec=45`) je po preverjanju izbrisan (anonimni uporabnik, profil in vsi njegovi zapisi).
