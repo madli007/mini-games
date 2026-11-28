@@ -1651,7 +1651,8 @@ Pričakovane nadgradnje pri nivoju i: hitrost round(4·i/19), bonus round(2·i/1
   RLS le svoje vrstice) v `supabase/schema.sql` namesto `<igra>_saves` na igro. **Razlog:** API (`hub.loadSave`/`writeSave`) je že
   splošen, vse igre imajo isto obliko zapisa in ista pravila — 8 enakih tabel bi pomenilo 8× enak SQL, pravila in advisorje
   ter SQL ob vsaki novi igri. Ena tabela: nova igra ne potrebuje SQL-a, adapter ne sestavlja imen tabel iz `gameId`.
-  `gneca_saves` (1 zapis) je prenesen (`game = 'gneca'`); stara tabela še obstaja, dokler GitHub Pages teče s staro kodo.
+  `gneca_saves` (1 zapis) je prenesen (`game = 'gneca'`); po objavi na GitHub Pages (push `f011d90`) je stara tabela
+  zbrisana (migracija `drop_gneca_saves`, pred tem še en prenos — novejših zapisov ni bilo).
 - [x] `shared/progress.js` — `cloudSync(hub, { slot, rules })`: igra opiše, kateri ključi `shared/storage.js` so napredek
   (`key`/`prefix`, `check` = validacija tujega vnosa, `merge` = čista funkcija za konflikt). Ob zagonu: strežnik + lokalno →
   združeno → oboje; kasnejši `S.save`/`S.remove` se sam pošlje (`S.onChange` v `storage.js`). Tako se stari lokalni napredek
@@ -1693,5 +1694,4 @@ Pričakovane nadgradnje pri nivoju i: hitrost round(4·i/19), bonus round(2·i/1
 - Ročno igranje Frnikol, Ustavi uro, Zaporedja in Rušilca do konca na Supabaseu (preverjeno le nalaganje brez napak in testi pravil).
 - Velikost resnične dolge kariere (več sezon) in odrezovanje ghostov pri resničnih rekordih — le s testi.
 - Telefon (375×812): UI se ni spremenil, zato ni bil ponovno preverjen.
-- **Stara tabela `gneca_saves`:** ko objaviš novo kodo, ponovno poženi `supabase/schema.sql` (prenese morebitne novejše zapise
-  Gneče) in nato `drop table public.gneca_saves;`. Testni profil `TestNapredek` (`?igralec=45`) lahko izbrišeš.
+- Testni profil `TestNapredek` (`?igralec=45`) lahko izbrišeš.

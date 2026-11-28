@@ -582,8 +582,8 @@ create policy game_saves_update on public.game_saves for update to authenticated
 revoke all on table public.game_saves from anon, authenticated;
 grant select, insert, update on table public.game_saves to authenticated;
 
--- Prenos iz stare tabele Gneče (prompt 40). Idempotentno: novejši rev zmaga.
--- Ko je nova koda objavljena (GitHub Pages), lahko staro tabelo zbrišeš: drop table public.gneca_saves;
+-- Prenos iz stare tabele Gneče (prompt 40). Idempotentno: novejši rev zmaga. Tabela je že zbrisana (28. 11. 2026);
+-- blok ostane za baze, ki jo še imajo.
 do $$
 begin
   if to_regclass('public.gneca_saves') is not null then
